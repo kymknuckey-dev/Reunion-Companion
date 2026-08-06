@@ -147,3 +147,21 @@ reunion-companion person "/path/to/file.familyfile14" --id 1
 
 Probe-21 establishes a master free-form Source record and an event-specific
 Birth citation that references the Source ID and stores citation detail.
+
+
+## Person profile publishing
+
+Print a Markdown profile:
+
+```bash
+reunion-companion profile "/path/to/file.familyfile14" --id 1
+```
+
+Write it to a file:
+
+```bash
+reunion-companion profile "/path/to/file.familyfile14"   --id 1   --output "Test Probe.md"
+```
+
+The profile combines relationships, events, places, memos, notes, media, and
+sources from the semantic model.

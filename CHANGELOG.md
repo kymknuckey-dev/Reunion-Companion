@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0-dev1
+
+- Added the first publishing layer.
+- Added reusable Markdown person profiles.
+- Added `profile --output` file generation.
+- Added profile JSON output for future DOCX/PDF renderers.
+
+
 ## 0.3.0-dev1
 
 - Added free-form master source extraction.

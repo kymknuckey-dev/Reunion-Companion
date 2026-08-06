@@ -11,6 +11,7 @@ from .records import TreeExtraction, extract_tree
 from .domain import GenealogyTree, load_genealogy_tree
 from .media import extract_media
 from .sources import extract_sources
+from .publishing import build_person_profile_data, build_person_profile_markdown, write_person_profile
 from .version import __version__
 
 
@@ -107,6 +108,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sources_parser.add_argument("package")
     sources_parser.add_argument("--json", action="store_true")
+
+    profile_parser = subparsers.add_parser(
+        "profile",
+        help="Generate a reusable person profile from the semantic model.",
+    )
+    profile_parser.add_argument("package")
+    profile_parser.add_argument("--id", type=int, required=True, dest="person_id")
+    profile_parser.add_argument(
+        "--output",
+        help="Write Markdown profile to this path instead of stdout.",
+    )
+    profile_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -473,6 +486,29 @@ def run_sources(package_path: str, as_json: bool) -> int:
     return 0
 
 
+
+def run_profile(
+    package_path: str,
+    person_id: int,
+    output: str | None,
+    as_json: bool,
+) -> int:
+    tree = load_genealogy_tree(package_path)
+    person = tree.get_person(person_id)
+
+    if as_json:
+        print(json.dumps(build_person_profile_data(tree, person), indent=2))
+        return 0
+
+    if output:
+        path = write_person_profile(package_path, person_id, output)
+        print(f"Profile written: {path}")
+        return 0
+
+    print(build_person_profile_markdown(tree, person), end="")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -506,6 +542,15 @@ def main() -> None:
             raise SystemExit(run_media(args.package, args.json))
         if args.command == "sources":
             raise SystemExit(run_sources(args.package, args.json))
+        if args.command == "profile":
+            raise SystemExit(
+                run_profile(
+                    args.package,
+                    args.person_id,
+                    args.output,
+                    args.json,
+                )
+            )
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc
