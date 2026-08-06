@@ -1,0 +1,25 @@
+# Python virtual environment
+.venv/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Testing and analysis
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Build output
+build/
+dist/
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/

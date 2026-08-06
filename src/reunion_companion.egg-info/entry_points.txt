@@ -1,2 +1,0 @@
-[console_scripts]
-reunion-companion = reunion_companion.cli:main
