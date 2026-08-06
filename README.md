@@ -120,3 +120,11 @@ reunion-companion media "/path/to/file.familyfile14" --json
 Thumbnail filenames provide direct person/family ownership, a media fingerprint,
 and generated size. Original filename/path linking is proven for the controlled
 single-media probe; multi-media mapping remains a later probe.
+
+
+### Multiple media items
+
+Probe-19 confirms ordered multi-media mapping for two person images. Thumbnail
+ownership is direct (`p1`, `p2`); filename and original-path records map in the
+same stable order. The decoder reports this as
+`decoded-ordered-controlled-probes`.

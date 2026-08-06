@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-dev5
+
+- Added controlled multi-media filename/path mapping.
+- Verified Person 1 and Person 2 media ownership from thumbnail names.
+- Mapped ProbePortrait.jpg to Test Probe and MaryProbePortrait.jpg to Mary Probe.
+- Retained an explicit evidence status for ordered media mapping.
+
+
 ## 0.2.0-dev4
 
 - Added media and thumbnail extraction.

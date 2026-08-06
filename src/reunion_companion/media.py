@@ -127,14 +127,24 @@ def extract_media(package_path: str | Path) -> list[MediaItem]:
     names = _decode_media_names(data)
     paths = _decode_original_paths(data)
 
-    # Controlled Probe-18 has one logical media item. For a single item, the
-    # unique filename/path association is unambiguous. Multi-item ownership
-    # remains deliberately unresolved until a second controlled media probe.
-    items = sorted(grouped.values(), key=lambda item: (item.owner_type, item.owner_id, item.media_key))
-    if len(items) == 1:
+    items = sorted(
+        grouped.values(),
+        key=lambda item: (item.owner_type, item.owner_id, item.media_key),
+    )
+
+    # Probe-18 established a one-item mapping. Probe-19 adds a second person
+    # image and proves that the filename/path record order matches the stable
+    # thumbnail owner order (Person 1, then Person 2). We therefore map by
+    # ordered position only when all three cardinalities agree.
+    if items and len(items) == len(names) == len(paths):
+        for item, filename, original_path in zip(items, names, paths, strict=True):
+            item.filename = filename
+            item.original_path = original_path
+            item.media_type = _media_type(filename)
+            item.filename_link_status = "decoded-ordered-controlled-probes"
+    elif len(items) == 1:
         item = items[0]
         if names:
-            # Prefer a mixed-case filename over a lower-case sandbox path tail.
             item.filename = names[0]
         if paths:
             item.original_path = paths[0]

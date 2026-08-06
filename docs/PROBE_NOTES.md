@@ -68,3 +68,11 @@
 - Prefix `p` denotes person ownership; existing Reunion samples also show `f` for family ownership.
 - Probe-18 contains `ProbePortrait.jpg` and its macOS bookmark path in main data.
 - Filename/path association is currently marked controlled-single-media until tested with multiple media.
+
+
+## Multi-media milestone
+
+- `p1-8f4821-*` belongs to Person 1 and maps to `ProbePortrait.jpg`.
+- `p2-90226f-*` belongs to Person 2 and maps to `MaryProbePortrait.jpg`.
+- Filename and bookmark-path records occur in the same order as thumbnail owner groups.
+- Multi-media filename/path mapping is now supported when counts match exactly.
