@@ -21,3 +21,13 @@
 - Date qualifier codes
 - Source and citation structures
 - Media ownership links
+
+
+## Structured records milestone
+
+- Person record envelope magic observed as `05 03 02 01`.
+- Person record ID is decoded from the controlled record header.
+- Sex field tag `0x001B`: `1 = male`, `2 = female`.
+- Field tag `0x003C` is observed on Baby Probe with value `1` after assignment as a child of Family 1.
+- Field tag `0x0064` is retained raw; its meaning is not yet assigned.
+- Spouse membership is not yet directly decoded.

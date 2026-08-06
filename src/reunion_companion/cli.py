@@ -6,6 +6,7 @@ import sys
 
 from .inventory import PackageInventory, build_inventory
 from .parser import BinaryReader, ReunionFormatError
+from .records import TreeExtraction, extract_tree
 from .version import __version__
 
 
@@ -53,6 +54,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--cache-values",
         action="store_true",
         help="List decoded given names, surnames, places, and trailing index IDs.",
+    )
+
+    tree_parser = subparsers.add_parser(
+        "tree",
+        help="Extract structured people and a provisional family graph.",
+    )
+    tree_parser.add_argument("package", help="Path to a .familyfile package directory")
+    tree_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print machine-readable JSON.",
+    )
+    tree_parser.add_argument(
+        "--raw-fields",
+        action="store_true",
+        help="Include unresolved raw family-related values in text output.",
     )
 
     return parser
@@ -175,6 +192,65 @@ def run_inventory(
     return 0
 
 
+
+def _person_label(tree: TreeExtraction, person_id: int) -> str:
+    person = next((item for item in tree.people if item.record_id == person_id), None)
+    return person.display if person else f"Person {person_id}"
+
+
+def run_tree(package_path: str, as_json: bool, include_raw_fields: bool) -> int:
+    tree = extract_tree(package_path)
+    if as_json:
+        print(json.dumps(tree.to_dict(), indent=2))
+        return 0
+
+    print(f"Package: {tree.package_path}")
+    print(f"Version: {tree.version}")
+    print()
+    print("Structured people")
+    if not tree.people:
+        print("  None decoded")
+    for person in tree.people:
+        sex = person.sex or f"unknown ({person.sex_code})"
+        print(f"  Person {person.record_id}: {person.display}  [{sex}]")
+        print(f"    Record offset: {person.offset:,}")
+        if person.parent_family_ids:
+            ids = ", ".join(str(item) for item in person.parent_family_ids)
+            print(f"    Parent family: {ids}")
+        if include_raw_fields and person.raw_family_values:
+            values = ", ".join(str(item) for item in person.raw_family_values)
+            print(f"    Raw 0x0064 values: {values}")
+
+    print()
+    print("Provisional families")
+    if not tree.families:
+        print("  None decoded")
+    for family in tree.families:
+        print(f"  Family {family.family_id}")
+        if family.spouse_ids:
+            spouses = " and ".join(
+                _person_label(tree, person_id) for person_id in family.spouse_ids
+            )
+            print(f"    Spouses: {spouses}")
+            print(f"    Spouse links: {family.spouse_link_status}")
+        else:
+            print("    Spouses: not yet decoded")
+        if family.child_ids:
+            children = ", ".join(
+                _person_label(tree, person_id) for person_id in family.child_ids
+            )
+            print(f"    Children: {children}")
+            print(f"    Child links: {family.child_link_status}")
+        else:
+            print("    Children: none decoded")
+
+    print()
+    print("Notes")
+    for warning in tree.warnings:
+        print(f"  - {warning}")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -190,6 +266,14 @@ def main() -> None:
                     include_files=args.files,
                     include_people=args.people,
                     include_cache_values=args.cache_values,
+                )
+            )
+        if args.command == "tree":
+            raise SystemExit(
+                run_tree(
+                    args.package,
+                    args.json,
+                    include_raw_fields=args.raw_fields,
                 )
             )
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:

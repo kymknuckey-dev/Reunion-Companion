@@ -69,3 +69,15 @@ reunion-companion inventory "/path/to/My Family.familyfile14" --cache-values
 ```
 
 The index values are currently labelled as **slots**, not definitive visible-person totals, because deleted and reserved record behaviour is still under investigation.
+
+
+## Structured tree extraction
+
+```bash
+reunion-companion tree "/path/to/Probe-16.familyfile14"
+reunion-companion tree "/path/to/Probe-16.familyfile14" --raw-fields
+reunion-companion tree "/path/to/Probe-16.familyfile14" --json
+```
+
+The current family output distinguishes directly decoded child-family references
+from spouse relationships inferred from the controlled one-family probe pattern.
