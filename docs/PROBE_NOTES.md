@@ -31,3 +31,14 @@
 - Field tag `0x003C` is observed on Baby Probe with value `1` after assignment as a child of Family 1.
 - Field tag `0x0064` is retained raw; its meaning is not yet assigned.
 - Spouse membership is not yet directly decoded.
+
+
+## Event milestone
+
+- Packed year is `((value >> 10) & 0x07FF) + 192`.
+- Bits above bit 20 are retained as unresolved high flags.
+- Qualifier byte `0xA0` is observed for `abt`; exact dates use `0x00`.
+- Person event field `0x03E8` contains the controlled Birth event.
+- Family tags `0x0050` and `0x0051` contain direct spouse person IDs.
+- The controlled family record contains the Marriage date `3 Mar 1950`.
+- Event-to-place pointers are not yet decoded.

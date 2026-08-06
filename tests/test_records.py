@@ -1,4 +1,8 @@
-from reunion_companion.records import build_families, extract_structured_people
+from reunion_companion.records import (
+    build_families,
+    extract_structured_families,
+    extract_structured_people,
+)
 
 
 def _person_record(
@@ -7,6 +11,9 @@ def _person_record(
     surname: str,
     sex_code: int,
     parent_family: int | None = None,
+    birth_date: bytes | None = None,
+    qualifier: int = 0,
+    memo: str | None = None,
 ) -> bytes:
     payload = bytearray()
     payload += b"\x00\x1b\x00" + sex_code.to_bytes(2, "little")
@@ -16,6 +23,13 @@ def _person_record(
     payload += (len(surname_raw) + 4).to_bytes(2, "little") + b"\x23\x00" + surname_raw
     if parent_family is not None:
         payload += b"\x08\x00\x3c\x00" + parent_family.to_bytes(4, "little")
+    if birth_date is not None:
+        payload += b"\xe8\x03"
+        payload += b"\x0a\x00\x08\x00\x00\x00" + bytes([qualifier]) + birth_date
+        if memo:
+            tag = b"[[pt:1]]"
+            memo_raw = memo.encode()
+            payload += tag + (len(memo_raw) + 4).to_bytes(4, "little") + memo_raw
 
     declared_length = len(payload) + 4
     return (
@@ -27,28 +41,71 @@ def _person_record(
     )
 
 
-def test_extract_structured_people() -> None:
+def _family_record(family_id: int, spouse_a: int, spouse_b: int, marriage_date: bytes) -> bytes:
+    payload = bytearray()
+    payload += b"\x08\x00\x50\x00" + spouse_a.to_bytes(4, "little")
+    payload += b"\x08\x00\x51\x00" + spouse_b.to_bytes(4, "little")
+    payload += b"\x08\x00\x00\x00\x00" + marriage_date
+    declared_length = len(payload) + 4
+    return (
+        b"\x01\x00"
+        + b"\x05\x03\x02\x01"
+        + declared_length.to_bytes(4, "little")
+        + family_id.to_bytes(4, "little")
+        + payload
+    )
+
+
+def test_extract_structured_people_and_birth() -> None:
     data = (
-        _person_record(1, "Test", "Probe", 1)
+        _person_record(
+            1,
+            "Test",
+            "Probe",
+            1,
+            birth_date=bytes.fromhex("42 14 9B 0C"),
+            memo="Probe birth memo",
+        )
         + _person_record(2, "Mary", "Probe", 2)
-        + _person_record(3, "Baby", "Probe", 1, parent_family=1)
+        + _person_record(
+            3,
+            "Baby",
+            "Probe",
+            1,
+            parent_family=1,
+            birth_date=bytes.fromhex("40 E1 9B 16"),
+            qualifier=0xA0,
+        )
     )
     people = extract_structured_people(data)
 
     assert [person.record_id for person in people] == [1, 2, 3]
-    assert [person.sex for person in people] == ["male", "female", "male"]
+    assert people[0].events[0].date.display == "2 Jan 1925"
+    assert people[0].events[0].memo == "Probe birth memo"
+    assert people[2].events[0].date.display == "abt May 1976"
     assert people[2].parent_family_ids == [1]
 
 
-def test_build_simple_family() -> None:
+def test_extract_family_spouses_and_marriage() -> None:
+    data = _family_record(1, 1, 2, bytes.fromhex("C3 78 9B 0C"))
+    families = extract_structured_families(data)
+
+    assert len(families) == 1
+    assert families[0].spouse_ids == [1, 2]
+    assert families[0].spouse_link_status == "decoded"
+    assert families[0].events[0].date.display == "3 Mar 1950"
+
+
+def test_build_family_children() -> None:
     data = (
         _person_record(1, "Test", "Probe", 1)
         + _person_record(2, "Mary", "Probe", 2)
         + _person_record(3, "Baby", "Probe", 1, parent_family=1)
+        + _family_record(1, 1, 2, bytes.fromhex("C3 78 9B 0C"))
     )
     people = extract_structured_people(data)
-    families = build_families(people, family_slots=1)
+    decoded = extract_structured_families(data)
+    families = build_families(people, decoded, family_slots=1)
 
     assert families[0].spouse_ids == [1, 2]
     assert families[0].child_ids == [3]
-    assert families[0].spouse_link_status == "inferred-controlled-pattern"

@@ -217,12 +217,19 @@ def run_tree(package_path: str, as_json: bool, include_raw_fields: bool) -> int:
         if person.parent_family_ids:
             ids = ", ".join(str(item) for item in person.parent_family_ids)
             print(f"    Parent family: {ids}")
+        for event in person.events:
+            if event.date:
+                print(f"    {event.event_type.title()}: {event.date.display}")
+            if event.memo:
+                print(f"      Memo: {event.memo}")
+            if event.place:
+                print(f"      Place: {event.place}")
         if include_raw_fields and person.raw_family_values:
             values = ", ".join(str(item) for item in person.raw_family_values)
             print(f"    Raw 0x0064 values: {values}")
 
     print()
-    print("Provisional families")
+    print("Structured families")
     if not tree.families:
         print("  None decoded")
     for family in tree.families:
@@ -243,6 +250,13 @@ def run_tree(package_path: str, as_json: bool, include_raw_fields: bool) -> int:
             print(f"    Child links: {family.child_link_status}")
         else:
             print("    Children: none decoded")
+        for event in family.events:
+            if event.date:
+                print(f"    {event.event_type.title()}: {event.date.display}")
+            if event.memo:
+                print(f"      Memo: {event.memo}")
+            if event.place:
+                print(f"      Place: {event.place}")
 
     print()
     print("Notes")

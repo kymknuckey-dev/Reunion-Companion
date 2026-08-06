@@ -9,8 +9,12 @@ class ReunionDate:
     raw_value: int
     day: int | None
     month: int | None
+    year: int
     year_code: int
+    high_flags: int
     qualifier: int | None = None
+    qualifier_name: str | None = None
+    display: str | None = None
 
 
 @dataclass(slots=True)
@@ -20,6 +24,7 @@ class Event:
     place: str | None = None
     memo: str | None = None
     raw_offset: int | None = None
+    decode_status: str = "experimental"
 
 
 @dataclass(slots=True)

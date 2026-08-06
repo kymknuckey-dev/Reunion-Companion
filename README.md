@@ -81,3 +81,10 @@ reunion-companion tree "/path/to/Probe-16.familyfile14" --json
 
 The current family output distinguishes directly decoded child-family references
 from spouse relationships inferred from the controlled one-family probe pattern.
+
+
+### Current event extraction
+
+The `tree` command now includes controlled-probe Birth and Marriage dates,
+the known `abt` qualifier, the Birth memo, and directly decoded spouse IDs.
+Event places remain unlinked until place-usage pointers are decoded.

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-dev4
+
+- Decoded full packed calendar years while retaining unknown high flags.
+- Added known `abt` date qualifier decoding.
+- Added person birth-event extraction, including the controlled birth memo.
+- Decoded direct spouse IDs from family fields 0x0050 and 0x0051.
+- Added family marriage-date extraction.
+- Added event data to text and JSON tree output.
+
+
 ## 0.1.0-dev3
 
 - Added structured Reunion 14 person-record envelope decoding.
