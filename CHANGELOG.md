@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0-dev4
+
+- Added media and thumbnail extraction.
+- Decoded thumbnail owner type, owner ID, fingerprint, and size.
+- Linked controlled single-media filename and original path.
+- Added media to person profiles and semantic JSON.
+- Added the `media` command.
+
+
 ## 0.2.0-dev3
 
 - Decoded standalone general person-note records.

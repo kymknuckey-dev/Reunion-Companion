@@ -59,3 +59,12 @@
 - The record ID is the owning person ID (`1`).
 - Marker `talfa` identifies the note payload in this controlled probe.
 - Note content is plain UTF-8; newline characters are preserved.
+
+
+## Media milestone
+
+- Thumbnail `p1-8f4821-200.jpg` identifies Person 1, fingerprint `8f4821`, size 200.
+- Thumbnail `p1-8f4821-1000.jpg` is the large rendering of the same media.
+- Prefix `p` denotes person ownership; existing Reunion samples also show `f` for family ownership.
+- Probe-18 contains `ProbePortrait.jpg` and its macOS bookmark path in main data.
+- Filename/path association is currently marked controlled-single-media until tested with multiple media.

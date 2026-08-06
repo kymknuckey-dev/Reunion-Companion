@@ -108,3 +108,15 @@ so semantic person and family output includes named locations.
 ### Person notes
 
 General person notes are now included in `person`, `tree`, and JSON output.
+
+
+## Media extraction
+
+```bash
+reunion-companion media "/path/to/file.familyfile14"
+reunion-companion media "/path/to/file.familyfile14" --json
+```
+
+Thumbnail filenames provide direct person/family ownership, a media fingerprint,
+and generated size. Original filename/path linking is proven for the controlled
+single-media probe; multi-media mapping remains a later probe.

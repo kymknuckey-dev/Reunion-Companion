@@ -9,6 +9,7 @@ from .inventory import PackageInventory, build_inventory
 from .parser import BinaryReader, ReunionFormatError
 from .records import TreeExtraction, extract_tree
 from .domain import GenealogyTree, load_genealogy_tree
+from .media import extract_media
 from .version import __version__
 
 
@@ -91,6 +92,13 @@ def build_parser() -> argparse.ArgumentParser:
     family_parser.add_argument("package")
     family_parser.add_argument("--id", type=int, required=True, dest="family_id")
     family_parser.add_argument("--json", action="store_true")
+
+    media_parser = subparsers.add_parser(
+        "media",
+        help="List decoded Reunion media and thumbnail ownership.",
+    )
+    media_parser.add_argument("package")
+    media_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -322,6 +330,20 @@ def _print_person_profile(tree: GenealogyTree, person) -> None:
         for note in person.notes:
             for line in note.text.splitlines() or [""]:
                 print(f"    {line}")
+    if person.media:
+        print("  Media")
+        for item in person.media:
+            print(f"    {item.filename or item.media_key}")
+            print(f"      Type: {item.media_type or 'unknown'}")
+            print(f"      Fingerprint: {item.fingerprint}")
+            print(f"      Thumbnails: {', '.join(str(t.size_hint) for t in item.thumbnails)}")
+            if item.original_path:
+                print(f"      Original path: {item.original_path}")
+    if person.notes:
+        print("  Notes")
+        for note in person.notes:
+            for line in note.text.splitlines() or [""]:
+                print(f"    {line}")
     else:
         print("  Notes: none decoded")
 
@@ -377,6 +399,37 @@ def run_family(package_path: str, family_id: int, as_json: bool) -> int:
     return 0
 
 
+
+def run_media(package_path: str, as_json: bool) -> int:
+    items = extract_media(package_path)
+    if as_json:
+        print(json.dumps([item.to_dict() for item in items], indent=2))
+        return 0
+    if not items:
+        print("No decoded media found.")
+        return 0
+    tree = load_genealogy_tree(package_path)
+    print("Media")
+    for item in items:
+        print()
+        print(f"  {item.filename or item.media_key}")
+        print(f"    Owner: {item.owner_type.title()} {item.owner_id}")
+        if item.owner_type == "person":
+            print(f"    Person: {tree.person_name(item.owner_id)}")
+        print(f"    Type: {item.media_type or 'unknown'}")
+        print(f"    Fingerprint: {item.fingerprint}")
+        print(f"    Filename link: {item.filename_link_status}")
+        if item.original_path:
+            print(f"    Original path: {item.original_path}")
+        print("    Thumbnails")
+        for thumb in item.thumbnails:
+            print(
+                f"      {thumb.size_hint}: {thumb.relative_path} "
+                f"({thumb.byte_size:,} bytes)"
+            )
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -406,6 +459,8 @@ def main() -> None:
             raise SystemExit(run_person(args.package, args.person_id, args.name, args.json))
         if args.command == "family":
             raise SystemExit(run_family(args.package, args.family_id, args.json))
+        if args.command == "media":
+            raise SystemExit(run_media(args.package, args.json))
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc

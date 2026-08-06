@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .models import Event, Note
+from .media import MediaItem, extract_media
 from .records import TreeExtraction, extract_tree
 
 
@@ -16,6 +17,7 @@ class PersonProfile:
     sex: str | None
     events: list[Event] = field(default_factory=list)
     notes: list[Note] = field(default_factory=list)
+    media: list[MediaItem] = field(default_factory=list)
     parent_family_ids: list[int] = field(default_factory=list)
     spouse_ids: list[int] = field(default_factory=list)
     parent_ids: list[int] = field(default_factory=list)
@@ -143,4 +145,10 @@ def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
 
 
 def load_genealogy_tree(package_path: str | Path) -> GenealogyTree:
-    return build_genealogy_tree(extract_tree(package_path))
+    tree = build_genealogy_tree(extract_tree(package_path))
+    for item in extract_media(package_path):
+        if item.owner_type == "person":
+            person = tree.people.get(item.owner_id)
+            if person is not None:
+                person.media.append(item)
+    return tree
