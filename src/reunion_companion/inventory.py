@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 import re
 
+from .caches import CacheSummary, build_cache_summary
 from .parser import BinaryReader
 
 _PRINTABLE = set(range(32, 127)) | {9, 10, 13}
@@ -48,6 +49,7 @@ class PackageInventory:
     media_strings: int = 0
     path_strings: int = 0
     thumbnails: ThumbnailInventory = field(default_factory=ThumbnailInventory)
+    caches: CacheSummary = field(default_factory=CacheSummary)
     warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
@@ -194,7 +196,7 @@ def build_inventory(package_path: str | Path) -> PackageInventory:
 
     warnings = [
         "Person extraction is experimental and may include false positives until record boundaries are decoded.",
-        "Cache entry counts are not yet decoded; inventory reports cache files and byte sizes only.",
+        "Index counts are labelled as slots until deleted and reserved record behaviour is decoded.",
     ]
 
     return PackageInventory(
@@ -210,5 +212,6 @@ def build_inventory(package_path: str | Path) -> PackageInventory:
         media_strings=media_strings,
         path_strings=path_strings,
         thumbnails=thumbnail_counts,
+        caches=build_cache_summary(package.package_path),
         warnings=warnings,
     )

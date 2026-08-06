@@ -61,3 +61,11 @@ Object model
         ↓
 Export / Publishing / Search / AI
 ```
+
+## Decode cache contents
+
+```bash
+reunion-companion inventory "/path/to/My Family.familyfile14" --cache-values
+```
+
+The index values are currently labelled as **slots**, not definitive visible-person totals, because deleted and reserved record behaviour is still under investigation.

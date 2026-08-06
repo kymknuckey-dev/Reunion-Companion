@@ -49,6 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="List experimental person-name candidates in text output.",
     )
+    inventory_parser.add_argument(
+        "--cache-values",
+        action="store_true",
+        help="List decoded given names, surnames, places, and trailing index IDs.",
+    )
 
     return parser
 
@@ -75,7 +80,12 @@ def run_inspect(package_path: str, as_json: bool) -> int:
     return 0
 
 
-def _print_inventory(inventory: PackageInventory, include_files: bool, include_people: bool) -> None:
+def _print_inventory(
+    inventory: PackageInventory,
+    include_files: bool,
+    include_people: bool,
+    include_cache_values: bool,
+) -> None:
     cache_files = [item for item in inventory.files if item.category == "cache"]
 
     print(f"Package:            {inventory.package_path}")
@@ -95,6 +105,35 @@ def _print_inventory(inventory: PackageInventory, include_files: bool, include_p
     print(f"    Family:          {inventory.thumbnails.family}")
     print(f"    Unknown:         {inventory.thumbnails.unknown}")
 
+    print()
+    print("Decoded caches")
+    caches = inventory.caches
+    print(f"  Given names:       {len(caches.given_names.values) if caches.given_names else 'unavailable'}")
+    print(f"  Surnames:          {len(caches.surnames.values) if caches.surnames else 'unavailable'}")
+    print(f"  Places:            {len(caches.places.values) if caches.places else 'unavailable'}")
+    print(f"  Place usages:      {caches.place_usage_count if caches.place_usage_count is not None else 'unavailable'}")
+    if caches.index:
+        print(f"  Primary slots:     {caches.index.primary_slots}")
+        print(f"  Family slots:      {caches.index.family_slots}")
+    else:
+        print("  Primary slots:     unavailable")
+        print("  Family slots:      unavailable")
+
+    if include_cache_values:
+        print()
+        print("Cache values")
+        if caches.given_names:
+            print("  Given names: " + ", ".join(caches.given_names.values))
+        if caches.surnames:
+            print("  Surnames:    " + ", ".join(caches.surnames.values))
+        if caches.places:
+            print("  Places:")
+            for place in caches.places.values:
+                print(f"    - {place}")
+        if caches.index:
+            ids = ", ".join(str(item) for item in caches.index.trailing_ids) or "none"
+            print(f"  Trailing index IDs: {ids}")
+
     if include_people:
         print()
         print("Person candidates")
@@ -111,17 +150,28 @@ def _print_inventory(inventory: PackageInventory, include_files: bool, include_p
 
     print()
     print("Notes")
-    for warning in inventory.warnings:
+    for warning in inventory.warnings + inventory.caches.warnings:
         print(f"  - {warning}")
     print("  - Read-only: no Reunion package files were changed.")
 
 
-def run_inventory(package_path: str, as_json: bool, include_files: bool, include_people: bool) -> int:
+def run_inventory(
+    package_path: str,
+    as_json: bool,
+    include_files: bool,
+    include_people: bool,
+    include_cache_values: bool,
+) -> int:
     inventory = build_inventory(package_path)
     if as_json:
         print(json.dumps(inventory.to_dict(), indent=2))
     else:
-        _print_inventory(inventory, include_files=include_files, include_people=include_people)
+        _print_inventory(
+            inventory,
+            include_files=include_files,
+            include_people=include_people,
+            include_cache_values=include_cache_values,
+        )
     return 0
 
 
@@ -139,6 +189,7 @@ def main() -> None:
                     args.json,
                     include_files=args.files,
                     include_people=args.people,
+                    include_cache_values=args.cache_values,
                 )
             )
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:
