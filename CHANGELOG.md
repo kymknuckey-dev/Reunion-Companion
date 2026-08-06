@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0-dev1
+
+- Added the first grounded question-answering engine.
+- Added deterministic natural-language intents for relationships, Birth facts, sources, place searches, and data-quality checks.
+- Added evidence-rich text and JSON answers.
+- Added the `ask` command.
+
+
 ## 0.4.0-dev1
 
 - Added the first publishing layer.

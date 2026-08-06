@@ -12,6 +12,7 @@ from .domain import GenealogyTree, load_genealogy_tree
 from .media import extract_media
 from .sources import extract_sources
 from .publishing import build_person_profile_data, build_person_profile_markdown, write_person_profile
+from .query import ask_package
 from .version import __version__
 
 
@@ -120,6 +121,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write Markdown profile to this path instead of stdout.",
     )
     profile_parser.add_argument("--json", action="store_true")
+
+    ask_parser = subparsers.add_parser(
+        "ask",
+        help="Ask a grounded question about decoded Reunion data.",
+    )
+    ask_parser.add_argument("package")
+    ask_parser.add_argument("question")
+    ask_parser.add_argument("--json", action="store_true")
+    ask_parser.add_argument(
+        "--evidence",
+        action="store_true",
+        help="Show the decoded evidence used for the answer.",
+    )
 
     return parser
 
@@ -509,6 +523,40 @@ def run_profile(
     return 0
 
 
+
+def run_ask(package_path: str, question: str, as_json: bool, show_evidence: bool) -> int:
+    result = ask_package(package_path, question)
+    if as_json:
+        print(json.dumps(result.to_dict(), indent=2))
+        return 0
+
+    print(result.answer)
+    if show_evidence and result.evidence:
+        print()
+        print("Evidence")
+        for item in result.evidence:
+            parts = [item.kind]
+            if item.person_name:
+                parts.append(item.person_name)
+            if item.event_type:
+                parts.append(item.event_type.title())
+            if item.field:
+                parts.append(item.field)
+            if item.value:
+                parts.append(item.value)
+            if item.source_title:
+                parts.append(item.source_title)
+            if item.citation_detail:
+                parts.append(item.citation_detail)
+            print("  - " + " | ".join(parts))
+    if result.limitations:
+        print()
+        print("Limits")
+        for limitation in result.limitations:
+            print(f"  - {limitation}")
+    return 0 if result.intent != "unknown" else 1
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -550,6 +598,10 @@ def main() -> None:
                     args.output,
                     args.json,
                 )
+            )
+        if args.command == "ask":
+            raise SystemExit(
+                run_ask(args.package, args.question, args.json, args.evidence)
             )
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

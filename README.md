@@ -165,3 +165,16 @@ reunion-companion profile "/path/to/file.familyfile14"   --id 1   --output "Test
 
 The profile combines relationships, events, places, memos, notes, media, and
 sources from the semantic model.
+
+
+## Ask questions
+
+```bash
+reunion-companion ask "/path/to/file.familyfile14" \
+  "Who are Test Probe's children?"
+
+reunion-companion ask "/path/to/file.familyfile14" \
+  "What sources support Test Probe's birth?" --evidence
+```
+
+The first pass is deterministic and grounded entirely in the decoded semantic model. It does not invent missing facts and can return evidence as text or JSON.
