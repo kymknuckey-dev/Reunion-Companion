@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-dev1
+
+- Added free-form master source extraction.
+- Added event-specific citation detail extraction.
+- Joined citation Source IDs to master source titles.
+- Added citations to semantic Event JSON and person output.
+- Added the `sources` command.
+
+
 ## 0.2.0-dev6
 
 - Added controlled media Description and Comment extraction.

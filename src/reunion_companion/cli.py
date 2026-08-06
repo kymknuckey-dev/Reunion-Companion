@@ -10,6 +10,7 @@ from .parser import BinaryReader, ReunionFormatError
 from .records import TreeExtraction, extract_tree
 from .domain import GenealogyTree, load_genealogy_tree
 from .media import extract_media
+from .sources import extract_sources
 from .version import __version__
 
 
@@ -99,6 +100,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     media_parser.add_argument("package")
     media_parser.add_argument("--json", action="store_true")
+
+    sources_parser = subparsers.add_parser(
+        "sources",
+        help="List decoded master sources.",
+    )
+    sources_parser.add_argument("package")
+    sources_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -307,6 +315,13 @@ def _print_events(events) -> None:
             print(f"      Place: {event.place}")
         if event.memo:
             print(f"      Memo: {event.memo}")
+        for citation in event.citations:
+            print("      Source")
+            print(
+                f"        {citation.source_title or f'Source {citation.source_id}'}"
+            )
+            if citation.detail:
+                print(f"        Detail: {citation.detail}")
 
 
 def _print_person_profile(tree: GenealogyTree, person) -> None:
@@ -440,6 +455,24 @@ def run_media(package_path: str, as_json: bool) -> int:
     return 0
 
 
+
+def run_sources(package_path: str, as_json: bool) -> int:
+    sources = extract_sources(package_path)
+    if as_json:
+        print(json.dumps([asdict(source) for source in sources], indent=2))
+        return 0
+    if not sources:
+        print("No decoded sources found.")
+        return 0
+    print("Sources")
+    for source in sources:
+        print()
+        print(f"  Source {source.source_id}")
+        print(f"    Title: {source.title}")
+        print(f"    Type: {source.source_type}")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -471,6 +504,8 @@ def main() -> None:
             raise SystemExit(run_family(args.package, args.family_id, args.json))
         if args.command == "media":
             raise SystemExit(run_media(args.package, args.json))
+        if args.command == "sources":
+            raise SystemExit(run_sources(args.package, args.json))
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc

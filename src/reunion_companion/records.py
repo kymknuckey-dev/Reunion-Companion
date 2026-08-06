@@ -6,7 +6,7 @@ import re
 
 from .dates import decode_packed_date
 from .inventory import _tagged_text_fields
-from .models import Event, Note
+from .models import Citation, Event, Note
 from .parser import BinaryReader
 
 _RECORD_MAGIC = b"\x05\x03\x02\x01"
@@ -195,6 +195,71 @@ def _decode_memo_after_date(record: bytes, content_start: int) -> str | None:
     return text if text.isprintable() else None
 
 
+
+
+def _event_content_end(record: bytes, content_start: int) -> int:
+    """Return the first byte after the optional memo following an event."""
+    if content_start + 4 > len(record):
+        return content_start
+    encoded_length = int.from_bytes(record[content_start : content_start + 4], "little")
+    text_length = encoded_length - 4
+    if 1 <= text_length <= 100_000:
+        end = content_start + 4 + text_length
+        if end <= len(record):
+            return end
+    return content_start
+
+
+def _decode_citations(record: bytes, start: int, record_offset: int) -> list[Citation]:
+    """Decode controlled free-form citation blocks attached to an event.
+
+    Probe-21 block:
+      total_length:u32
+      inner_length:u32
+      source_id:u32
+      field_length:u16
+      field_tag:u16 (0xAEB6)
+      format_or_flags:u32
+      UTF-8 citation detail
+    """
+    citations: list[Citation] = []
+    cursor = start
+    while cursor + 20 <= len(record):
+        total_length = int.from_bytes(record[cursor : cursor + 4], "little")
+        inner_length = int.from_bytes(record[cursor + 4 : cursor + 8], "little")
+        source_id = int.from_bytes(record[cursor + 8 : cursor + 12], "little")
+        field_length = int.from_bytes(record[cursor + 12 : cursor + 14], "little")
+        field_tag = int.from_bytes(record[cursor + 14 : cursor + 16], "little")
+
+        if (
+            20 <= total_length <= 4096
+            and inner_length + 4 == total_length
+            and source_id > 0
+            and field_tag == 0xAEB6
+            and field_length >= 4
+        ):
+            text_start = cursor + 20
+            text_length = total_length - 20
+            text_end = text_start + text_length
+            if text_end <= len(record):
+                try:
+                    detail = record[text_start:text_end].decode("utf-8").strip()
+                except UnicodeDecodeError:
+                    detail = ""
+                if detail and detail.isprintable():
+                    citations.append(
+                        Citation(
+                            source_id=source_id,
+                            detail=detail,
+                            raw_offset=record_offset + cursor,
+                        )
+                    )
+                    cursor += total_length
+                    continue
+        cursor += 1
+    return citations
+
+
 def _decode_birth_event(record: bytes, record_offset: int) -> Event | None:
     event_start = record.find(_BIRTH_EVENT_TAG)
     if event_start < 0:
@@ -214,11 +279,14 @@ def _decode_birth_event(record: bytes, record_offset: int) -> Event | None:
     date_end = date_marker + 11
     place_id, content_start = _decode_place_token(record, date_end)
     memo = _decode_memo_after_date(record, content_start)
+    citation_start = _event_content_end(record, content_start)
+    citations = _decode_citations(record, citation_start, record_offset)
     return Event(
         event_type="birth",
         date=date,
         place_id=place_id,
         memo=memo,
+        citations=citations,
         raw_offset=record_offset + date_marker,
         decode_status="decoded-controlled-probes",
     )

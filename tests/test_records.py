@@ -16,6 +16,7 @@ def _person_record(
     qualifier: int = 0,
     memo: str | None = None,
     place_id: int | None = None,
+    citation_detail: str | None = None,
 ) -> bytes:
     payload = bytearray()
     payload += b"\x00\x1b\x00" + sex_code.to_bytes(2, "little")
@@ -35,6 +36,18 @@ def _person_record(
             tag = b"[[pt:1]]"
             memo_raw = memo.encode()
             payload += tag + (len(memo_raw) + 4).to_bytes(4, "little") + memo_raw
+        if citation_detail:
+            detail_raw = citation_detail.encode()
+            field_length = len(detail_raw) + 8
+            total_length = 20 + len(detail_raw)
+            inner_length = total_length - 4
+            payload += total_length.to_bytes(4, "little")
+            payload += inner_length.to_bytes(4, "little")
+            payload += (1).to_bytes(4, "little")
+            payload += field_length.to_bytes(2, "little")
+            payload += (0xAEB6).to_bytes(2, "little")
+            payload += (1).to_bytes(4, "little")
+            payload += detail_raw
 
     declared_length = len(payload) + 4
     return (
@@ -74,6 +87,7 @@ def test_extract_structured_people_and_birth() -> None:
             birth_date=bytes.fromhex("42 14 9B 0C"),
             memo="Probe birth memo",
             place_id=1,
+            citation_detail="Certificate reference TP-1925-001",
         )
         + _person_record(2, "Mary", "Probe", 2)
         + _person_record(
@@ -92,6 +106,8 @@ def test_extract_structured_people_and_birth() -> None:
     assert people[0].events[0].date.display == "2 Jan 1925"
     assert people[0].events[0].memo == "Probe birth memo"
     assert people[0].events[0].place_id == 1
+    assert people[0].events[0].citations[0].source_id == 1
+    assert people[0].events[0].citations[0].detail == "Certificate reference TP-1925-001"
     assert people[2].events[0].date.display == "abt May 1976"
     assert people[2].parent_family_ids == [1]
 

@@ -27,12 +27,31 @@ class Note:
 
 
 @dataclass(slots=True)
+class Source:
+    source_id: int
+    title: str
+    source_type: str = "free-form"
+    raw_offset: int | None = None
+    decode_status: str = "decoded-controlled-probes"
+
+
+@dataclass(slots=True)
+class Citation:
+    source_id: int
+    detail: str | None = None
+    source_title: str | None = None
+    raw_offset: int | None = None
+    decode_status: str = "decoded-controlled-probes"
+
+
+@dataclass(slots=True)
 class Event:
     event_type: str
     date: ReunionDate | None = None
     place_id: int | None = None
     place: str | None = None
     memo: str | None = None
+    citations: list[Citation] = field(default_factory=list)
     raw_offset: int | None = None
     decode_status: str = "experimental"
 

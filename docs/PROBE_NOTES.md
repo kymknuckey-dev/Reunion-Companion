@@ -86,3 +86,13 @@
 - Comment appears in a separate media metadata area.
 - Ownership is proven for this single-metadata controlled probe; a second
   metadata assignment will test multi-item mapping.
+
+
+## Sources and citations milestone
+
+- Master Source ID 1 title: `Test Probe Birth Certificate`.
+- Source title uses field tag `0x0014` in a compact source record.
+- Test Probe Birth contains an event-specific citation block.
+- Citation Source ID: 1.
+- Citation detail: `Certificate reference TP-1925-001`.
+- Citation detail field tag observed as `0xAEB6`.

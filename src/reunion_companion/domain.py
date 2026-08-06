@@ -3,9 +3,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .models import Event, Note
+from .models import Event, Note, Source
 from .media import MediaItem, extract_media
 from .records import TreeExtraction, extract_tree
+from .sources import extract_sources
 
 
 @dataclass(slots=True)
@@ -39,6 +40,7 @@ class GenealogyTree:
     people: dict[int, PersonProfile]
     families: dict[int, FamilyUnit]
     warnings: list[str]
+    sources: dict[int, Source] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -51,6 +53,10 @@ class GenealogyTree:
             "families": {
                 str(family_id): asdict(family)
                 for family_id, family in sorted(self.families.items())
+            },
+            "sources": {
+                str(source_id): asdict(source)
+                for source_id, source in sorted(self.sources.items())
             },
             "warnings": list(self.warnings),
         }
@@ -146,6 +152,23 @@ def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
 
 def load_genealogy_tree(package_path: str | Path) -> GenealogyTree:
     tree = build_genealogy_tree(extract_tree(package_path))
+    tree.sources = {
+        source.source_id: source
+        for source in extract_sources(package_path)
+    }
+    for person in tree.people.values():
+        for event in person.events:
+            for citation in event.citations:
+                source = tree.sources.get(citation.source_id)
+                if source is not None:
+                    citation.source_title = source.title
+    for family in tree.families.values():
+        for event in family.events:
+            for citation in event.citations:
+                source = tree.sources.get(citation.source_id)
+                if source is not None:
+                    citation.source_title = source.title
+
     for item in extract_media(package_path):
         if item.owner_type == "person":
             person = tree.people.get(item.owner_id)

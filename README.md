@@ -136,3 +136,14 @@ Probe-20 decodes Mary Probe's media Description and Comment. The description is
 stored in her person-media block; the comment is stored in a separate metadata
 area. The current link is labelled
 `decoded-single-metadata-controlled-probe` pending a second metadata test.
+
+
+## Sources and citations
+
+```bash
+reunion-companion sources "/path/to/file.familyfile14"
+reunion-companion person "/path/to/file.familyfile14" --id 1
+```
+
+Probe-21 establishes a master free-form Source record and an event-specific
+Birth citation that references the Source ID and stores citation detail.
