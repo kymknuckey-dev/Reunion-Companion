@@ -21,6 +21,7 @@ class ReunionDate:
 class Event:
     event_type: str
     date: ReunionDate | None = None
+    place_id: int | None = None
     place: str | None = None
     memo: str | None = None
     raw_offset: int | None = None

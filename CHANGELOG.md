@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-dev2
+
+- Decoded length-prefixed event place tokens (`[[pt:n]]`).
+- Decoded stable place IDs from `places.cache`.
+- Resolved Birth and Marriage events to named places.
+- Added place IDs to semantic event JSON.
+
+
 ## 0.2.0-dev1
 
 - Added semantic genealogy object model.

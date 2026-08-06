@@ -13,7 +13,7 @@ _RECORD_MAGIC = b"\x05\x03\x02\x01"
 _BIRTH_EVENT_TAG = b"\xe8\x03"
 _DATE_FIELD_MARKER = b"\x0a\x00\x08\x00\x00\x00"
 _INLINE_DATE_MARKER = b"\x08\x00\x00\x00"
-_PT_TAG = re.compile(rb"\[\[pt:\d+\]\]")
+_PT_TAG = re.compile(rb"\[\[pt:(\d+)\]\]")
 
 
 @dataclass(slots=True)
@@ -125,18 +125,63 @@ def _decode_name(record: bytes) -> tuple[str, str] | None:
     return best[1], best[2]
 
 
-def _decode_memo_after_date(record: bytes, date_end: int) -> str | None:
-    match = _PT_TAG.search(record, date_end)
+
+def _decode_place_token(record: bytes, date_end: int) -> tuple[int | None, int]:
+    """Decode the ``[[pt:n]]`` place token following an event date.
+
+    Controlled probes show three null separator bytes between the four-byte
+    packed date and the token. The decoder permits zero to four null bytes so
+    it remains conservative across otherwise equivalent event envelopes.
+    """
+    token_start = date_end
+    null_count = 0
+    while (
+        token_start < len(record)
+        and record[token_start] == 0
+        and null_count < 4
+    ):
+        token_start += 1
+        null_count += 1
+
+    match = _PT_TAG.match(record, token_start)
+    if match is None or match.start() != token_start:
+        return None, date_end
+    return int(match.group(1)), match.end()
+
+
+def _decode_memo_after_date(record: bytes, content_start: int) -> str | None:
+    """Decode the optional length-prefixed event memo.
+
+    When a place token is present, ``content_start`` points immediately after
+    it. For older probe shapes, the function also retains a fallback search for
+    a place token before the memo.
+    """
+    length_start = content_start
+
+    if length_start + 4 <= len(record):
+        length = int.from_bytes(record[length_start : length_start + 4], "little")
+        text_length = length - 4
+        if 1 <= text_length <= 100_000:
+            text_start = length_start + 4
+            text_end = text_start + text_length
+            if text_end <= len(record):
+                try:
+                    text = record[text_start:text_end].decode("utf-8")
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    if text.isprintable():
+                        return text
+
+    match = _PT_TAG.search(record, content_start)
     if match is None:
         return None
     length_start = match.end()
     if length_start + 4 > len(record):
         return None
     length = int.from_bytes(record[length_start : length_start + 4], "little")
-    if not 1 <= length <= 100_000:
-        return None
     text_length = length - 4
-    if text_length <= 0:
+    if not 1 <= text_length <= 100_000:
         return None
     text_start = length_start + 4
     text_end = text_start + text_length
@@ -165,10 +210,13 @@ def _decode_birth_event(record: bytes, record_offset: int) -> Event | None:
     except ValueError:
         return None
 
-    memo = _decode_memo_after_date(record, date_marker + 11)
+    date_end = date_marker + 11
+    place_id, content_start = _decode_place_token(record, date_end)
+    memo = _decode_memo_after_date(record, content_start)
     return Event(
         event_type="birth",
         date=date,
+        place_id=place_id,
         memo=memo,
         raw_offset=record_offset + date_marker,
         decode_status="decoded-controlled-probes",
@@ -211,10 +259,13 @@ def _decode_family_record(
     date_candidates = _plausible_inline_dates(record)
     if date_candidates:
         date_offset, date = date_candidates[-1]
+        date_end = date_offset + 9
+        place_id, _content_start = _decode_place_token(record, date_end)
         events.append(
             Event(
                 event_type="marriage",
                 date=date,
+                place_id=place_id,
                 raw_offset=offset + date_offset,
                 decode_status="decoded-controlled-probes",
             )
@@ -306,7 +357,7 @@ def extract_tree(package_path: str | Path) -> TreeExtraction:
     package = reader.inspect()
     data = reader.read_main_data()
 
-    from .caches import build_cache_summary
+    from .caches import build_cache_summary, decode_place_map
 
     caches = build_cache_summary(package.package_path)
     family_slots = caches.index.family_slots if caches.index else 0
@@ -314,11 +365,28 @@ def extract_tree(package_path: str | Path) -> TreeExtraction:
     decoded_families = extract_structured_families(data)
     families = build_families(people, decoded_families, family_slots)
 
+    place_map: dict[int, str] = {}
+    places_path = package.package_path / "places.cache"
+    if places_path.is_file():
+        try:
+            place_map = decode_place_map(places_path.read_bytes())
+        except Exception:
+            place_map = {}
+
+    for person in people:
+        for event in person.events:
+            if event.place_id is not None:
+                event.place = place_map.get(event.place_id)
+    for family in families:
+        for event in family.events:
+            if event.place_id is not None:
+                event.place = place_map.get(event.place_id)
+
     warnings = [
         "Person IDs, sex codes, birth dates, and direct spouse IDs are decoded from controlled Reunion 14 records.",
         "Child-to-family links use the observed 0x003C field and remain experimental until confirmed by additional family shapes.",
         "Marriage dates are decoded from the controlled family-event record pattern.",
-        "Place records are catalogued, but event-to-place pointers are not yet decoded.",
+        "Event place IDs are decoded from length-prefixed [[pt:n]] tokens and resolved through places.cache.",
         "Raw 0x0064 values are preserved but not assigned a meaning.",
         "Read-only: no Reunion package files were changed.",
     ]

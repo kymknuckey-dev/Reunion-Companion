@@ -6,6 +6,7 @@ from reunion_companion.caches import (
     decode_index,
     decode_place_usage_count,
     decode_places,
+    decode_place_map,
     decode_surnames,
 )
 
@@ -67,3 +68,38 @@ def test_build_cache_summary(tmp_path: Path) -> None:
     summary = build_cache_summary(tmp_path)
     assert summary.given_names is None
     assert any("fmnames.cache" in warning for warning in summary.warnings)
+
+
+def test_decode_place_ids() -> None:
+    first = b"Adelaide Registry Office"
+    second = b"Adelaide, South Australia"
+    entry1 = (
+        (16 + len(first)).to_bytes(4, "little")
+        + (1).to_bytes(4, "little")
+        + (123).to_bytes(4, "little")
+        + (2).to_bytes(4, "little")
+        + first
+    )
+    entry2 = (
+        (16 + len(second)).to_bytes(4, "little")
+        + (2).to_bytes(4, "little")
+        + (456).to_bytes(4, "little")
+        + (1).to_bytes(4, "little")
+        + second
+    )
+    offset1 = 24
+    offset2 = offset1 + len(entry1)
+    body = (
+        b"ahcp"
+        + (2).to_bytes(4, "little")
+        + b"\x00\x00\x00\x00"
+        + offset1.to_bytes(4, "little")
+        + offset2.to_bytes(4, "little")
+        + entry1
+        + entry2
+    )
+    cache = (len(body) + 4).to_bytes(4, "little") + body
+    assert decode_place_map(cache) == {
+        2: "Adelaide Registry Office",
+        1: "Adelaide, South Australia",
+    }

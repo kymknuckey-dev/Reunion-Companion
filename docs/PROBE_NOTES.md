@@ -42,3 +42,12 @@
 - Family tags `0x0050` and `0x0051` contain direct spouse person IDs.
 - The controlled family record contains the Marriage date `3 Mar 1950`.
 - Event-to-place pointers are not yet decoded.
+
+
+## Event-place linkage
+
+- Event places are stored immediately after the packed date as a length-prefixed `[[pt:n]]` token.
+- `n` is the stable place-record ID.
+- Place entries store their ID at offset `+12` within each `places.cache` entry.
+- Probe-16 resolves Place 1 to `Adelaide, South Australia`.
+- Probe-16 resolves Place 2 to `Adelaide Registry Office`.

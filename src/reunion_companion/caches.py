@@ -99,9 +99,24 @@ def decode_fmnames(data: bytes) -> NamedCache:
     return NamedCache("fmnames.cache", signature, declared_size, count, values)
 
 
-def decode_places(data: bytes) -> NamedCache:
-    """Decode Reunion 14's unique-place catalogue."""
-    declared_size, signature = _header(data, b"ahcp")
+
+@dataclass(slots=True)
+class PlaceRecord:
+    record_id: int
+    value: str
+
+
+def decode_place_records(data: bytes) -> list[PlaceRecord]:
+    """Decode Reunion 14 place IDs and names.
+
+    Controlled probes establish a place entry layout containing:
+      entry_size:u32
+      usage_or_sort_value:u32
+      hash:u32
+      place_id:u32
+      UTF-8 place text
+    """
+    _declared_size, _signature = _header(data, b"ahcp")
     count = _u32(data, 8)
     table_start = 16
     table_end = table_start + (count * 4)
@@ -109,7 +124,7 @@ def decode_places(data: bytes) -> NamedCache:
         raise CacheDecodeError("Place offset table extends beyond cache")
 
     offsets = [_u32(data, table_start + (index * 4)) for index in range(count)]
-    values: list[str] = []
+    records: list[PlaceRecord] = []
     for index, offset in enumerate(offsets):
         end = offsets[index + 1] if index + 1 < count else len(data)
         if offset < table_end or offset + 16 > end or end > len(data):
@@ -119,9 +134,27 @@ def decode_places(data: bytes) -> NamedCache:
             raise CacheDecodeError(
                 f"Place entry at {offset} declares {entry_size} bytes but occupies {end - offset}"
             )
-        values.append(_clean_text(data[offset + 16 : end]))
+        place_id = _u32(data, offset + 12)
+        value = _clean_text(data[offset + 16 : end])
+        records.append(PlaceRecord(record_id=place_id, value=value))
+    return records
 
-    return NamedCache("places.cache", signature, declared_size, count, values)
+
+def decode_place_map(data: bytes) -> dict[int, str]:
+    return {record.record_id: record.value for record in decode_place_records(data)}
+
+
+def decode_places(data: bytes) -> NamedCache:
+    """Decode Reunion 14's unique-place catalogue."""
+    declared_size, signature = _header(data, b"ahcp")
+    records = decode_place_records(data)
+    return NamedCache(
+        "places.cache",
+        signature,
+        declared_size,
+        len(records),
+        [record.value for record in records],
+    )
 
 
 def decode_surnames(data: bytes) -> NamedCache:

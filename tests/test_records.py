@@ -14,6 +14,7 @@ def _person_record(
     birth_date: bytes | None = None,
     qualifier: int = 0,
     memo: str | None = None,
+    place_id: int | None = None,
 ) -> bytes:
     payload = bytearray()
     payload += b"\x00\x1b\x00" + sex_code.to_bytes(2, "little")
@@ -26,6 +27,9 @@ def _person_record(
     if birth_date is not None:
         payload += b"\xe8\x03"
         payload += b"\x0a\x00\x08\x00\x00\x00" + bytes([qualifier]) + birth_date
+        if place_id is not None:
+            token = f"[[pt:{place_id}]]".encode()
+            payload += b"\x00\x00\x00" + token
         if memo:
             tag = b"[[pt:1]]"
             memo_raw = memo.encode()
@@ -41,11 +45,14 @@ def _person_record(
     )
 
 
-def _family_record(family_id: int, spouse_a: int, spouse_b: int, marriage_date: bytes) -> bytes:
+def _family_record(family_id: int, spouse_a: int, spouse_b: int, marriage_date: bytes, place_id: int | None = None) -> bytes:
     payload = bytearray()
     payload += b"\x08\x00\x50\x00" + spouse_a.to_bytes(4, "little")
     payload += b"\x08\x00\x51\x00" + spouse_b.to_bytes(4, "little")
     payload += b"\x08\x00\x00\x00\x00" + marriage_date
+    if place_id is not None:
+        token = f"[[pt:{place_id}]]".encode()
+        payload += b"\x00\x00\x00" + token
     declared_length = len(payload) + 4
     return (
         b"\x01\x00"
@@ -65,6 +72,7 @@ def test_extract_structured_people_and_birth() -> None:
             1,
             birth_date=bytes.fromhex("42 14 9B 0C"),
             memo="Probe birth memo",
+            place_id=1,
         )
         + _person_record(2, "Mary", "Probe", 2)
         + _person_record(
@@ -82,18 +90,20 @@ def test_extract_structured_people_and_birth() -> None:
     assert [person.record_id for person in people] == [1, 2, 3]
     assert people[0].events[0].date.display == "2 Jan 1925"
     assert people[0].events[0].memo == "Probe birth memo"
+    assert people[0].events[0].place_id == 1
     assert people[2].events[0].date.display == "abt May 1976"
     assert people[2].parent_family_ids == [1]
 
 
 def test_extract_family_spouses_and_marriage() -> None:
-    data = _family_record(1, 1, 2, bytes.fromhex("C3 78 9B 0C"))
+    data = _family_record(1, 1, 2, bytes.fromhex("C3 78 9B 0C"), place_id=2)
     families = extract_structured_families(data)
 
     assert len(families) == 1
     assert families[0].spouse_ids == [1, 2]
     assert families[0].spouse_link_status == "decoded"
     assert families[0].events[0].date.display == "3 Mar 1950"
+    assert families[0].events[0].place_id == 2
 
 
 def test_build_family_children() -> None:
