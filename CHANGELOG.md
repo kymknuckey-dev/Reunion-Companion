@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-dev1
+
+- Added semantic genealogy object model.
+- Resolved parents, spouses, and children.
+- Added person and family commands.
+- Added semantic JSON output.
+
 ## 0.1.0-dev4
 
 - Decoded full packed calendar years while retaining unknown high flags.

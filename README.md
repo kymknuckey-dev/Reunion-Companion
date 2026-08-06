@@ -88,3 +88,12 @@ from spouse relationships inferred from the controlled one-family probe pattern.
 The `tree` command now includes controlled-probe Birth and Marriage dates,
 the known `abt` qualifier, the Birth memo, and directly decoded spouse IDs.
 Event places remain unlinked until place-usage pointers are decoded.
+
+
+## Semantic object model
+
+```bash
+reunion-companion person "/path/to/file.familyfile14" --id 1
+reunion-companion person "/path/to/file.familyfile14" --name "Probe"
+reunion-companion family "/path/to/file.familyfile14" --id 1
+```

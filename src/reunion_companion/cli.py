@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 import json
 import sys
 
 from .inventory import PackageInventory, build_inventory
 from .parser import BinaryReader, ReunionFormatError
 from .records import TreeExtraction, extract_tree
+from .domain import GenealogyTree, load_genealogy_tree
 from .version import __version__
 
 
@@ -71,6 +73,24 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Include unresolved raw family-related values in text output.",
     )
+
+    person_parser = subparsers.add_parser(
+        "person",
+        help="Show a resolved person profile from the genealogy object model.",
+    )
+    person_parser.add_argument("package")
+    selector = person_parser.add_mutually_exclusive_group(required=True)
+    selector.add_argument("--id", type=int, dest="person_id")
+    selector.add_argument("--name")
+    person_parser.add_argument("--json", action="store_true")
+
+    family_parser = subparsers.add_parser(
+        "family",
+        help="Show a resolved family unit from the genealogy object model.",
+    )
+    family_parser.add_argument("package")
+    family_parser.add_argument("--id", type=int, required=True, dest="family_id")
+    family_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -265,6 +285,91 @@ def run_tree(package_path: str, as_json: bool, include_raw_fields: bool) -> int:
     return 0
 
 
+def _print_events(events) -> None:
+    if not events:
+        print("  Events: none decoded")
+        return
+    print("  Events")
+    for event in events:
+        line = f"    {event.event_type.title()}"
+        if event.date and event.date.display:
+            line += f": {event.date.display}"
+        print(line)
+        if event.place:
+            print(f"      Place: {event.place}")
+        if event.memo:
+            print(f"      Memo: {event.memo}")
+
+
+def _print_person_profile(tree: GenealogyTree, person) -> None:
+    print(f"Person {person.id}: {person.display}")
+    print(f"  Sex: {person.sex or 'unknown'}")
+    print("  Parents: " + (
+        ", ".join(tree.person_name(item) for item in person.parent_ids)
+        if person.parent_ids else "none decoded"
+    ))
+    print("  Spouses: " + (
+        ", ".join(tree.person_name(item) for item in person.spouse_ids)
+        if person.spouse_ids else "none decoded"
+    ))
+    print("  Children: " + (
+        ", ".join(tree.person_name(item) for item in person.child_ids)
+        if person.child_ids else "none decoded"
+    ))
+    _print_events(person.events)
+
+
+def run_person(package_path: str, person_id: int | None, name: str | None, as_json: bool) -> int:
+    tree = load_genealogy_tree(package_path)
+    people = [tree.get_person(person_id)] if person_id is not None else tree.find_people(name or "")
+    if not people:
+        print("No matching people found.", file=sys.stderr)
+        return 1
+    if as_json:
+        payload = {
+            "matches": [asdict(person) for person in people],
+            "resolved_names": {
+                str(person.id): {
+                    "parents": [tree.person_name(item) for item in person.parent_ids],
+                    "spouses": [tree.person_name(item) for item in person.spouse_ids],
+                    "children": [tree.person_name(item) for item in person.child_ids],
+                }
+                for person in people
+            },
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+    for index, person in enumerate(people):
+        if index:
+            print()
+        _print_person_profile(tree, person)
+    return 0
+
+
+def run_family(package_path: str, family_id: int, as_json: bool) -> int:
+    tree = load_genealogy_tree(package_path)
+    family = tree.get_family(family_id)
+    if as_json:
+        payload = {
+            "family": asdict(family),
+            "spouse_names": [tree.person_name(item) for item in family.spouse_ids],
+            "child_names": [tree.person_name(item) for item in family.child_ids],
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+    print(f"Family {family.id}")
+    print("  Spouses: " + (
+        " and ".join(tree.person_name(item) for item in family.spouse_ids)
+        if family.spouse_ids else "none decoded"
+    ))
+    print("  Children: " + (
+        ", ".join(tree.person_name(item) for item in family.child_ids)
+        if family.child_ids else "none decoded"
+    ))
+    _print_events(family.events)
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -290,6 +395,10 @@ def main() -> None:
                     include_raw_fields=args.raw_fields,
                 )
             )
+        if args.command == "person":
+            raise SystemExit(run_person(args.package, args.person_id, args.name, args.json))
+        if args.command == "family":
+            raise SystemExit(run_family(args.package, args.family_id, args.json))
     except (FileNotFoundError, ReunionFormatError, PermissionError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc
