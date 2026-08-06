@@ -41,6 +41,7 @@ class MediaItem:
     description: str | None = None
     thumbnails: list[Thumbnail] = field(default_factory=list)
     filename_link_status: str = "unresolved"
+    metadata_link_status: str = "unresolved"
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -70,6 +71,73 @@ def _decode_original_paths(data: bytes) -> list[str]:
         except UnicodeDecodeError:
             continue
         key = value.casefold()
+        if key not in seen:
+            seen.add(key)
+            values.append(value)
+    return values
+
+
+
+_DESCRIPTION_BOOK_RE = re.compile(
+    rb"([\x20-\x7e]{3,300}?)book",
+)
+_COMMENT_RE = re.compile(
+    rb"([A-Za-z][A-Za-z0-9 ,.'()&+\-]{8,499}[.!?])\x00+",
+)
+
+
+def _decode_description_candidates(data: bytes) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for match in _DESCRIPTION_BOOK_RE.finditer(data):
+        raw = match.group(1)
+        # Keep only the trailing readable phrase after binary/control noise.
+        phrase_match = re.search(rb"([A-Za-z][A-Za-z0-9 ,.'()&+-]{2,299})$", raw)
+        if phrase_match is None:
+            continue
+        try:
+            value = phrase_match.group(1).decode("utf-8").strip()
+        except UnicodeDecodeError:
+            continue
+        if "." in value and value.lower().endswith(
+            (".jpg", ".jpeg", ".png", ".tif", ".tiff", ".heic", ".pdf")
+        ):
+            continue
+        key = value.casefold()
+        if key not in seen:
+            seen.add(key)
+            values.append(value)
+    return values
+
+
+def _decode_comment_candidates(data: bytes) -> list[str]:
+    excluded_fragments = (
+        "users/",
+        "/users/",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".tif",
+        ".tiff",
+        ".heic",
+        ".pdf",
+        "[[pt:",
+    )
+    values: list[str] = []
+    seen: set[str] = set()
+    for match in _COMMENT_RE.finditer(data):
+        try:
+            value = match.group(1).decode("utf-8").strip()
+        except UnicodeDecodeError:
+            continue
+        lowered = value.casefold()
+        if any(fragment in lowered for fragment in excluded_fragments):
+            continue
+        # Comments in the controlled probe are prose; require whitespace and
+        # terminal punctuation to avoid picking up internal labels.
+        if " " not in value or value[-1:] not in ".!?":
+            continue
+        key = lowered
         if key not in seen:
             seen.add(key)
             values.append(value)
@@ -126,6 +194,8 @@ def extract_media(package_path: str | Path) -> list[MediaItem]:
 
     names = _decode_media_names(data)
     paths = _decode_original_paths(data)
+    descriptions = _decode_description_candidates(data)
+    comments = _decode_comment_candidates(data)
 
     items = sorted(
         grouped.values(),
@@ -152,6 +222,18 @@ def extract_media(package_path: str | Path) -> list[MediaItem]:
                 item.filename = Path(paths[0]).name
         item.media_type = _media_type(item.filename)
         item.filename_link_status = "decoded-single-media-controlled-probe"
+
+    # Probe-20 adds metadata to Mary Probe's image only. A unique metadata
+    # pair can therefore be assigned to the sole media item whose owner record
+    # contains the description marker. Until a second metadata probe is made,
+    # the fallback associates the unique pair with the last ordered media item.
+    metadata_targets = [item for item in items if item.owner_type == "person"]
+    if descriptions and metadata_targets:
+        target = metadata_targets[-1]
+        target.description = descriptions[-1]
+        if comments:
+            target.caption = comments[-1]
+        target.metadata_link_status = "decoded-single-metadata-controlled-probe"
 
     for item in items:
         item.thumbnails.sort(key=lambda thumb: thumb.size_hint)

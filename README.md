@@ -128,3 +128,11 @@ Probe-19 confirms ordered multi-media mapping for two person images. Thumbnail
 ownership is direct (`p1`, `p2`); filename and original-path records map in the
 same stable order. The decoder reports this as
 `decoded-ordered-controlled-probes`.
+
+
+### Media description and comment
+
+Probe-20 decodes Mary Probe's media Description and Comment. The description is
+stored in her person-media block; the comment is stored in a separate metadata
+area. The current link is labelled
+`decoded-single-metadata-controlled-probe` pending a second metadata test.

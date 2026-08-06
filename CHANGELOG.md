@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-dev6
+
+- Added controlled media Description and Comment extraction.
+- Linked Probe-20 metadata to MaryProbePortrait.jpg.
+- Added media metadata to person profiles and JSON output.
+- Added an explicit metadata evidence-status field.
+
+
 ## 0.2.0-dev5
 
 - Added controlled multi-media filename/path mapping.

@@ -337,6 +337,10 @@ def _print_person_profile(tree: GenealogyTree, person) -> None:
             print(f"      Type: {item.media_type or 'unknown'}")
             print(f"      Fingerprint: {item.fingerprint}")
             print(f"      Thumbnails: {', '.join(str(t.size_hint) for t in item.thumbnails)}")
+            if item.description:
+                print(f"      Description: {item.description}")
+            if item.caption:
+                print(f"      Comment: {item.caption}")
             if item.original_path:
                 print(f"      Original path: {item.original_path}")
     if person.notes:
@@ -419,6 +423,12 @@ def run_media(package_path: str, as_json: bool) -> int:
         print(f"    Type: {item.media_type or 'unknown'}")
         print(f"    Fingerprint: {item.fingerprint}")
         print(f"    Filename link: {item.filename_link_status}")
+        if item.description:
+            print(f"    Description: {item.description}")
+        if item.caption:
+            print(f"    Comment: {item.caption}")
+        if item.description or item.caption:
+            print(f"    Metadata link: {item.metadata_link_status}")
         if item.original_path:
             print(f"    Original path: {item.original_path}")
         print("    Thumbnails")

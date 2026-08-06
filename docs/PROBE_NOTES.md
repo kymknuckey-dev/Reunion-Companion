@@ -76,3 +76,13 @@
 - `p2-90226f-*` belongs to Person 2 and maps to `MaryProbePortrait.jpg`.
 - Filename and bookmark-path records occur in the same order as thumbnail owner groups.
 - Multi-media filename/path mapping is now supported when counts match exactly.
+
+
+## Media metadata milestone
+
+- Mary image Description: `Portrait of Mary Probe`.
+- Mary image Comment: `Added for Reunion Companion media metadata testing.`
+- Description appears in Mary Probe's expanded person-media block.
+- Comment appears in a separate media metadata area.
+- Ownership is proven for this single-metadata controlled probe; a second
+  metadata assignment will test multi-item mapping.
