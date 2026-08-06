@@ -2,6 +2,7 @@ from reunion_companion.records import (
     build_families,
     extract_structured_families,
     extract_structured_people,
+    extract_person_notes,
 )
 
 
@@ -119,3 +120,20 @@ def test_build_family_children() -> None:
 
     assert families[0].spouse_ids == [1, 2]
     assert families[0].child_ids == [3]
+
+
+def test_extract_standalone_person_note() -> None:
+    text = b"This is the Test Probe person note.\nIt contains family history information for Reunion Companion."
+    payload = b"\xf5\x09ujq\x00\x00\x00talfa" + (b"\x00" * 7) + text
+    declared_length = len(payload) + 4
+    record = (
+        b"\x04\x21"
+        + b"\x05\x03\x02\x01"
+        + declared_length.to_bytes(4, "little")
+        + (1).to_bytes(4, "little")
+        + payload
+    )
+    notes = extract_person_notes(record)
+    assert notes[1][0].note_type == "person"
+    assert notes[1][0].format == "plain"
+    assert notes[1][0].text == text.decode()

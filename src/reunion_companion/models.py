@@ -18,6 +18,15 @@ class ReunionDate:
 
 
 @dataclass(slots=True)
+class Note:
+    note_type: str
+    text: str
+    format: str = "plain"
+    raw_offset: int | None = None
+    decode_status: str = "decoded-controlled-probes"
+
+
+@dataclass(slots=True)
 class Event:
     event_type: str
     date: ReunionDate | None = None

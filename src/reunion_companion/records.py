@@ -6,7 +6,7 @@ import re
 
 from .dates import decode_packed_date
 from .inventory import _tagged_text_fields
-from .models import Event
+from .models import Event, Note
 from .parser import BinaryReader
 
 _RECORD_MAGIC = b"\x05\x03\x02\x01"
@@ -29,6 +29,7 @@ class StructuredPerson:
     parent_family_ids: list[int] = field(default_factory=list)
     raw_family_values: list[int] = field(default_factory=list)
     events: list[Event] = field(default_factory=list)
+    notes: list[Note] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -281,6 +282,53 @@ def _decode_family_record(
     )
 
 
+
+def extract_person_notes(data: bytes) -> dict[int, list[Note]]:
+    """Decode standalone Reunion 14 person-note records.
+
+    Probe-17 establishes that a general person note is stored in a separate
+    record envelope whose record ID is the owning person ID. The payload uses
+    the marker ``talfa`` followed by null padding and plain UTF-8 text.
+    """
+    notes: dict[int, list[Note]] = {}
+    cursor = 0
+    while True:
+        marker = data.find(b"talfa", cursor)
+        if marker < 0:
+            break
+        magic = data.rfind(_RECORD_MAGIC, max(0, marker - 64), marker)
+        if magic < 0 or magic + 12 > len(data):
+            cursor = marker + 5
+            continue
+        owner_id = int.from_bytes(data[magic + 8 : magic + 12], "little")
+        if owner_id <= 0:
+            cursor = marker + 5
+            continue
+        text_start = marker + len(b"talfa")
+        while text_start < len(data) and data[text_start] == 0:
+            text_start += 1
+        text_end = data.find(b"\x00", text_start)
+        if text_end < 0:
+            text_end = len(data)
+        raw = data[text_start:text_end]
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            cursor = marker + 5
+            continue
+        if text.strip():
+            notes.setdefault(owner_id, []).append(
+                Note(
+                    note_type="person",
+                    text=text,
+                    format="plain",
+                    raw_offset=text_start,
+                )
+            )
+        cursor = marker + 5
+    return notes
+
+
 def extract_structured_people(data: bytes) -> list[StructuredPerson]:
     people: list[StructuredPerson] = []
     seen_ids: set[int] = set()
@@ -362,6 +410,9 @@ def extract_tree(package_path: str | Path) -> TreeExtraction:
     caches = build_cache_summary(package.package_path)
     family_slots = caches.index.family_slots if caches.index else 0
     people = extract_structured_people(data)
+    person_notes = extract_person_notes(data)
+    for person in people:
+        person.notes.extend(person_notes.get(person.record_id, []))
     decoded_families = extract_structured_families(data)
     families = build_families(people, decoded_families, family_slots)
 
@@ -387,6 +438,7 @@ def extract_tree(package_path: str | Path) -> TreeExtraction:
         "Child-to-family links use the observed 0x003C field and remain experimental until confirmed by additional family shapes.",
         "Marriage dates are decoded from the controlled family-event record pattern.",
         "Event place IDs are decoded from length-prefixed [[pt:n]] tokens and resolved through places.cache.",
+        "General person notes are decoded from standalone talfa records.",
         "Raw 0x0064 values are preserved but not assigned a meaning.",
         "Read-only: no Reunion package files were changed.",
     ]

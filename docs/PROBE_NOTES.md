@@ -51,3 +51,11 @@
 - Place entries store their ID at offset `+12` within each `places.cache` entry.
 - Probe-16 resolves Place 1 to `Adelaide, South Australia`.
 - Probe-16 resolves Place 2 to `Adelaide Registry Office`.
+
+
+## Person notes
+
+- Probe-17 stores Test Probe's general note in a standalone record.
+- The record ID is the owning person ID (`1`).
+- Marker `talfa` identifies the note payload in this controlled probe.
+- Note content is plain UTF-8; newline characters are preserved.

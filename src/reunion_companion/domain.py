@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .models import Event
+from .models import Event, Note
 from .records import TreeExtraction, extract_tree
 
 
@@ -15,6 +15,7 @@ class PersonProfile:
     display: str
     sex: str | None
     events: list[Event] = field(default_factory=list)
+    notes: list[Note] = field(default_factory=list)
     parent_family_ids: list[int] = field(default_factory=list)
     spouse_ids: list[int] = field(default_factory=list)
     parent_ids: list[int] = field(default_factory=list)
@@ -90,6 +91,7 @@ def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
             display=item.display,
             sex=item.sex,
             events=list(item.events),
+            notes=list(item.notes),
             parent_family_ids=list(item.parent_family_ids),
         )
         for item in extraction.people

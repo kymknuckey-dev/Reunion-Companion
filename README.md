@@ -103,3 +103,8 @@ reunion-companion family "/path/to/file.familyfile14" --id 1
 
 Birth and Marriage event place tokens are now resolved through `places.cache`,
 so semantic person and family output includes named locations.
+
+
+### Person notes
+
+General person notes are now included in `person`, `tree`, and JSON output.

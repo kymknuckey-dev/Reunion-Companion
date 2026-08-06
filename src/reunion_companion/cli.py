@@ -317,6 +317,13 @@ def _print_person_profile(tree: GenealogyTree, person) -> None:
         if person.child_ids else "none decoded"
     ))
     _print_events(person.events)
+    if person.notes:
+        print("  Notes")
+        for note in person.notes:
+            for line in note.text.splitlines() or [""]:
+                print(f"    {line}")
+    else:
+        print("  Notes: none decoded")
 
 
 def run_person(package_path: str, person_id: int | None, name: str | None, as_json: bool) -> int:

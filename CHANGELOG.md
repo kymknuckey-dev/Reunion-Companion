@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-dev3
+
+- Decoded standalone general person-note records.
+- Added semantic Note objects and person-profile note output.
+- Preserved UTF-8 text and paragraph line breaks.
+
+
 ## 0.2.0-dev2
 
 - Decoded length-prefixed event place tokens (`[[pt:n]]`).
