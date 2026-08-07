@@ -1,0 +1,9 @@
+Reunion Companion Foundation Layer v0.10.0-alpha2
+
+Baseline: verified v0.9.0-dev1
+Alpha 1: installed
+Alpha 2: installed
+
+pytest result: 74 passed
+Existing v0.9 behavior modified: no
+Existing v0.9 source files replaced: no

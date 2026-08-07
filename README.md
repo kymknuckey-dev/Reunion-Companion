@@ -1,7 +1,7 @@
-# Core Engine Build 1B
+# Reunion Companion Foundation Layer — Alpha 2
 
-Install these model files into:
-src/reunion_companion/model/
+Alpha 2 adds the first genealogy-domain objects to the additive Foundation
+Layer. These classes are not yet used by the existing CLI or decoders.
 
-This package completes most of the object model.
-Do not commit until Build 1C (__init__ and tests) is installed.
+The existing v0.9 semantic model remains authoritative while the Foundation
+Layer matures beside it.
