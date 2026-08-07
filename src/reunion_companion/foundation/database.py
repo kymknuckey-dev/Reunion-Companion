@@ -16,6 +16,10 @@ from .repository import Repository
 class FoundationDatabase:
     """Root container for the future Core Engine object graph."""
 
+    package_path: str | None = None
+    version: str | None = None
+    warnings: list[str] = field(default_factory=list)
+
     people: Repository[FoundationPerson] = field(default_factory=Repository)
     families: Repository[FoundationFamily] = field(default_factory=Repository)
     events: Repository[FoundationEvent] = field(default_factory=Repository)
@@ -23,7 +27,6 @@ class FoundationDatabase:
     indexes: FoundationIndexes = field(default_factory=FoundationIndexes)
 
     def rebuild_indexes(self) -> None:
-        """Rebuild all derived indexes from current repository contents."""
         self.indexes.clear()
         for person in self.people:
             self.indexes.index_person(person)

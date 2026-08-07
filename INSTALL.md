@@ -1,20 +1,18 @@
-# Foundation Layer v0.10.0-alpha3 — Install
+# Foundation Layer v0.10.0-alpha4 — Install
 
-Alpha 3 is cumulative and additive.
+Alpha 4 is cumulative and remains additive relative to the working v0.9 application.
 
 Merge:
 
 ```text
 src/reunion_companion/foundation/
-tests/test_foundation.py
-tests/test_foundation_objects.py
-tests/test_foundation_repository.py
-tests/test_foundation_database.py
+tests/test_foundation*.py
 ```
 
 into your existing Reunion Companion project.
 
-Do not replace or modify the established `model/`, decoder, engine, or CLI files.
+Do not modify or replace the established `model/`, decoder, engine, publisher,
+or CLI files.
 
 Then run:
 
@@ -28,7 +26,7 @@ pytest
 Expected:
 
 ```text
-82 passed
+89 passed
 ```
 
 If the result differs, do not make manual fixes. Send the complete output back.

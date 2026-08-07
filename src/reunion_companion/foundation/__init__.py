@@ -1,5 +1,7 @@
 """Experimental Foundation Layer for Reunion Companion v0.10."""
 
+from .adapters import from_package, from_semantic_database
+from .builder import FoundationBuilder, FoundationBuildReport
 from .database import FoundationDatabase
 from .event import FoundationEvent
 from .family import FoundationFamily
@@ -17,6 +19,8 @@ from .repository import (
 
 __all__ = [
     "DuplicateObjectError",
+    "FoundationBuildReport",
+    "FoundationBuilder",
     "FoundationDatabase",
     "FoundationEvent",
     "FoundationFamily",
@@ -28,4 +32,6 @@ __all__ = [
     "ObjectNotFoundError",
     "RecordLocation",
     "Repository",
+    "from_package",
+    "from_semantic_database",
 ]

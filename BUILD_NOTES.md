@@ -1,24 +1,30 @@
-# Foundation Layer v0.10.0-alpha3
+# Foundation Layer v0.10.0-alpha4
+
+## Milestone
+
+Alpha 4 is the first release that converts the verified v0.9 semantic database
+into the new Foundation object graph.
 
 ## Added
 
-- Generic typed `Repository`
-- Duplicate and missing-object errors
-- Derived `FoundationIndexes`
-- `FoundationDatabase`
-- Name/surname/place lookup
-- Automatic indexing through database add methods
-- Explicit index rebuild support
-- Eight new tests
+- `FoundationBuilder`
+- `FoundationBuildReport`
+- semantic-model adapter
+- `from_semantic_database(...)`
+- `from_package(...)` convenience adapter
+- package/version/warnings metadata in `FoundationDatabase`
+- deterministic Foundation-local event IDs
+- person/family relationship linking
+- person/family event attachment
+- semantic place resolution
+- unresolved place-text preservation
+- source offsets and decoder status carried into Foundation events
+- seven new tests
 
-## Regression result
+## Architectural boundary
 
-Verified against v0.9 + Alpha 1 + Alpha 2:
+Alpha 4 does **not** decode Reunion binary data itself. `from_package()` first
+uses the established v0.9 `load_reunion_database()` path and then adapts that
+verified semantic model into Foundation objects.
 
-```text
-82 passed
-```
-
-## Safety
-
-No established v0.9 source module is changed.
+No existing application path is changed.

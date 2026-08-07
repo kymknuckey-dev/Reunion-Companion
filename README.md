@@ -1,7 +1,22 @@
-# Reunion Companion Foundation Layer — Alpha 3
+# Reunion Companion Foundation Layer — Alpha 4
 
-Alpha 3 introduces the first in-memory database infrastructure for the future
-Core Engine. Repositories contain Foundation objects, while derived indexes
-provide fast lookup without embedding search concerns in the domain classes.
+This is the first Foundation release that can represent real Reunion genealogy
+data.
 
-The current v0.9 application remains unchanged and authoritative.
+Data flow:
+
+```text
+.familyfile14
+    ↓
+verified v0.9 decoder
+    ↓
+verified v0.9 semantic ReunionDatabase
+    ↓
+FoundationBuilder
+    ↓
+FoundationDatabase
+```
+
+The old model remains authoritative for the application. Alpha 4 is a parallel,
+read-only representation so the new Core Engine can be validated safely before
+any migration begins.

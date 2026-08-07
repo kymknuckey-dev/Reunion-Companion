@@ -1,10 +1,93 @@
-Reunion Companion Foundation Layer v0.10.0-alpha3
+Reunion Companion Foundation Layer v0.10.0-alpha4
 
 Baseline: v0.9.0-dev1
 Alpha 1: included
 Alpha 2: included
 Alpha 3: included
+Alpha 4: included
 
-pytest result: 82 passed
+pytest result: 89 passed
 Existing v0.9 modules modified: no
 Existing v0.9 behavior replaced: no
+
+Probe archive: Probe-21(1).zip
+Package: /mnt/data/_foundation_alpha4_probe21/Probe-21.familyfile14
+Result:
+{
+  "counts": {
+    "people": 3,
+    "families": 1,
+    "events": 3,
+    "places": 2
+  },
+  "people": [
+    {
+      "id": 1,
+      "name": "Test Probe",
+      "parents": [],
+      "spouses": [
+        2
+      ],
+      "children": [
+        3
+      ],
+      "events": [
+        {
+          "type": "birth",
+          "date": "2 Jan 1925",
+          "place": "Adelaide, South Australia"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Mary Probe",
+      "parents": [],
+      "spouses": [
+        1
+      ],
+      "children": [
+        3
+      ],
+      "events": []
+    },
+    {
+      "id": 3,
+      "name": "Baby Probe",
+      "parents": [
+        1,
+        2
+      ],
+      "spouses": [],
+      "children": [],
+      "events": [
+        {
+          "type": "birth",
+          "date": "abt May 1976",
+          "place": null
+        }
+      ]
+    }
+  ],
+  "families": [
+    {
+      "id": 1,
+      "spouses": [
+        1,
+        2
+      ],
+      "children": [
+        3
+      ],
+      "events": [
+        {
+          "type": "marriage",
+          "date": "3 Mar 1950",
+          "place": "Adelaide Registry Office"
+        }
+      ]
+    }
+  ]
+}
+
+
