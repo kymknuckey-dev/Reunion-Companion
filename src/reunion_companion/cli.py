@@ -8,7 +8,7 @@ import sys
 from .inventory import PackageInventory, build_inventory
 from .parser import BinaryReader, ReunionFormatError
 from .records import TreeExtraction, extract_tree
-from .domain import GenealogyTree, load_genealogy_tree
+from .domain import GenealogyTree, load_genealogy_tree, load_reunion_database
 from .media import extract_media
 from .sources import extract_sources
 from .publishing import build_person_profile_data, build_person_profile_markdown, write_person_profile
@@ -134,6 +134,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show the decoded evidence used for the answer.",
     )
+
+
+    database_parser = subparsers.add_parser(
+        "database",
+        help="Show a semantic-model summary of the Reunion file.",
+    )
+    database_parser.add_argument("package")
+    database_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -557,6 +565,42 @@ def run_ask(package_path: str, question: str, as_json: bool, show_evidence: bool
     return 0 if result.intent != "unknown" else 1
 
 
+
+def run_database(package_path: str, as_json: bool) -> int:
+    database = load_reunion_database(package_path)
+    summary = database.summary()
+
+    if as_json:
+        print(json.dumps({
+            "package_path": database.package_path,
+            "version": database.version,
+            "summary": summary,
+            "warnings": database.warnings,
+        }, indent=2))
+        return 0
+
+    print(f"Database: {database.package_path}")
+    print(f"Reunion version: {database.version}")
+    print()
+    print("Semantic model")
+    labels = (
+        ("People", "people"),
+        ("Families", "families"),
+        ("Person events", "person_events"),
+        ("Family events", "family_events"),
+        ("Places", "places"),
+        ("Sources", "sources"),
+        ("Citations", "citations"),
+        ("Notes", "notes"),
+        ("Media", "media"),
+    )
+    for label, key in labels:
+        print(f"  {label:<16} {summary[key]:>6}")
+    print()
+    print("Mode: read-only")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -599,6 +643,8 @@ def main() -> None:
                     args.json,
                 )
             )
+        if args.command == "database":
+            raise SystemExit(run_database(args.package, args.json))
         if args.command == "ask":
             raise SystemExit(
                 run_ask(args.package, args.question, args.json, args.evidence)

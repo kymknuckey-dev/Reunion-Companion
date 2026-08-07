@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 
-from .domain import GenealogyTree, PersonProfile, load_genealogy_tree
+from .domain import load_reunion_database
+from .model import Person, ReunionDatabase
 
 
 def _event_markdown(event) -> list[str]:
@@ -35,8 +36,8 @@ def _event_markdown(event) -> list[str]:
 
 
 def build_person_profile_markdown(
-    tree: GenealogyTree,
-    person: PersonProfile,
+    tree: ReunionDatabase,
+    person: Person,
 ) -> str:
     lines: list[str] = [
         f"# {person.display}",
@@ -106,8 +107,8 @@ def build_person_profile_markdown(
 
 
 def build_person_profile_data(
-    tree: GenealogyTree,
-    person: PersonProfile,
+    tree: ReunionDatabase,
+    person: Person,
 ) -> dict[str, object]:
     return {
         "person": asdict(person),
@@ -124,7 +125,7 @@ def write_person_profile(
     person_id: int,
     output_path: str | Path,
 ) -> Path:
-    tree = load_genealogy_tree(package_path)
+    tree = load_reunion_database(package_path)
     person = tree.get_person(person_id)
     output = Path(output_path).expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)

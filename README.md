@@ -178,3 +178,26 @@ reunion-companion ask "/path/to/file.familyfile14" \
 ```
 
 The first pass is deterministic and grounded entirely in the decoded semantic model. It does not invent missing facts and can return evidence as text or JSON.
+
+
+## Semantic foundation
+
+Reunion Companion 0.6 introduces a stable model API:
+
+```python
+from reunion_companion.domain import load_reunion_database
+
+db = load_reunion_database("/path/to/file.familyfile14")
+print(db.summary())
+person = db.get_person(1)
+```
+
+Inspect it from the command line:
+
+```bash
+reunion-companion database "/path/to/file.familyfile14"
+reunion-companion database "/path/to/file.familyfile14" --json
+```
+
+Publishing and question answering now consume this model rather than decoding
+Reunion binary data themselves.

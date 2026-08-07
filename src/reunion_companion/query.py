@@ -4,7 +4,8 @@ from dataclasses import asdict, dataclass, field
 import re
 from typing import Iterable
 
-from .domain import GenealogyTree, PersonProfile, load_genealogy_tree
+from .domain import load_reunion_database
+from .model import Person, ReunionDatabase
 
 
 @dataclass(slots=True)
@@ -46,7 +47,7 @@ def _normalise_name(text: str) -> str:
     return text.strip().strip("?.! ")
 
 
-def _find_unique_person(tree: GenealogyTree, name: str) -> tuple[PersonProfile | None, list[PersonProfile]]:
+def _find_unique_person(tree: ReunionDatabase, name: str) -> tuple[Person | None, list[Person]]:
     matches = tree.find_people(_normalise_name(name))
     if len(matches) == 1:
         return matches[0], matches
@@ -56,11 +57,11 @@ def _find_unique_person(tree: GenealogyTree, name: str) -> tuple[PersonProfile |
     return None, matches
 
 
-def _event(person: PersonProfile, event_type: str):
+def _event(person: Person, event_type: str):
     return next((event for event in person.events if event.event_type.casefold() == event_type.casefold()), None)
 
 
-def _relationship_answer(tree: GenealogyTree, question: str, name: str, relation: str) -> Answer:
+def _relationship_answer(tree: ReunionDatabase, question: str, name: str, relation: str) -> Answer:
     person, matches = _find_unique_person(tree, name)
     if person is None:
         if not matches:
@@ -105,7 +106,7 @@ def _relationship_answer(tree: GenealogyTree, question: str, name: str, relation
     )
 
 
-def _birth_fact_answer(tree: GenealogyTree, question: str, name: str, field: str) -> Answer:
+def _birth_fact_answer(tree: ReunionDatabase, question: str, name: str, field: str) -> Answer:
     person, matches = _find_unique_person(tree, name)
     if person is None:
         return _ambiguous_or_missing(question, f"birth_{field}", name, matches)
@@ -131,14 +132,14 @@ def _birth_fact_answer(tree: GenealogyTree, question: str, name: str, field: str
     )
 
 
-def _ambiguous_or_missing(question: str, intent: str, name: str, matches: list[PersonProfile]) -> Answer:
+def _ambiguous_or_missing(question: str, intent: str, name: str, matches: list[Person]) -> Answer:
     if not matches:
         return Answer(question, intent, f"No person matching ‘{_normalise_name(name)}’ was found in the decoded Reunion data.")
     names = ", ".join(f"{item.display} (Person {item.id})" for item in matches)
     return Answer(question, intent, f"The name is ambiguous. Matching people: {names}.", matched_person_ids=[item.id for item in matches], confidence="low")
 
 
-def _source_answer(tree: GenealogyTree, question: str, name: str, event_type: str) -> Answer:
+def _source_answer(tree: ReunionDatabase, question: str, name: str, event_type: str) -> Answer:
     person, matches = _find_unique_person(tree, name)
     if person is None:
         return _ambiguous_or_missing(question, "event_sources", name, matches)
@@ -156,7 +157,7 @@ def _source_answer(tree: GenealogyTree, question: str, name: str, event_type: st
     return Answer(question, "event_sources", f"{person.display}’s {event_type.title()} event is supported by: " + "; ".join(descriptions) + ".", evidence=evidence, matched_person_ids=[person.id])
 
 
-def _summary_answer(tree: GenealogyTree, question: str, name: str) -> Answer:
+def _summary_answer(tree: ReunionDatabase, question: str, name: str) -> Answer:
     person, matches = _find_unique_person(tree, name)
     if person is None:
         return _ambiguous_or_missing(question, "person_summary", name, matches)
@@ -184,9 +185,9 @@ def _summary_answer(tree: GenealogyTree, question: str, name: str) -> Answer:
     return Answer(question, "person_summary", "; ".join(parts) + ".", evidence=evidence, matched_person_ids=[person.id], limitations=["This summary includes only fields currently decoded by Reunion Companion."])
 
 
-def _people_born_in(tree: GenealogyTree, question: str, place_query: str) -> Answer:
+def _people_born_in(tree: ReunionDatabase, question: str, place_query: str) -> Answer:
     needle = _normalise_name(place_query).casefold()
-    matches: list[tuple[PersonProfile, object]] = []
+    matches: list[tuple[Person, object]] = []
     for person in tree.people.values():
         birth = _event(person, "birth")
         if birth and birth.place and needle in birth.place.casefold():
@@ -198,7 +199,7 @@ def _people_born_in(tree: GenealogyTree, question: str, place_query: str) -> Ans
     return Answer(question, "people_born_in", f"{len(labels)} person{'s' if len(labels) != 1 else ''} have decoded Birth events matching {_normalise_name(place_query)}: " + ", ".join(labels) + ".", evidence=evidence, matched_person_ids=[person.id for person, _ in matches])
 
 
-def _unsourced_births(tree: GenealogyTree, question: str) -> Answer:
+def _unsourced_births(tree: ReunionDatabase, question: str) -> Answer:
     people = []
     for person in tree.people.values():
         birth = _event(person, "birth")
@@ -211,7 +212,7 @@ def _unsourced_births(tree: GenealogyTree, question: str) -> Answer:
     return Answer(question, "unsourced_births", f"{len(people)} person{'s' if len(people) != 1 else ''} have a decoded Birth event with no decoded citation: " + ", ".join(labels) + ".", evidence=evidence, matched_person_ids=[person.id for person in people])
 
 
-def _media_without_notes(tree: GenealogyTree, question: str) -> Answer:
+def _media_without_notes(tree: ReunionDatabase, question: str) -> Answer:
     people = [person for person in tree.people.values() if person.media and not person.notes]
     if not people:
         return Answer(question, "media_without_notes", "No decoded people currently have media but no person notes.")
@@ -220,7 +221,7 @@ def _media_without_notes(tree: GenealogyTree, question: str) -> Answer:
     return Answer(question, "media_without_notes", f"{len(people)} person{'s' if len(people) != 1 else ''} have decoded media but no person note: " + ", ".join(labels) + ".", evidence=evidence, matched_person_ids=[person.id for person in people])
 
 
-def ask_tree(tree: GenealogyTree, question: str) -> Answer:
+def ask_tree(tree: ReunionDatabase, question: str) -> Answer:
     cleaned = " ".join(question.strip().split())
     if not cleaned:
         return Answer(question, "unknown", "Please enter a question.", confidence="low")
@@ -271,4 +272,4 @@ def ask_tree(tree: GenealogyTree, question: str) -> Answer:
 
 
 def ask_package(package_path: str, question: str) -> Answer:
-    return ask_tree(load_genealogy_tree(package_path), question)
+    return ask_tree(load_reunion_database(package_path), question)

@@ -1,98 +1,29 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .models import Event, Note, Source
-from .media import MediaItem, extract_media
+from .caches import decode_place_map
+from .media import extract_media
+from .model import (
+    Family,
+    GenealogyTree,
+    Media,
+    Person,
+    Place,
+    ReunionDatabase,
+)
 from .records import TreeExtraction, extract_tree
 from .sources import extract_sources
 
 
-@dataclass(slots=True)
-class PersonProfile:
-    id: int
-    given: str
-    surname: str
-    display: str
-    sex: str | None
-    events: list[Event] = field(default_factory=list)
-    notes: list[Note] = field(default_factory=list)
-    media: list[MediaItem] = field(default_factory=list)
-    parent_family_ids: list[int] = field(default_factory=list)
-    spouse_ids: list[int] = field(default_factory=list)
-    parent_ids: list[int] = field(default_factory=list)
-    child_ids: list[int] = field(default_factory=list)
+# Backwards-compatible names from v0.2-v0.5.
+PersonProfile = Person
+FamilyUnit = Family
 
 
-@dataclass(slots=True)
-class FamilyUnit:
-    id: int
-    spouse_ids: list[int] = field(default_factory=list)
-    child_ids: list[int] = field(default_factory=list)
-    events: list[Event] = field(default_factory=list)
-
-
-@dataclass(slots=True)
-class GenealogyTree:
-    package_path: str
-    version: str
-    people: dict[int, PersonProfile]
-    families: dict[int, FamilyUnit]
-    warnings: list[str]
-    sources: dict[int, Source] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "package_path": self.package_path,
-            "version": self.version,
-            "people": {
-                str(person_id): asdict(person)
-                for person_id, person in sorted(self.people.items())
-            },
-            "families": {
-                str(family_id): asdict(family)
-                for family_id, family in sorted(self.families.items())
-            },
-            "sources": {
-                str(source_id): asdict(source)
-                for source_id, source in sorted(self.sources.items())
-            },
-            "warnings": list(self.warnings),
-        }
-
-    def get_person(self, person_id: int) -> PersonProfile:
-        try:
-            return self.people[person_id]
-        except KeyError as exc:
-            raise KeyError(f"Person {person_id} was not found") from exc
-
-    def find_people(self, query: str) -> list[PersonProfile]:
-        needle = query.casefold().strip()
-        if not needle:
-            return []
-        return [
-            person
-            for person in self.people.values()
-            if needle in person.display.casefold()
-            or needle in person.given.casefold()
-            or needle in person.surname.casefold()
-        ]
-
-    def get_family(self, family_id: int) -> FamilyUnit:
-        try:
-            return self.families[family_id]
-        except KeyError as exc:
-            raise KeyError(f"Family {family_id} was not found") from exc
-
-    def person_name(self, person_id: int) -> str:
-        person = self.people.get(person_id)
-        return person.display if person else f"Person {person_id}"
-
-
-def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
+def build_reunion_database(extraction: TreeExtraction) -> ReunionDatabase:
     people = {
-        item.record_id: PersonProfile(
+        item.record_id: Person(
             id=item.record_id,
             given=item.given,
             surname=item.surname,
@@ -101,16 +32,24 @@ def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
             events=list(item.events),
             notes=list(item.notes),
             parent_family_ids=list(item.parent_family_ids),
+            evidence={
+                "identity": _evidence("decoded-controlled-probes"),
+                "relationships": _evidence("decoded-controlled-probes"),
+            },
         )
         for item in extraction.people
     }
 
     families = {
-        item.family_id: FamilyUnit(
+        item.family_id: Family(
             id=item.family_id,
             spouse_ids=list(item.spouse_ids),
             child_ids=list(item.child_ids),
             events=list(item.events),
+            evidence={
+                "spouses": _evidence(item.spouse_link_status),
+                "children": _evidence(item.child_link_status),
+            },
         )
         for item in extraction.families
     }
@@ -141,7 +80,7 @@ def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
                 if parent_id not in child.parent_ids
             )
 
-    return GenealogyTree(
+    return ReunionDatabase(
         package_path=extraction.package_path,
         version=extraction.version,
         people=people,
@@ -150,28 +89,74 @@ def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
     )
 
 
-def load_genealogy_tree(package_path: str | Path) -> GenealogyTree:
-    tree = build_genealogy_tree(extract_tree(package_path))
-    tree.sources = {
+def _evidence(status: str):
+    from .model import Evidence
+    return Evidence(status=status)
+
+
+def build_genealogy_tree(extraction: TreeExtraction) -> GenealogyTree:
+    """Historical API retained as an alias of build_reunion_database."""
+    return build_reunion_database(extraction)
+
+
+def load_reunion_database(package_path: str | Path) -> ReunionDatabase:
+    database = build_reunion_database(extract_tree(package_path))
+
+    database.sources = {
         source.source_id: source
         for source in extract_sources(package_path)
     }
-    for person in tree.people.values():
+
+    for person in database.people.values():
         for event in person.events:
             for citation in event.citations:
-                source = tree.sources.get(citation.source_id)
+                source = database.sources.get(citation.source_id)
                 if source is not None:
                     citation.source_title = source.title
-    for family in tree.families.values():
+
+    for family in database.families.values():
         for event in family.events:
             for citation in event.citations:
-                source = tree.sources.get(citation.source_id)
+                source = database.sources.get(citation.source_id)
                 if source is not None:
                     citation.source_title = source.title
 
     for item in extract_media(package_path):
+        database.media[item.media_key] = item
         if item.owner_type == "person":
-            person = tree.people.get(item.owner_id)
+            person = database.people.get(item.owner_id)
             if person is not None:
                 person.media.append(item)
-    return tree
+        elif item.owner_type == "family":
+            family = database.families.get(item.owner_id)
+            if family is not None:
+                family.media.append(item)
+
+    places_path = Path(database.package_path) / "places.cache"
+    if places_path.is_file():
+        try:
+            database.places = {
+                place_id: Place(id=place_id, name=name)
+                for place_id, name in decode_place_map(places_path.read_bytes()).items()
+            }
+        except Exception:
+            database.places = {}
+
+    return database
+
+
+def load_genealogy_tree(package_path: str | Path) -> GenealogyTree:
+    """Historical API retained as an alias of load_reunion_database."""
+    return load_reunion_database(package_path)
+
+
+__all__ = [
+    "FamilyUnit",
+    "GenealogyTree",
+    "PersonProfile",
+    "ReunionDatabase",
+    "build_genealogy_tree",
+    "build_reunion_database",
+    "load_genealogy_tree",
+    "load_reunion_database",
+]

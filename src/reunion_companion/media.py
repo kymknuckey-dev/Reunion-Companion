@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
 import re
 
@@ -20,31 +19,7 @@ _LOWER_PATH_RE = re.compile(
 )
 
 
-@dataclass(slots=True)
-class Thumbnail:
-    relative_path: str
-    size_hint: int
-    byte_size: int
-    extension: str
-
-
-@dataclass(slots=True)
-class MediaItem:
-    media_key: str
-    owner_type: str
-    owner_id: int
-    fingerprint: str
-    filename: str | None = None
-    original_path: str | None = None
-    media_type: str | None = None
-    caption: str | None = None
-    description: str | None = None
-    thumbnails: list[Thumbnail] = field(default_factory=list)
-    filename_link_status: str = "unresolved"
-    metadata_link_status: str = "unresolved"
-
-    def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+from .model.media import Media, MediaItem, Thumbnail
 
 
 def _decode_media_names(data: bytes) -> list[str]:

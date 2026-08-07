@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0-dev1 — Semantic Foundation
+
+- Added the permanent `reunion_companion.model` package.
+- Added canonical ReunionDatabase, Person, Family, Event, Place, Source, Citation, Media, and Note objects.
+- Added Evidence metadata for decoded, inferred, experimental, and unresolved values.
+- Refactored publishing and question answering to use the semantic model.
+- Preserved historical domain/model imports and all existing CLI commands.
+- Added the `database` semantic-summary command.
+
+
 ## 0.5.0-dev1
 
 - Added the first grounded question-answering engine.
