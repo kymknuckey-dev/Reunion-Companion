@@ -1,7 +1,7 @@
-# Reunion Companion Foundation Layer — Alpha 2
+# Reunion Companion Foundation Layer — Alpha 3
 
-Alpha 2 adds the first genealogy-domain objects to the additive Foundation
-Layer. These classes are not yet used by the existing CLI or decoders.
+Alpha 3 introduces the first in-memory database infrastructure for the future
+Core Engine. Repositories contain Foundation objects, while derived indexes
+provide fast lookup without embedding search concerns in the domain classes.
 
-The existing v0.9 semantic model remains authoritative while the Foundation
-Layer matures beside it.
+The current v0.9 application remains unchanged and authoritative.

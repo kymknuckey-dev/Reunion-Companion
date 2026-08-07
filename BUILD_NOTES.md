@@ -1,24 +1,24 @@
-# Foundation Layer v0.10.0-alpha2
+# Foundation Layer v0.10.0-alpha3
 
 ## Added
 
-- `FoundationPerson`
-- `FoundationFamily`
-- `FoundationEvent`
-- `FoundationPlace`
-- Relationship navigation for parents, spouses, and children
-- Event filtering by type
-- Optional place coordinates
-- Eight new isolated tests
+- Generic typed `Repository`
+- Duplicate and missing-object errors
+- Derived `FoundationIndexes`
+- `FoundationDatabase`
+- Name/surname/place lookup
+- Automatic indexing through database add methods
+- Explicit index rebuild support
+- Eight new tests
 
 ## Regression result
 
-Verified against the complete v0.9 application plus Alpha 1:
+Verified against v0.9 + Alpha 1 + Alpha 2:
 
 ```text
-74 passed
+82 passed
 ```
 
 ## Safety
 
-No established v0.9 module is modified. Alpha 2 remains entirely additive.
+No established v0.9 source module is changed.
