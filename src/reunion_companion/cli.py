@@ -11,6 +11,7 @@ from .records import TreeExtraction, extract_tree
 from .domain import GenealogyTree, load_genealogy_tree, load_reunion_database
 from .media import extract_media
 from .sources import extract_sources
+from .relationships import RelationshipEngine
 from .publishing import build_person_profile_data, build_person_profile_markdown, write_person_profile
 from .query import ask_package
 from .version import __version__
@@ -142,6 +143,46 @@ def build_parser() -> argparse.ArgumentParser:
     )
     database_parser.add_argument("package")
     database_parser.add_argument("--json", action="store_true")
+
+
+    relationship_parser = subparsers.add_parser(
+        "relationship",
+        help="Explain the decoded relationship between two people.",
+    )
+    relationship_parser.add_argument("package")
+    relationship_parser.add_argument("--from-id", type=int, required=True)
+    relationship_parser.add_argument("--to-id", type=int, required=True)
+    relationship_parser.add_argument(
+        "--blood-only",
+        action="store_true",
+        help="Ignore spouse links when finding a path.",
+    )
+    relationship_parser.add_argument("--json", action="store_true")
+
+    ancestors_parser = subparsers.add_parser(
+        "ancestors",
+        help="List decoded ancestors by generation.",
+    )
+    ancestors_parser.add_argument("package")
+    ancestors_parser.add_argument("--id", type=int, required=True, dest="person_id")
+    ancestors_parser.add_argument("--generations", type=int)
+    ancestors_parser.add_argument("--json", action="store_true")
+
+    descendants_parser = subparsers.add_parser(
+        "descendants",
+        help="List decoded descendants by generation.",
+    )
+    descendants_parser.add_argument("package")
+    descendants_parser.add_argument("--id", type=int, required=True, dest="person_id")
+    descendants_parser.add_argument("--generations", type=int)
+    descendants_parser.add_argument("--json", action="store_true")
+
+    components_parser = subparsers.add_parser(
+        "components",
+        help="Show disconnected relationship groups in the database.",
+    )
+    components_parser.add_argument("package")
+    components_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -601,6 +642,185 @@ def run_database(package_path: str, as_json: bool) -> int:
     return 0
 
 
+
+def _relationship_path_data(database, path):
+    return {
+        "from_id": path.from_id,
+        "from_name": database.person_name(path.from_id),
+        "to_id": path.to_id,
+        "to_name": database.person_name(path.to_id),
+        "label": path.label,
+        "blood_relationship": path.blood_relationship,
+        "distance": path.distance,
+        "uses_spouse_link": path.uses_spouse_link,
+        "common_ancestors": [
+            {
+                "person_id": person_id,
+                "name": database.person_name(person_id),
+            }
+            for person_id in path.common_ancestor_ids
+        ],
+        "generation_distances": path.generation_distances,
+        "path": [
+            {
+                "person_id": person_id,
+                "name": database.person_name(person_id),
+            }
+            for person_id in path.person_ids
+        ],
+        "edges": [
+            {
+                "from_id": edge.from_id,
+                "to_id": edge.to_id,
+                "relation": edge.relation,
+                "family_id": edge.family_id,
+            }
+            for edge in path.edges
+        ],
+    }
+
+
+def run_relationship(
+    package_path: str,
+    from_id: int,
+    to_id: int,
+    blood_only: bool,
+    as_json: bool,
+) -> int:
+    database = load_reunion_database(package_path)
+    engine = RelationshipEngine(database)
+    path = engine.shortest_path(
+        from_id,
+        to_id,
+        include_spouses=not blood_only,
+    )
+
+    if path is None:
+        message = (
+            f"No decoded relationship path connects "
+            f"{database.person_name(from_id)} and {database.person_name(to_id)}."
+        )
+        if as_json:
+            print(json.dumps({"found": False, "message": message}, indent=2))
+        else:
+            print(message)
+        return 1
+
+    data = _relationship_path_data(database, path)
+    if as_json:
+        print(json.dumps({"found": True, **data}, indent=2))
+        return 0
+
+    print(
+        f"{database.person_name(from_id)} → "
+        f"{database.person_name(to_id)}"
+    )
+    print(f"Relationship: {path.label}")
+    if path.blood_relationship and path.blood_relationship != path.label:
+        print(f"Blood relationship: {path.blood_relationship}")
+    print(f"Steps: {path.distance}")
+    if path.common_ancestor_ids:
+        names = ", ".join(
+            database.person_name(person_id)
+            for person_id in path.common_ancestor_ids
+        )
+        print(f"Nearest common ancestor: {names}")
+    print()
+    print("Path")
+    for index, person_id in enumerate(path.person_ids):
+        print(f"  {database.person_name(person_id)}")
+        if index < len(path.edges):
+            print(f"    ↓ {path.edges[index].relation}")
+    if path.uses_spouse_link:
+        print()
+        print("Note: the shortest path includes a spouse link.")
+    return 0
+
+
+def _run_generation_list(
+    package_path: str,
+    person_id: int,
+    generations: int | None,
+    as_json: bool,
+    mode: str,
+) -> int:
+    database = load_reunion_database(package_path)
+    engine = RelationshipEngine(database)
+    items = (
+        engine.ancestors(person_id, generations)
+        if mode == "ancestors"
+        else engine.descendants(person_id, generations)
+    )
+    payload = [
+        {
+            "person_id": item.person_id,
+            "name": database.person_name(item.person_id),
+            "generations": item.generations,
+        }
+        for item in items
+    ]
+
+    if as_json:
+        print(json.dumps({
+            "person_id": person_id,
+            "person_name": database.person_name(person_id),
+            mode: payload,
+        }, indent=2))
+        return 0
+
+    title = mode.title()
+    print(f"{title} of {database.person_name(person_id)}")
+    if not items:
+        print("  None decoded")
+        return 0
+
+    current_generation = None
+    for item in items:
+        if item.generations != current_generation:
+            current_generation = item.generations
+            print()
+            print(f"Generation {current_generation}")
+        print(f"  {database.person_name(item.person_id)}  [Person {item.person_id}]")
+    return 0
+
+
+def run_components(package_path: str, as_json: bool) -> int:
+    database = load_reunion_database(package_path)
+    components = RelationshipEngine(database).connected_components()
+    payload = [
+        {
+            "component_id": component.component_id,
+            "person_count": len(component.person_ids),
+            "people": [
+                {
+                    "person_id": person_id,
+                    "name": database.person_name(person_id),
+                }
+                for person_id in component.person_ids
+            ],
+        }
+        for component in components
+    ]
+
+    if as_json:
+        print(json.dumps({
+            "component_count": len(components),
+            "components": payload,
+        }, indent=2))
+        return 0
+
+    print(f"Relationship components: {len(components)}")
+    for component in payload:
+        print()
+        print(
+            f"Component {component['component_id']} "
+            f"({component['person_count']} people)"
+        )
+        for person in component["people"]:
+            print(f"  {person['name']}  [Person {person['person_id']}]")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -645,6 +865,39 @@ def main() -> None:
             )
         if args.command == "database":
             raise SystemExit(run_database(args.package, args.json))
+
+        if args.command == "relationship":
+            raise SystemExit(
+                run_relationship(
+                    args.package,
+                    args.from_id,
+                    args.to_id,
+                    args.blood_only,
+                    args.json,
+                )
+            )
+        if args.command == "ancestors":
+            raise SystemExit(
+                _run_generation_list(
+                    args.package,
+                    args.person_id,
+                    args.generations,
+                    args.json,
+                    "ancestors",
+                )
+            )
+        if args.command == "descendants":
+            raise SystemExit(
+                _run_generation_list(
+                    args.package,
+                    args.person_id,
+                    args.generations,
+                    args.json,
+                    "descendants",
+                )
+            )
+        if args.command == "components":
+            raise SystemExit(run_components(args.package, args.json))
         if args.command == "ask":
             raise SystemExit(
                 run_ask(args.package, args.question, args.json, args.evidence)

@@ -39,3 +39,23 @@
 - Reusable family-history publishing
 - PDF and DOCX output
 - Optional AI assistant
+
+
+## 0.7 relationship engine
+
+Implemented:
+
+- parent/child/spouse graph
+- ancestor and descendant traversal
+- shortest path
+- sibling and cousin naming
+- nearest common ancestors
+- disconnected components
+
+Future relationship work:
+
+- half and step relationships
+- adoption and foster relationship roles
+- multiple parent sets
+- lineage selection
+- relationship phrasing sensitive to sex and role

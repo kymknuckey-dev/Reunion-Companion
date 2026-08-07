@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0-dev1 — Relationship Engine
+
+- Added ancestor and descendant traversal by generation.
+- Added shortest decoded relationship paths through parent, child, and spouse links.
+- Added sibling, ancestor, descendant, cousin, and removed-cousin labels.
+- Added nearest common-ancestor reporting.
+- Added disconnected relationship-component detection.
+- Added `relationship`, `ancestors`, `descendants`, and `components` commands.
+
+
 ## 0.6.0-dev1 — Semantic Foundation
 
 - Added the permanent `reunion_companion.model` package.

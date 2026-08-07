@@ -201,3 +201,29 @@ reunion-companion database "/path/to/file.familyfile14" --json
 
 Publishing and question answering now consume this model rather than decoding
 Reunion binary data themselves.
+
+
+## Relationship engine
+
+Explain the decoded relationship between two people:
+
+```bash
+reunion-companion relationship "/path/to/file.familyfile14"   --from-id 1 --to-id 3
+```
+
+List ancestors or descendants:
+
+```bash
+reunion-companion ancestors "/path/to/file.familyfile14" --id 3
+reunion-companion descendants "/path/to/file.familyfile14" --id 1
+```
+
+Find disconnected branches:
+
+```bash
+reunion-companion components "/path/to/file.familyfile14"
+```
+
+The engine uses only relationships decoded into `ReunionDatabase`. It reports
+the exact path, nearest common ancestor, cousin degree/removal, and whether a
+spouse link was required.

@@ -11,6 +11,12 @@ from .media import Media, MediaItem, Thumbnail
 from .note import Note
 from .person import Person
 from .place import Place
+from .relationship import (
+    GenerationPerson,
+    RelationshipComponent,
+    RelationshipEdge,
+    RelationshipPath,
+)
 from .source import Source
 
 __all__ = [
@@ -25,6 +31,10 @@ __all__ = [
     "Person",
     "Place",
     "ReunionDatabase",
+    "RelationshipComponent",
+    "RelationshipEdge",
+    "RelationshipPath",
+    "GenerationPerson",
     "ReunionDate",
     "Source",
     "Thumbnail",

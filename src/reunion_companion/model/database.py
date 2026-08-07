@@ -97,6 +97,39 @@ class ReunionDatabase:
         person = self.people.get(person_id)
         return person.display if person else f"Person {person_id}"
 
+
+    def relationships(self):
+        """Return a RelationshipEngine bound to this database."""
+        from ..relationships import RelationshipEngine
+        return RelationshipEngine(self)
+
+    def relationship_between(
+        self,
+        first_id: int,
+        second_id: int,
+        *,
+        include_spouses: bool = True,
+    ):
+        return self.relationships().shortest_path(
+            first_id,
+            second_id,
+            include_spouses=include_spouses,
+        )
+
+    def ancestors_of(
+        self,
+        person_id: int,
+        max_generations: int | None = None,
+    ):
+        return self.relationships().ancestors(person_id, max_generations)
+
+    def descendants_of(
+        self,
+        person_id: int,
+        max_generations: int | None = None,
+    ):
+        return self.relationships().descendants(person_id, max_generations)
+
     def summary(self) -> dict[str, int]:
         return {
             "people": len(self.people),
