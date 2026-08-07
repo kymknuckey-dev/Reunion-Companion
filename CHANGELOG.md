@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0-dev1 — Event Engine
+
+- Added a generic event registry covering common Reunion event categories.
+- Added EventOccurrence objects for person-owned and family-owned events.
+- Added searchable event indexes by type, person, place, year, owner and source status.
+- Added chronological person timelines including spouse-family events.
+- Added event coverage summaries and decoder-status reporting.
+- Added a person-event decoder registry so future event decoders plug in once.
+- Added `events`, `timeline`, `event-types`, and `event-summary` commands.
+- Extended grounded questions to generic decoded event dates and places.
+
+
 ## 0.7.0-dev1 — Relationship Engine
 
 - Added ancestor and descendant traversal by generation.

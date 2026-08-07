@@ -5,6 +5,7 @@ from dataclasses import asdict
 import json
 import sys
 
+from .event_engine import EventEngine, event_definition
 from .inventory import PackageInventory, build_inventory
 from .parser import BinaryReader, ReunionFormatError
 from .records import TreeExtraction, extract_tree
@@ -183,6 +184,54 @@ def build_parser() -> argparse.ArgumentParser:
     )
     components_parser.add_argument("package")
     components_parser.add_argument("--json", action="store_true")
+
+
+    events_parser = subparsers.add_parser(
+        "events",
+        help="Search all decoded person and family events.",
+    )
+    events_parser.add_argument("package")
+    events_parser.add_argument("--type", dest="event_type")
+    events_parser.add_argument("--person-id", type=int)
+    events_parser.add_argument("--place")
+    events_parser.add_argument("--from-year", type=int)
+    events_parser.add_argument("--to-year", type=int)
+    source_group = events_parser.add_mutually_exclusive_group()
+    source_group.add_argument("--sourced", action="store_true")
+    source_group.add_argument("--unsourced", action="store_true")
+    events_parser.add_argument(
+        "--owner",
+        choices=("person", "family"),
+        dest="owner_type",
+    )
+    events_parser.add_argument("--json", action="store_true")
+
+    timeline_parser = subparsers.add_parser(
+        "timeline",
+        help="Show a chronological timeline for one person.",
+    )
+    timeline_parser.add_argument("package")
+    timeline_parser.add_argument("--id", type=int, required=True, dest="person_id")
+    timeline_parser.add_argument(
+        "--person-events-only",
+        action="store_true",
+        help="Exclude marriage and other family-owned events.",
+    )
+    timeline_parser.add_argument("--json", action="store_true")
+
+    event_types_parser = subparsers.add_parser(
+        "event-types",
+        help="Show registered Reunion event types and current decoder status.",
+    )
+    event_types_parser.add_argument("package")
+    event_types_parser.add_argument("--json", action="store_true")
+
+    event_summary_parser = subparsers.add_parser(
+        "event-summary",
+        help="Summarise decoded events and evidence coverage.",
+    )
+    event_summary_parser.add_argument("package")
+    event_summary_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -821,6 +870,179 @@ def run_components(package_path: str, as_json: bool) -> int:
     return 0
 
 
+
+def _occurrence_data(occurrence):
+    event = occurrence.event
+    return {
+        "owner_type": occurrence.owner_type,
+        "owner_id": occurrence.owner_id,
+        "owner_name": occurrence.owner_name,
+        "related_person_ids": occurrence.related_person_ids,
+        "event_index": occurrence.event_index,
+        "event_type": event.event_type,
+        "event_label": event_definition(event.event_type).label,
+        "date": asdict(event.date) if event.date else None,
+        "place_id": event.place_id,
+        "place": event.place,
+        "memo": event.memo,
+        "citations": [asdict(item) for item in event.citations],
+        "decode_status": event.decode_status,
+        "raw_offset": event.raw_offset,
+    }
+
+
+def _print_occurrence(occurrence) -> None:
+    event = occurrence.event
+    definition = event_definition(event.event_type)
+    date_text = (
+        event.date.display
+        if event.date and event.date.display
+        else "date not decoded"
+    )
+    print(
+        f"{date_text:<18} {definition.label:<18} "
+        f"{occurrence.owner_name}"
+    )
+    if event.place:
+        print(f"{'':18} Place: {event.place}")
+    if event.memo:
+        print(f"{'':18} Memo: {event.memo}")
+    if event.citations:
+        for citation in event.citations:
+            source = citation.source_title or f"Source {citation.source_id}"
+            detail = f" — {citation.detail}" if citation.detail else ""
+            print(f"{'':18} Source: {source}{detail}")
+
+
+def run_events(
+    package_path: str,
+    event_type: str | None,
+    person_id: int | None,
+    place: str | None,
+    year_from: int | None,
+    year_to: int | None,
+    sourced_flag: bool,
+    unsourced_flag: bool,
+    owner_type: str | None,
+    as_json: bool,
+) -> int:
+    database = load_reunion_database(package_path)
+    if person_id is not None:
+        try:
+            database.get_person(person_id)
+        except KeyError as exc:
+            print(f"Error: {exc.args[0]}", file=sys.stderr)
+            return 2
+
+    sourced = True if sourced_flag else False if unsourced_flag else None
+    matches = EventEngine(database).search(
+        event_type=event_type,
+        person_id=person_id,
+        place=place,
+        year_from=year_from,
+        year_to=year_to,
+        sourced=sourced,
+        owner_type=owner_type,
+    )
+
+    if as_json:
+        print(json.dumps({
+            "count": len(matches),
+            "events": [_occurrence_data(item) for item in matches],
+        }, indent=2))
+        return 0
+
+    print(f"Decoded events: {len(matches)}")
+    for occurrence in matches:
+        print()
+        _print_occurrence(occurrence)
+    return 0
+
+
+def run_timeline(
+    package_path: str,
+    person_id: int,
+    person_events_only: bool,
+    as_json: bool,
+) -> int:
+    database = load_reunion_database(package_path)
+    try:
+        person = database.get_person(person_id)
+    except KeyError as exc:
+        print(f"Error: {exc.args[0]}", file=sys.stderr)
+        return 2
+
+    timeline = EventEngine(database).timeline(
+        person_id,
+        include_family_events=not person_events_only,
+    )
+
+    if as_json:
+        print(json.dumps({
+            "person_id": person_id,
+            "person_name": person.display,
+            "event_count": len(timeline),
+            "events": [_occurrence_data(item) for item in timeline],
+        }, indent=2))
+        return 0
+
+    print(f"Timeline for {person.display}")
+    if not timeline:
+        print("  No events currently decoded")
+        return 0
+    for occurrence in timeline:
+        print()
+        _print_occurrence(occurrence)
+    return 0
+
+
+def run_event_types(package_path: str, as_json: bool) -> int:
+    database = load_reunion_database(package_path)
+    status = EventEngine(database).registry_status()
+
+    if as_json:
+        print(json.dumps(status, indent=2))
+        return 0
+
+    print("Reunion event types")
+    print()
+    print(f"{'Event':<20} {'Scope':<10} {'Status':<28} {'Count':>5}")
+    print("-" * 68)
+    for item in status:
+        print(
+            f"{item['label']:<20} "
+            f"{item['owner_scope']:<10} "
+            f"{item['decoder_status']:<28} "
+            f"{item['decoded_count']:>5}"
+        )
+        if item["note"]:
+            print(f"  {item['note']}")
+    return 0
+
+
+def run_event_summary(package_path: str, as_json: bool) -> int:
+    database = load_reunion_database(package_path)
+    summary = EventEngine(database).summary()
+
+    if as_json:
+        print(json.dumps(summary, indent=2))
+        return 0
+
+    print("Event engine summary")
+    print(f"  Total events      {summary['total_events']:>6}")
+    print(f"  Person events     {summary['person_events']:>6}")
+    print(f"  Family events     {summary['family_events']:>6}")
+    print(f"  With dates        {summary['dated_events']:>6}")
+    print(f"  With places       {summary['placed_events']:>6}")
+    print(f"  With sources      {summary['sourced_events']:>6}")
+    print(f"  Without sources   {summary['unsourced_events']:>6}")
+    print()
+    print("By type")
+    for event_type, count in summary["types"].items():
+        print(f"  {event_definition(event_type).label:<20} {count:>6}")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -898,6 +1120,35 @@ def main() -> None:
             )
         if args.command == "components":
             raise SystemExit(run_components(args.package, args.json))
+
+        if args.command == "events":
+            raise SystemExit(
+                run_events(
+                    args.package,
+                    args.event_type,
+                    args.person_id,
+                    args.place,
+                    args.from_year,
+                    args.to_year,
+                    args.sourced,
+                    args.unsourced,
+                    args.owner_type,
+                    args.json,
+                )
+            )
+        if args.command == "timeline":
+            raise SystemExit(
+                run_timeline(
+                    args.package,
+                    args.person_id,
+                    args.person_events_only,
+                    args.json,
+                )
+            )
+        if args.command == "event-types":
+            raise SystemExit(run_event_types(args.package, args.json))
+        if args.command == "event-summary":
+            raise SystemExit(run_event_summary(args.package, args.json))
         if args.command == "ask":
             raise SystemExit(
                 run_ask(args.package, args.question, args.json, args.evidence)

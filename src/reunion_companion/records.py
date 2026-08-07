@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Callable, TypeAlias
 import re
 
 from .dates import decode_packed_date
@@ -13,6 +14,8 @@ _RECORD_MAGIC = b"\x05\x03\x02\x01"
 _BIRTH_EVENT_TAG = b"\xe8\x03"
 _DATE_FIELD_MARKER = b"\x0a\x00\x08\x00\x00\x00"
 _INLINE_DATE_MARKER = b"\x08\x00\x00\x00"
+PersonEventDecoder: TypeAlias = Callable[[bytes, int], Event | None]
+
 _PT_TAG = re.compile(rb"\[\[pt:(\d+)\]\]")
 
 
@@ -292,6 +295,24 @@ def _decode_birth_event(record: bytes, record_offset: int) -> Event | None:
     )
 
 
+
+# Person event decoders are deliberately registered in one place. Adding a
+# decoded Death, Residence, Occupation or custom event later should require a
+# decoder function and one registry entry—not changes throughout the app.
+PERSON_EVENT_DECODERS: tuple[PersonEventDecoder, ...] = (
+    _decode_birth_event,
+)
+
+
+def _decode_person_events(record: bytes, record_offset: int) -> list[Event]:
+    events: list[Event] = []
+    for decoder in PERSON_EVENT_DECODERS:
+        event = decoder(record, record_offset)
+        if event is not None:
+            events.append(event)
+    return events
+
+
 def _plausible_inline_dates(record: bytes, start: int = 0) -> list[tuple[int, object]]:
     results: list[tuple[int, object]] = []
     cursor = start
@@ -413,10 +434,7 @@ def extract_structured_people(data: bytes) -> list[StructuredPerson]:
         parent_family_ids = [value for value in _field_u32(record, 0x003C) if value > 0]
         raw_family_values = [value for value in _field_u32(record, 0x0064) if value > 0]
 
-        events: list[Event] = []
-        birth_event = _decode_birth_event(record, offset)
-        if birth_event is not None:
-            events.append(birth_event)
+        events = _decode_person_events(record, offset)
 
         people.append(
             StructuredPerson(

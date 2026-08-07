@@ -227,3 +227,33 @@ reunion-companion components "/path/to/file.familyfile14"
 The engine uses only relationships decoded into `ReunionDatabase`. It reports
 the exact path, nearest common ancestor, cousin degree/removal, and whether a
 spouse link was required.
+
+
+## Event engine
+
+Search every event currently decoded from the Reunion file:
+
+```bash
+reunion-companion events "/path/to/file.familyfile14"
+reunion-companion events "/path/to/file.familyfile14" --type birth
+reunion-companion events "/path/to/file.familyfile14" --place Adelaide
+reunion-companion events "/path/to/file.familyfile14" --from-year 1900 --to-year 1950
+reunion-companion events "/path/to/file.familyfile14" --unsourced
+```
+
+Generate one person's chronological timeline:
+
+```bash
+reunion-companion timeline "/path/to/file.familyfile14" --id 1
+```
+
+Review registered Reunion event types and decoder status:
+
+```bash
+reunion-companion event-types "/path/to/file.familyfile14"
+reunion-companion event-summary "/path/to/file.familyfile14"
+```
+
+Birth and Marriage are decoded from controlled probes. Other common event types
+are registered in the semantic engine so their future binary decoders will
+automatically feed search, timelines, publishing and grounded questions.

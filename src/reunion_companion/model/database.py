@@ -98,6 +98,26 @@ class ReunionDatabase:
         return person.display if person else f"Person {person_id}"
 
 
+
+    def events(self):
+        """Return an EventEngine bound to this database."""
+        from ..event_engine import EventEngine
+        return EventEngine(self)
+
+    def event_timeline(
+        self,
+        person_id: int,
+        *,
+        include_family_events: bool = True,
+    ):
+        return self.events().timeline(
+            person_id,
+            include_family_events=include_family_events,
+        )
+
+    def search_events(self, **filters):
+        return self.events().search(**filters)
+
     def relationships(self):
         """Return a RelationshipEngine bound to this database."""
         from ..relationships import RelationshipEngine

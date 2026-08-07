@@ -46,3 +46,22 @@ publisher / query / validation / future GUI
 
 Code outside the decoder and package-reader layers consumes semantic objects,
 not Reunion binary tags or offsets.
+
+
+## Event engine boundary
+
+Binary event decoders return the same semantic `Event` object. The
+`EventEngine` then provides indexing, timelines, filtering and coverage
+analysis without knowing any Reunion field tags.
+
+```text
+Reunion person/family record
+        ↓
+registered event decoder
+        ↓
+Event
+        ↓
+EventOccurrence
+        ↓
+timeline / search / publisher / ask / validation
+```

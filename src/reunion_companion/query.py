@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 import re
 from typing import Iterable
 
+from .event_engine import event_definition, normalise_event_type
 from .domain import load_reunion_database
 from .model import Person, ReunionDatabase
 
@@ -221,6 +222,66 @@ def _media_without_notes(tree: ReunionDatabase, question: str) -> Answer:
     return Answer(question, "media_without_notes", f"{len(people)} person{'s' if len(people) != 1 else ''} have decoded media but no person note: " + ", ".join(labels) + ".", evidence=evidence, matched_person_ids=[person.id for person in people])
 
 
+
+def _generic_event_fact_answer(
+    tree: ReunionDatabase,
+    question: str,
+    name: str,
+    event_type: str,
+    field: str,
+) -> Answer:
+    person, matches = _find_unique_person(tree, name)
+    if person is None:
+        return _ambiguous_or_missing(question, f"event_{field}", name, matches)
+
+    normalised = normalise_event_type(event_type)
+    event = _event(person, normalised)
+    definition = event_definition(normalised)
+    if event is None:
+        return Answer(
+            question,
+            f"event_{field}",
+            f"No {definition.label} event is currently decoded for {person.display}.",
+            matched_person_ids=[person.id],
+            limitations=[
+                f"{definition.label} may exist in Reunion but its binary event pattern "
+                "may not yet be decoded by Reunion Companion."
+            ],
+        )
+
+    if field == "date":
+        value = event.date.display if event.date and event.date.display else None
+        preposition = "on"
+    else:
+        value = event.place
+        preposition = "in"
+
+    if not value:
+        return Answer(
+            question,
+            f"event_{field}",
+            f"No {definition.label} {field} is currently decoded for {person.display}.",
+            matched_person_ids=[person.id],
+        )
+
+    return Answer(
+        question,
+        f"event_{field}",
+        f"{person.display}’s {definition.label} was {preposition} {value}.",
+        matched_person_ids=[person.id],
+        evidence=[
+            Evidence(
+                kind="event",
+                person_id=person.id,
+                person_name=person.display,
+                event_type=normalised,
+                field=field,
+                value=value,
+            )
+        ],
+    )
+
+
 def ask_tree(tree: ReunionDatabase, question: str) -> Answer:
     cleaned = " ".join(question.strip().split())
     if not cleaned:
@@ -239,6 +300,29 @@ def ask_tree(tree: ReunionDatabase, question: str) -> Answer:
         match = pattern.match(cleaned)
         if match:
             return _birth_fact_answer(tree, question, match.group(1), field)
+
+
+    match = re.match(
+        r"^(?:when was|what is the date of) (.+?)(?:'s|’s) "
+        r"(death|burial|cremation|baptism|christening|immigration|emigration|probate|divorce)\??$",
+        cleaned,
+        re.I,
+    )
+    if match:
+        return _generic_event_fact_answer(
+            tree, question, match.group(1), match.group(2), "date"
+        )
+
+    match = re.match(
+        r"^(?:where was|what is the place of) (.+?)(?:'s|’s) "
+        r"(death|burial|cremation|baptism|christening|immigration|emigration|probate|divorce)\??$",
+        cleaned,
+        re.I,
+    )
+    if match:
+        return _generic_event_fact_answer(
+            tree, question, match.group(1), match.group(2), "place"
+        )
 
     match = re.match(r"^(?:what sources? (?:support|prove|cite)|show sources? for) (.+?)(?:'s|’s) (birth|death|marriage)\??$", cleaned, re.I)
     if match:

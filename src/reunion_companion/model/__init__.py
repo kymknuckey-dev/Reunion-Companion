@@ -5,6 +5,7 @@ Everything outside the decoder layer should import from this package.
 
 from .database import GenealogyTree, ReunionDatabase
 from .event import Citation, Event, ReunionDate
+from .event_engine import EventOccurrence, EventTypeDefinition
 from .evidence import Evidence
 from .family import Family
 from .media import Media, MediaItem, Thumbnail
@@ -22,6 +23,8 @@ from .source import Source
 __all__ = [
     "Citation",
     "Event",
+    "EventOccurrence",
+    "EventTypeDefinition",
     "Evidence",
     "Family",
     "GenealogyTree",

@@ -59,3 +59,30 @@ Future relationship work:
 - multiple parent sets
 - lineage selection
 - relationship phrasing sensitive to sex and role
+
+
+## 0.8 event engine
+
+Implemented:
+
+- generic semantic event registry
+- person and family event occurrences
+- chronological sorting with partial dates
+- event search and filtering
+- personal timelines
+- source-coverage audit
+- decoder-status catalogue
+- plug-in person-event decoder registry
+
+Controlled probes still required for binary decoding of:
+
+- Death
+- Burial and Cremation
+- Baptism and Christening
+- Occupation and Residence
+- Census
+- Immigration and Emigration
+- Military Service
+- Education and Probate
+- Divorce
+- Custom events
