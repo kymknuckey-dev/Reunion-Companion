@@ -12,6 +12,7 @@ from .media import Media, MediaItem, Thumbnail
 from .note import Note
 from .person import Person
 from .place import Place
+from .place_engine import PlaceSummary, PlaceUsage
 from .relationship import (
     GenerationPerson,
     RelationshipComponent,
@@ -33,6 +34,8 @@ __all__ = [
     "Note",
     "Person",
     "Place",
+    "PlaceSummary",
+    "PlaceUsage",
     "ReunionDatabase",
     "RelationshipComponent",
     "RelationshipEdge",

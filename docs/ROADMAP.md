@@ -86,3 +86,25 @@ Controlled probes still required for binary decoding of:
 - Education and Probate
 - Divorce
 - Custom events
+
+
+## 0.9 place engine
+
+Implemented:
+
+- place catalogue
+- name search
+- event usage by stable place ID
+- people and family usage
+- event-type counts per place
+- unused-place detection
+- coverage reporting
+
+Controlled probes still required for:
+
+- place hierarchy / parent-place structure
+- latitude and longitude
+- place notes
+- place media
+- place citations
+- place-specific metadata

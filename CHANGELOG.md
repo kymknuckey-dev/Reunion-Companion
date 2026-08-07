@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0-dev1 — Place Engine
+
+- Added semantic place search and lookup.
+- Added event-to-place usage analysis using decoded place IDs.
+- Added people/family usage summaries and event-type counts per place.
+- Added unused-place detection and place coverage reporting.
+- Added `places`, `place`, and `place-summary` commands.
+- Explicitly reports hierarchy, coordinates, place notes, media, and citations as not yet decoded.
+
+
 ## 0.8.0-dev1 — Event Engine
 
 - Added a generic event registry covering common Reunion event categories.

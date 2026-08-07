@@ -99,6 +99,18 @@ class ReunionDatabase:
 
 
 
+
+    def places_engine(self):
+        """Return a PlaceEngine bound to this database."""
+        from ..place_engine import PlaceEngine
+        return PlaceEngine(self)
+
+    def find_places(self, query: str):
+        return self.places_engine().find(query)
+
+    def place_summary(self, place_id: int):
+        return self.places_engine().summary(place_id)
+
     def events(self):
         """Return an EventEngine bound to this database."""
         from ..event_engine import EventEngine

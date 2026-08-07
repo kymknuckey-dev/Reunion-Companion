@@ -13,6 +13,7 @@ from .domain import GenealogyTree, load_genealogy_tree, load_reunion_database
 from .media import extract_media
 from .sources import extract_sources
 from .relationships import RelationshipEngine
+from .place_engine import PlaceEngine
 from .publishing import build_person_profile_data, build_person_profile_markdown, write_person_profile
 from .query import ask_package
 from .version import __version__
@@ -232,6 +233,31 @@ def build_parser() -> argparse.ArgumentParser:
     )
     event_summary_parser.add_argument("package")
     event_summary_parser.add_argument("--json", action="store_true")
+
+
+    places_parser = subparsers.add_parser(
+        "places",
+        help="List or search decoded Reunion places.",
+    )
+    places_parser.add_argument("package")
+    places_parser.add_argument("--search")
+    places_parser.add_argument("--unused", action="store_true")
+    places_parser.add_argument("--json", action="store_true")
+
+    place_parser = subparsers.add_parser(
+        "place",
+        help="Show one decoded place and every event that uses it.",
+    )
+    place_parser.add_argument("package")
+    place_parser.add_argument("--id", type=int, required=True, dest="place_id")
+    place_parser.add_argument("--json", action="store_true")
+
+    place_summary_parser = subparsers.add_parser(
+        "place-summary",
+        help="Summarise place decoding and event linkage coverage.",
+    )
+    place_summary_parser.add_argument("package")
+    place_summary_parser.add_argument("--json", action="store_true")
 
     return parser
 
@@ -1043,6 +1069,129 @@ def run_event_summary(package_path: str, as_json: bool) -> int:
     return 0
 
 
+
+def run_places(
+    package_path: str,
+    search: str | None,
+    unused: bool,
+    as_json: bool,
+) -> int:
+    database = load_reunion_database(package_path)
+    engine = PlaceEngine(database)
+
+    if unused:
+        places = engine.unused_places()
+    elif search:
+        places = engine.find(search)
+    else:
+        places = engine.all_places()
+
+    payload = []
+    for place in places:
+        summary = engine.summary(place.id)
+        payload.append({
+            "place_id": place.id,
+            "name": place.name,
+            "usage_count": summary.usage_count,
+            "people_count": len(summary.people_ids),
+            "family_count": len(summary.family_ids),
+            "event_types": summary.event_types,
+        })
+
+    if as_json:
+        print(json.dumps({"count": len(payload), "places": payload}, indent=2))
+        return 0
+
+    print(f"Places: {len(payload)}")
+    for item in payload:
+        types = ", ".join(
+            f"{event_definition(key).label} {count}"
+            for key, count in item["event_types"].items()
+        ) or "unused"
+        print(
+            f"  Place {item['place_id']}: {item['name']} "
+            f"[uses {item['usage_count']}; {types}]"
+        )
+    return 0
+
+
+def run_place(package_path: str, place_id: int, as_json: bool) -> int:
+    database = load_reunion_database(package_path)
+    engine = PlaceEngine(database)
+    try:
+        summary = engine.summary(place_id)
+        usages = engine.usages(place_id)
+    except KeyError as exc:
+        print(f"Error: {exc.args[0]}", file=sys.stderr)
+        return 2
+
+    if as_json:
+        print(json.dumps({
+            "place": asdict(summary),
+            "people": [
+                {
+                    "person_id": person_id,
+                    "name": database.person_name(person_id),
+                }
+                for person_id in summary.people_ids
+            ],
+            "usages": [asdict(usage) for usage in usages],
+        }, indent=2))
+        return 0
+
+    print(f"Place {summary.place_id}: {summary.name}")
+    print(f"Uses: {summary.usage_count}")
+    print(f"Person events: {summary.person_event_count}")
+    print(f"Family events: {summary.family_event_count}")
+
+    if summary.people_ids:
+        print()
+        print("People")
+        for person_id in summary.people_ids:
+            print(f"  {database.person_name(person_id)}  [Person {person_id}]")
+
+    if usages:
+        print()
+        print("Events")
+        for usage in usages:
+            date = usage.date_display or "date not decoded"
+            print(
+                f"  {date:<18} "
+                f"{event_definition(usage.event_type).label:<18} "
+                f"{usage.owner_name}"
+            )
+
+    print()
+    print("Not yet decoded for places: hierarchy, coordinates, notes, media, citations")
+    return 0
+
+
+def run_place_summary(package_path: str, as_json: bool) -> int:
+    database = load_reunion_database(package_path)
+    coverage = PlaceEngine(database).coverage()
+
+    if as_json:
+        print(json.dumps(coverage, indent=2))
+        return 0
+
+    print("Place engine summary")
+    print(f"  Total places           {coverage['total_places']:>6}")
+    print(f"  Used places            {coverage['used_places']:>6}")
+    print(f"  Unused places          {coverage['unused_places']:>6}")
+    print(f"  Event/place links      {coverage['event_place_links']:>6}")
+    print(f"  Events total           {coverage['events_total']:>6}")
+    print(f"  Events with place name {coverage['events_with_place_name']:>6}")
+    print(f"  Events with place ID   {coverage['events_with_place_id']:>6}")
+    print()
+    print("Additional place structures")
+    print(f"  Hierarchy:    {coverage['hierarchy_status']}")
+    print(f"  Coordinates:  {coverage['coordinates_status']}")
+    print(f"  Notes:        {coverage['notes_status']}")
+    print(f"  Media:        {coverage['media_status']}")
+    print(f"  Citations:    {coverage['citations_status']}")
+    return 0
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
@@ -1149,6 +1298,20 @@ def main() -> None:
             raise SystemExit(run_event_types(args.package, args.json))
         if args.command == "event-summary":
             raise SystemExit(run_event_summary(args.package, args.json))
+
+        if args.command == "places":
+            raise SystemExit(
+                run_places(
+                    args.package,
+                    args.search,
+                    args.unused,
+                    args.json,
+                )
+            )
+        if args.command == "place":
+            raise SystemExit(run_place(args.package, args.place_id, args.json))
+        if args.command == "place-summary":
+            raise SystemExit(run_place_summary(args.package, args.json))
         if args.command == "ask":
             raise SystemExit(
                 run_ask(args.package, args.question, args.json, args.evidence)

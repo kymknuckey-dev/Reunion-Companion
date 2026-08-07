@@ -257,3 +257,35 @@ reunion-companion event-summary "/path/to/file.familyfile14"
 Birth and Marriage are decoded from controlled probes. Other common event types
 are registered in the semantic engine so their future binary decoders will
 automatically feed search, timelines, publishing and grounded questions.
+
+
+## Place engine
+
+List decoded Reunion places and their event usage:
+
+```bash
+reunion-companion places "/path/to/file.familyfile14"
+```
+
+Search by place name:
+
+```bash
+reunion-companion places "/path/to/file.familyfile14" --search Adelaide
+```
+
+Inspect one place and every event using it:
+
+```bash
+reunion-companion place "/path/to/file.familyfile14" --id 1
+```
+
+Review place decoding coverage:
+
+```bash
+reunion-companion place-summary "/path/to/file.familyfile14"
+```
+
+The engine uses stable place IDs already decoded from `places.cache` and the
+event `[[pt:n]]` place links. Place hierarchy, coordinates, notes, media and
+citations are deliberately reported as not decoded until controlled Reunion
+probes establish those structures.
