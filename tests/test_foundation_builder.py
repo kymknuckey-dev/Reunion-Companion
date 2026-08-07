@@ -100,12 +100,20 @@ def test_builder_preserves_package_metadata_and_counts() -> None:
         "families": 1,
         "events": 2,
         "places": 2,
+        "notes": 0,
+        "media": 0,
+        "sources": 0,
+        "citations": 0,
     }
     assert report.to_dict() == {
         "people": 3,
         "families": 1,
         "events": 2,
         "places": 2,
+        "notes": 0,
+        "media": 0,
+        "sources": 0,
+        "citations": 0,
         "warnings": 1,
     }
 

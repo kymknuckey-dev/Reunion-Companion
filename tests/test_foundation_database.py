@@ -36,6 +36,10 @@ def test_database_add_and_lookup_objects() -> None:
         "families": 1,
         "events": 1,
         "places": 1,
+        "notes": 0,
+        "media": 0,
+        "sources": 0,
+        "citations": 0,
     }
 
 

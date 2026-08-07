@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .object import FoundationObject
 
 if TYPE_CHECKING:
+    from .citation import FoundationCitation
     from .place import FoundationPlace
 
 
@@ -24,6 +25,8 @@ class FoundationEvent(FoundationObject):
     owner_id: int | None = None
     source_offset: int | None = None
     decode_status: str | None = None
+    citations: list["FoundationCitation"] = field(default_factory=list)
+    media_keys: list[str] = field(default_factory=list)
 
     @property
     def has_date(self) -> bool:

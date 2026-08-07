@@ -1,90 +1,77 @@
-Reunion Companion Foundation Layer v0.10.0-alpha4
+Reunion Companion Foundation Layer v0.10.0-alpha5
 
 Baseline: v0.9.0-dev1
-Alpha 1: included
-Alpha 2: included
-Alpha 3: included
-Alpha 4: included
+Alpha 1-5: included
 
-pytest result: 89 passed
+pytest result: 95 passed
 Existing v0.9 modules modified: no
 Existing v0.9 behavior replaced: no
 
 Probe archive: Probe-21(1).zip
-Package: /mnt/data/_foundation_alpha4_probe21/Probe-21.familyfile14
+Package: /mnt/data/_foundation_alpha5_probe21/Probe-21.familyfile14
 Result:
 {
   "counts": {
     "people": 3,
     "families": 1,
     "events": 3,
-    "places": 2
+    "places": 2,
+    "notes": 1,
+    "media": 2,
+    "sources": 1,
+    "citations": 1
   },
   "people": [
     {
       "id": 1,
       "name": "Test Probe",
-      "parents": [],
-      "spouses": [
-        2
+      "notes": [
+        "This is the Test Probe person note.\nIt contains family history information for Reunion Companion."
       ],
-      "children": [
-        3
-      ],
-      "events": [
+      "media": [
         {
-          "type": "birth",
-          "date": "2 Jan 1925",
-          "place": "Adelaide, South Australia"
+          "key": "p1-8f4821",
+          "filename": "probeportrait.jpg",
+          "caption": null,
+          "description": null
+        }
+      ],
+      "citations": [
+        {
+          "source": "Test Probe Birth Certificate",
+          "detail": "Certificate reference TP-1925-001",
+          "resolved": true
         }
       ]
     },
     {
       "id": 2,
       "name": "Mary Probe",
-      "parents": [],
-      "spouses": [
-        1
+      "notes": [],
+      "media": [
+        {
+          "key": "p2-90226f",
+          "filename": "MaryProbePortrait.jpg",
+          "caption": "Added for Reunion Companion media metadata testing.",
+          "description": "Portrait of Mary Probe"
+        }
       ],
-      "children": [
-        3
-      ],
-      "events": []
+      "citations": []
     },
     {
       "id": 3,
       "name": "Baby Probe",
-      "parents": [
-        1,
-        2
-      ],
-      "spouses": [],
-      "children": [],
-      "events": [
-        {
-          "type": "birth",
-          "date": "abt May 1976",
-          "place": null
-        }
-      ]
+      "notes": [],
+      "media": [],
+      "citations": []
     }
   ],
-  "families": [
+  "sources": [
     {
       "id": 1,
-      "spouses": [
-        1,
-        2
-      ],
-      "children": [
-        3
-      ],
-      "events": [
-        {
-          "type": "marriage",
-          "date": "3 Mar 1950",
-          "place": "Adelaide Registry Office"
-        }
+      "title": "Test Probe Birth Certificate",
+      "citations": [
+        1
       ]
     }
   ]

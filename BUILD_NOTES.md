@@ -1,30 +1,40 @@
-# Foundation Layer v0.10.0-alpha4
-
-## Milestone
-
-Alpha 4 is the first release that converts the verified v0.9 semantic database
-into the new Foundation object graph.
+# Foundation Layer v0.10.0-alpha5
 
 ## Added
 
-- `FoundationBuilder`
-- `FoundationBuildReport`
-- semantic-model adapter
-- `from_semantic_database(...)`
-- `from_package(...)` convenience adapter
-- package/version/warnings metadata in `FoundationDatabase`
-- deterministic Foundation-local event IDs
-- person/family relationship linking
-- person/family event attachment
-- semantic place resolution
-- unresolved place-text preservation
-- source offsets and decoder status carried into Foundation events
-- seven new tests
+- `FoundationNote`
+- `FoundationMedia`
+- `FoundationSource`
+- `FoundationCitation`
+- note attachment to people/families
+- media attachment to people/families
+- source repository and source-title index
+- citation repository and event/source/owner links
+- media filename index
+- expanded Foundation build report
+- six new content tests
 
-## Architectural boundary
+## Design
 
-Alpha 4 does **not** decode Reunion binary data itself. `from_package()` first
-uses the established v0.9 `load_reunion_database()` path and then adapts that
-verified semantic model into Foundation objects.
+Notes, media, and citations do not currently have stable Reunion object IDs in
+the verified semantic model. Alpha 5 therefore assigns deterministic,
+Foundation-local integer IDs while preserving original offsets/keys in fields
+and metadata.
 
-No existing application path is changed.
+## Safety
+
+The build remains one-way and read-only:
+
+```text
+.familyfile14
+    ↓
+verified v0.9 decoder
+    ↓
+verified semantic model
+    ↓
+FoundationBuilder
+    ↓
+FoundationDatabase
+```
+
+No established application module is replaced.
