@@ -1,0 +1,72 @@
+{
+  "schema": "reunion-companion.probe-corpus.v1",
+  "probes": [
+    {
+      "id": "birth-date",
+      "semantic_label": "Birth Date",
+      "operation": "MODIFY",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-00-Baseline.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-01-Birth-Date.familyfile14"
+    },
+    {
+      "id": "birth-place",
+      "semantic_label": "Birth Place",
+      "operation": "MODIFY",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-01-Birth-Date.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-02-Birth-Place.familyfile14"
+    },
+    {
+      "id": "birth-memo",
+      "semantic_label": "Birth Memo",
+      "operation": "MODIFY",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-02-Birth-Place.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-03-Birth-Memo.familyfile14"
+    },
+    {
+      "id": "occupation",
+      "semantic_label": "Occupation",
+      "operation": "ADD",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-03-Birth-Memo.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-04-Occupation.familyfile14"
+    },
+    {
+      "id": "education",
+      "semantic_label": "Education",
+      "operation": "ADD",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-04-Occupation.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-05-Education.familyfile14"
+    },
+    {
+      "id": "religion",
+      "semantic_label": "Religion",
+      "operation": "ADD",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-05-Education.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-06-Religion.familyfile14"
+    },
+    {
+      "id": "misc-note",
+      "semantic_label": "Misc Note",
+      "operation": "MODIFY",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-06-Religion.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-07-Misc-Note.familyfile14"
+    },
+    {
+      "id": "research-note",
+      "semantic_label": "Research Note",
+      "operation": "COMPOUND",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-07-Misc-Note.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-08-Research-Note.familyfile14",
+      "compound_actions": [
+        "Enable/add Research Note note type for Person 1 from Reunion's existing note-type options",
+        "Enter content in the newly available Research Note"
+      ]
+    },
+    {
+      "id": "marriage",
+      "semantic_label": "Marriage",
+      "operation": "MODIFY",
+      "before": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-08-Research-Note.familyfile14",
+      "after": "/Users/kymknuckey/Documents/Reunion Files/Build 13/Probe-09-Marriage.familyfile14"
+    }
+  ]
+}

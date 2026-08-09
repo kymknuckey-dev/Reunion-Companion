@@ -1,0 +1,406 @@
+{
+  "source": "Reunion Field Usage Report supplied by user",
+  "database": "Mervyn Knuckey 14.familyfile14",
+  "nonzero": {
+    "Birth": {
+      "type": "Event",
+      "count": 5422
+    },
+    "Death": {
+      "type": "Event",
+      "count": 1946
+    },
+    "Misc. Notes": {
+      "type": "Note",
+      "count": 1669
+    },
+    "Marriage": {
+      "type": "Marriage",
+      "count": 1533
+    },
+    "Clergy": {
+      "type": "Flag",
+      "count": 994
+    },
+    "Christen": {
+      "type": "Event",
+      "count": 616
+    },
+    "Occupation": {
+      "type": "Fact",
+      "count": 456
+    },
+    "Burial": {
+      "type": "Event",
+      "count": 429
+    },
+    "Research": {
+      "type": "Note",
+      "count": 362
+    },
+    "Education": {
+      "type": "Fact",
+      "count": 100
+    },
+    "Religion": {
+      "type": "Fact",
+      "count": 89
+    },
+    "Military Service": {
+      "type": "Note",
+      "count": 86
+    },
+    "Divorce": {
+      "type": "Marriage",
+      "count": 47
+    },
+    "Cremation": {
+      "type": "Event",
+      "count": 46
+    },
+    "Common Law": {
+      "type": "Marriage",
+      "count": 20
+    },
+    "Medical": {
+      "type": "Note",
+      "count": 12
+    },
+    "Unmarried": {
+      "type": "Marriage",
+      "count": 6
+    },
+    "Building achievements": {
+      "type": "Note",
+      "count": 5
+    },
+    "Education (Note)": {
+      "type": "Note",
+      "count": 4
+    },
+    "Separation": {
+      "type": "Marriage",
+      "count": 4
+    },
+    "Domestic Partnership": {
+      "type": "Marriage",
+      "count": 3
+    },
+    "Military": {
+      "type": "Flag",
+      "count": 2
+    },
+    "Sport Achievement": {
+      "type": "Note",
+      "count": 2
+    },
+    "Misc. Notes (Family)": {
+      "type": "Family Note",
+      "count": 1
+    },
+    "Monument Inscription": {
+      "type": "Note",
+      "count": 1
+    },
+    "Research doubt.": {
+      "type": "Flag",
+      "count": 1
+    },
+    "Resume": {
+      "type": "Note",
+      "count": 1
+    }
+  },
+  "zero_usage": [
+    {
+      "name": "1st Communion",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Adopted",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Alias/AKA",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Anc Interest Level",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Annulment",
+      "type": "Marriage",
+      "count": 0
+    },
+    {
+      "name": "Anst File#",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Baptism",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Baptism LDS",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Bar Mitzvah",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Bas Mitzvah",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Blessing",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Cause of death",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Census",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Citizenship",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Civil Union",
+      "type": "Marriage",
+      "count": 0
+    },
+    {
+      "name": "Confirmation",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Confirmation LDS",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Degree",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Desc Interest Level",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Description",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Earliest Ancestor",
+      "type": "Flag",
+      "count": 0
+    },
+    {
+      "name": "Emigration",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Employment",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Endowment",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Engagement",
+      "type": "Family Event",
+      "count": 0
+    },
+    {
+      "name": "Eye color",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Filed for Divorce",
+      "type": "Family Event",
+      "count": 0
+    },
+    {
+      "name": "Graduation",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Hair color",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Height",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Hobbies",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Honors",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Honors",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Immigration",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Initiatory LDS",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Land Purchase",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Marriage License",
+      "type": "Family Event",
+      "count": 0
+    },
+    {
+      "name": "Married Name",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Military",
+      "type": "Note",
+      "count": 0
+    },
+    {
+      "name": "Namesake",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Nationality",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Naturalization",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "New Note",
+      "type": "Note",
+      "count": 0
+    },
+    {
+      "name": "Ordination",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Private",
+      "type": "Flag",
+      "count": 0
+    },
+    {
+      "name": "Race",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Reference #",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Religious Name",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Research",
+      "type": "Family Note",
+      "count": 0
+    },
+    {
+      "name": "Research Complete",
+      "type": "Flag",
+      "count": 0
+    },
+    {
+      "name": "Residence",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Retirement",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Seal to Parents",
+      "type": "Event",
+      "count": 0
+    },
+    {
+      "name": "Sealing Spouse",
+      "type": "Family Event",
+      "count": 0
+    },
+    {
+      "name": "Separated",
+      "type": "Family Event",
+      "count": 0
+    },
+    {
+      "name": "Skin color",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Soc. Sec. #",
+      "type": "Fact",
+      "count": 0
+    },
+    {
+      "name": "Weight",
+      "type": "Fact",
+      "count": 0
+    }
+  ]
+}

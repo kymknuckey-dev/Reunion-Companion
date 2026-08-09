@@ -1,0 +1,775 @@
+{
+  "build": 15,
+  "patterns": [
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 113,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:color"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 50,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:font"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 22,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:tfField|tfType"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 20,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:color|font"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 17,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "DOCUMENT_PATH:familyfile.familydata"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 16,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "DOCUMENT_PATH:size=96:print=0.5"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 15,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:font|pPict"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 14,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:NSDictionary"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 14,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:NSMutableDictionary"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 13,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:NSObject"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 13,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.8888888888888888,
+      "signature": "UI_ARCHIVE:cExEmpty|color"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 2578,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.0"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 1213,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.2"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 1066,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.5"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 254,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.3"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 139,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.1"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 96,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=1.0"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 87,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.4"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 68,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=32:print=0.8"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 23,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UNKNOWN:size=64:print=0.5"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 12,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "UI_ARCHIVE:NSArray"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 11,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "DOCUMENT_PATH:size=128:print=0.5"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 10,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.7777777777777778,
+      "signature": "DOCUMENT_PATH:file:///"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 12,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "research-note"
+      ],
+      "recurrence": 0.6666666666666666,
+      "signature": "UNKNOWN:size=32:print=0.6"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 10,
+      "probes": [
+        "birth-memo",
+        "birth-place",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.6666666666666666,
+      "signature": "DOCUMENT_PATH:Reunion Files"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 9,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "education",
+        "marriage",
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.6666666666666666,
+      "signature": "DOCUMENT_PATH:size=96:print=0.7"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 8,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "marriage",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.6666666666666666,
+      "signature": "UI_ARCHIVE:color|sExEmpty"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 7,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "birth-place",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.6666666666666666,
+      "signature": "UI_ARCHIVE:NSValue"
+    },
+    {
+      "category": "TEXT_SEMANTIC_CANDIDATE",
+      "occurrences": 11,
+      "probes": [
+        "birth-memo",
+        "birth-place",
+        "marriage",
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.5555555555555556,
+      "signature": "TEXT_SEMANTIC_CANDIDATE:[[pt:"
+    },
+    {
+      "category": "TEXT_SEMANTIC_CANDIDATE",
+      "occurrences": 10,
+      "probes": [
+        "birth-memo",
+        "birth-place",
+        "marriage",
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.5555555555555556,
+      "signature": "TEXT_SEMANTIC_CANDIDATE:Certificate|reference"
+    },
+    {
+      "category": "TEXT_SEMANTIC_CANDIDATE",
+      "occurrences": 9,
+      "probes": [
+        "birth-memo",
+        "birth-place",
+        "marriage",
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.5555555555555556,
+      "signature": "TEXT_SEMANTIC_CANDIDATE:Probe "
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 7,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.5555555555555556,
+      "signature": "UI_ARCHIVE:NSNumber|NSString|flFrame|frame"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 7,
+      "probes": [
+        "birth-place",
+        "education",
+        "misc-note",
+        "religion",
+        "research-note"
+      ],
+      "recurrence": 0.5555555555555556,
+      "signature": "UNKNOWN:size=256:print=0.5"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 6,
+      "probes": [
+        "birth-memo",
+        "education",
+        "marriage",
+        "research-note"
+      ],
+      "recurrence": 0.4444444444444444,
+      "signature": "UI_ARCHIVE:LucidaGrande|Recent Results|recent"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 6,
+      "probes": [
+        "birth-date",
+        "birth-place",
+        "misc-note",
+        "research-note"
+      ],
+      "recurrence": 0.4444444444444444,
+      "signature": "UNKNOWN:size=32:print=0.7"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 4,
+      "probes": [
+        "birth-date",
+        "birth-memo",
+        "education",
+        "misc-note"
+      ],
+      "recurrence": 0.4444444444444444,
+      "signature": "UI_ARCHIVE:NSNumber|NSString|NSValue|color|flFrame|frame"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 4,
+      "probes": [
+        "birth-place",
+        "marriage",
+        "religion"
+      ],
+      "recurrence": 0.3333333333333333,
+      "signature": "DOCUMENT_PATH:size=96:print=0.6"
+    },
+    {
+      "category": "DOCUMENT_PATH",
+      "occurrences": 3,
+      "probes": [
+        "birth-date",
+        "misc-note",
+        "research-note"
+      ],
+      "recurrence": 0.3333333333333333,
+      "signature": "DOCUMENT_PATH:size=128:print=0.7"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 3,
+      "probes": [
+        "birth-date",
+        "misc-note",
+        "research-note"
+      ],
+      "recurrence": 0.3333333333333333,
+      "signature": "UI_ARCHIVE:LucidaGrande"
+    },
+    {
+      "category": "CACHE_INDEX",
+      "occurrences": 2,
+      "probes": [
+        "misc-note",
+        "research-note"
+      ],
+      "recurrence": 0.2222222222222222,
+      "signature": "CACHE_INDEX:recent"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 2,
+      "probes": [
+        "marriage",
+        "research-note"
+      ],
+      "recurrence": 0.2222222222222222,
+      "signature": "UI_ARCHIVE:NSNumber|NSString|NSValue|flFrame|frame"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 2,
+      "probes": [
+        "birth-date",
+        "misc-note"
+      ],
+      "recurrence": 0.2222222222222222,
+      "signature": "UI_ARCHIVE:Recent Results|recent"
+    },
+    {
+      "category": "UI_ARCHIVE",
+      "occurrences": 2,
+      "probes": [
+        "birth-date",
+        "birth-memo"
+      ],
+      "recurrence": 0.2222222222222222,
+      "signature": "UI_ARCHIVE:tfWrap"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 2,
+      "probes": [
+        "misc-note",
+        "religion"
+      ],
+      "recurrence": 0.2222222222222222,
+      "signature": "UNKNOWN:size=384:print=0.1"
+    },
+    {
+      "category": "UNKNOWN",
+      "occurrences": 2,
+      "probes": [
+        "education",
+        "marriage"
+      ],
+      "recurrence": 0.2222222222222222,
+      "signature": "UNKNOWN:size=64:print=0.6"
+    }
+  ],
+  "phase": "Phase 2 - Semantic Discovery",
+  "probes": [
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 1,
+      "id": "birth-date",
+      "operation": "MODIFY",
+      "raw_changed": true,
+      "semantic_label": "Birth Date",
+      "span_counts": {
+        "all": 841,
+        "noise": 75,
+        "semantic": 204,
+        "unknown": 562
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "birth-place",
+      "operation": "MODIFY",
+      "raw_changed": true,
+      "semantic_label": "Birth Place",
+      "span_counts": {
+        "all": 960,
+        "noise": 52,
+        "semantic": 6,
+        "unknown": 902
+      }
+    },
+    {
+      "alignment_changes": 2,
+      "class_changes": 2,
+      "decoded_event_changes": 0,
+      "id": "birth-memo",
+      "operation": "MODIFY",
+      "raw_changed": true,
+      "semantic_label": "Birth Memo",
+      "span_counts": {
+        "all": 823,
+        "noise": 77,
+        "semantic": 746,
+        "unknown": 0
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "occupation",
+      "operation": "ADD",
+      "raw_changed": true,
+      "semantic_label": "Occupation",
+      "span_counts": {
+        "all": 1,
+        "noise": 0,
+        "semantic": 0,
+        "unknown": 1
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "education",
+      "operation": "ADD",
+      "raw_changed": true,
+      "semantic_label": "Education",
+      "span_counts": {
+        "all": 904,
+        "noise": 38,
+        "semantic": 0,
+        "unknown": 866
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "religion",
+      "operation": "ADD",
+      "raw_changed": true,
+      "semantic_label": "Religion",
+      "span_counts": {
+        "all": 1359,
+        "noise": 42,
+        "semantic": 9,
+        "unknown": 1308
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "misc-note",
+      "operation": "MODIFY",
+      "raw_changed": true,
+      "semantic_label": "Misc Note",
+      "span_counts": {
+        "all": 624,
+        "noise": 49,
+        "semantic": 6,
+        "unknown": 569
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "research-note",
+      "operation": "COMPOUND",
+      "raw_changed": true,
+      "semantic_label": "Research Note",
+      "span_counts": {
+        "all": 613,
+        "noise": 73,
+        "semantic": 0,
+        "unknown": 540
+      }
+    },
+    {
+      "alignment_changes": 0,
+      "class_changes": 0,
+      "decoded_event_changes": 0,
+      "id": "marriage",
+      "operation": "MODIFY",
+      "raw_changed": true,
+      "semantic_label": "Marriage",
+      "span_counts": {
+        "all": 855,
+        "noise": 36,
+        "semantic": 5,
+        "unknown": 814
+      }
+    }
+  ],
+  "schema": "reunion-companion.semantic-noise-corpus.v1",
+  "summary": {
+    "add_probes": 3,
+    "compound_probes": 1,
+    "modify_probes": 5,
+    "probes": 9,
+    "recurring_patterns": 45,
+    "semantic_candidate_spans": 976,
+    "suppressed_noise_spans": 442,
+    "total_spans": 6980,
+    "unknown_spans": 5562
+  }
+}

@@ -1,0 +1,5069 @@
+{
+  "build": 22,
+  "input_hashes": {
+    "stage16": "462a7e0068ad0b052767b9d5285385050c6218cd1d279cdd5399cdf9f15ac287",
+    "stage17": "ed2dc72d3b91b95bc249193f9efbad3deeef82d9e85bed382290c69e78c2cd52",
+    "stage18": "111e2890863cdd935bf12d19371199dafbb4245d2271e96de015c942412a59af",
+    "stage19": "2d1bc0a527fcb6e4bd7fb78a9eb385ddef8fa27b418190788d9cbcb47b02486f",
+    "stage20": "b11e2208f2850742d517b447757ef9cce90426be155774befcd55ac72280d5f4",
+    "stage21": "b0a106ba58e6eeb93da77bd284044643e9fd9f920effa19d857b1afa978ba00f"
+  },
+  "payload": {
+    "build": 22,
+    "canonical_identity_allowed": false,
+    "keys": [
+      {
+        "collision_rate": 0.9709677419354839,
+        "coverage": 1.0,
+        "covered_regions": 310,
+        "distinct_values": 9,
+        "exclusivity": 1.0,
+        "grade": "STRONG_IDENTITY_CANDIDATE",
+        "key_name": "probe_id",
+        "multi_region_groups": 8,
+        "observations": 310,
+        "sample_values": [
+          "birth-date",
+          "birth-memo",
+          "birth-place",
+          "education",
+          "marriage",
+          "misc-note",
+          "occupation",
+          "religion"
+        ],
+        "score": 0.9835842293906811
+      },
+      {
+        "collision_rate": 0.0,
+        "coverage": 0.0,
+        "covered_regions": 0,
+        "distinct_values": 0,
+        "exclusivity": 1.0,
+        "grade": "ABSENT",
+        "key_name": "after_span",
+        "multi_region_groups": 0,
+        "observations": 0,
+        "sample_values": [],
+        "score": 0.5
+      },
+      {
+        "collision_rate": 0.0,
+        "coverage": 0.0,
+        "covered_regions": 0,
+        "distinct_values": 0,
+        "exclusivity": 1.0,
+        "grade": "ABSENT",
+        "key_name": "before_span",
+        "multi_region_groups": 0,
+        "observations": 0,
+        "sample_values": [],
+        "score": 0.5
+      },
+      {
+        "collision_rate": 0.0,
+        "coverage": 0.0,
+        "covered_regions": 0,
+        "distinct_values": 0,
+        "exclusivity": 1.0,
+        "grade": "ABSENT",
+        "key_name": "person_id",
+        "multi_region_groups": 0,
+        "observations": 0,
+        "sample_values": [],
+        "score": 0.5
+      },
+      {
+        "collision_rate": 0.0,
+        "coverage": 0.0,
+        "covered_regions": 0,
+        "distinct_values": 0,
+        "exclusivity": 1.0,
+        "grade": "ABSENT",
+        "key_name": "record_id",
+        "multi_region_groups": 0,
+        "observations": 0,
+        "sample_values": [],
+        "score": 0.5
+      }
+    ],
+    "phase": "Phase 4 - Object Reconstruction",
+    "regions": [
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-001032E263",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0049DC26D8",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-00E1A09F9A",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0120E8E6A5",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-01CF932A1D",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-02789A71AF",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0388585728",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-04A1628777",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-04C1DD271B",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-06626BC8DE",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0866B84458",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-095E124CDF",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-09681A87C1",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-09A44C10C4",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0BFB570EF9",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0EED5D1C4A",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0F61DAB26A",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-0F6219866C",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1035D4EBA9",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-121BE3B19C",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-13B71B7411",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-13D22A1B34",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1AD649AD9E",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1C25DBF2DD",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1CB376E57C",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1CE3B3C321",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1EEEB6826C",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-1FD6F97EE4",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-2029220746",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-20CF2072A4",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-211BD76897",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-21C128C465",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-225BB6407C",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-22DB4FFFBD",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-23C20B1CC7",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-25BA0B7347",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-28309ABEF7",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-28E55C8080",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-293A4D3FE2",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-2DE2480B16",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-2E10563A6C",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-300797C7C3",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-30BCC573FC",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-322049A269",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-32616553C8",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-339E1F2004",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-343805D1E1",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-344BEAD784",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-348EE3AD02",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-34D275BC24",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-35071E9B52",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-353896F674",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-364C417A69",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-366CABCB7F",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-369587F671",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-37351F0222",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-382F3C9700",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-385C7C9CFB",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3C67AFC423",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3C6B100B39",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3D5263EA75",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3DCE06792F",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3F226F7C3B",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3F484C09E6",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-3F86700C45",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-40F366B3CD",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4132E166C8",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-41984F7FD6",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4277E8AF64",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-43D9F37686",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4440DEFD8E",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-444E58BD32",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-44833982C9",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-46C2BA076E",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4794B19E40",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-487C24B2B9",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-489E61FDF5",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-49EE0BAE01",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4A0E2FF065",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4AA3372B82",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4AE4DAF147",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4AF4FECE76",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Occupation",
+        "person_ids": [],
+        "probe_ids": [
+          "occupation"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4BC8C47B5F",
+        "semantic_label": "Occupation",
+        "unresolved": false
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4BFAABF6A6",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4CFE033889",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4D08E373FE",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4D45C40FB5",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4E27001768",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4E785B9F0F",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-4FB88AEAEC",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5059742E13",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-52770B05D6",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-52D7670C3C",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5349EC95E7",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5468691720",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-56EFC3B710",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-58B108EA62",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-58EEDBE930",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5C3F91EAB1",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5CB768E2C6",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5CEF6AA7DA",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5CF378BDB8",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5D9937585C",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-5E0AFDB9D7",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-607A6D8B0E",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-60A907EBAE",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-624B558414",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-634C8BC466",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-65CA7DE2CA",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-666A1548D7",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-66CD27CF20",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-672710BABA",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-675BD5938E",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6773368C1D",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-67B6A46DA9",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-67D027CA4A",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-693AD4DADE",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6942996F00",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-694948B3FC",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-69928B3672",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-69E13E46A7",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-69EA5E278B",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6A55FD2D5E",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6ACE3943CC",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6BE6D33EDD",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6C0A96D1FD",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6C24AE0029",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6D8EBE8AEA",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6DAF146C98",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-6DC5759C0D",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-71B713B847",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-72FEBEEAF9",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-731F873E07",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7353600B02",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-735995B440",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7360FEAF22",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-74B82515B2",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7601345DAF",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7619F95064",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-77081324BD",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-77E7700D6C",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7B33B90ED7",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7B5016847C",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7B777291FE",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7C605FABC0",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7D225AAAED",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7E422C7D15",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-7F0CB74B67",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-80821B7212",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-825B368CD9",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-82AB87CFF5",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-83B7D15F2D",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-850EC02D42",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-86FFC3AEFD",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-874DA83CB3",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-88DD665DE6",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-896D312238",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-89807CB031",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8B480A3D9A",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8BCD9B493C",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8BFA048992",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8C4BC799F5",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8D0017B6DE",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8F03B36DF6",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8FDB68BDE5",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-8FE25E37E4",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-91CD19F31C",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-921014F065",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-92E0E83B3A",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-92FE1D3935",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9439CFF961",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9752857A94",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-97FC12D70D",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-98867E3478",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9925FF242F",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9A01544DB4",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9AF13EDD4A",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9C496FA39A",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9C9D463664",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-9D65A743F8",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A113FDFC80",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A29A659C56",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A30F283464",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A3A7DCA781",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A3EE2801C4",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A4C88A1603",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A5871237D3",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A76FC09550",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-A90EDE4504",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-AA93663710",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-AAB6213046",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-AABA2FCABE",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-AB3BE13323",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-AB74EA5509",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-ABAD6C75FF",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-AF59426735",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B0BCF7D031",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B1A8858847",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B22647F511",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B2586F8797",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B2F704B2F9",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B46BC0E565",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B4CC9A04A4",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B55E2BAD04",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B62174E103",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B6B7ED7F07",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B9B9BF64F7",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-B9F7F184C6",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BABE2D2EBD",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BB2606A221",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BBC6884D05",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BC63D7E27B",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BF0038CAC3",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BF1F827016",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BF22FB1FD8",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BF60F862A0",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BF85CD6AB9",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BF8DFCEA36",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BFB7ED96A7",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-BFD46DA3DD",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-C086A40C20",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-C1384E1EBE",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-C19D0BB5FC",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-C34C3DBFEB",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-C393A66A5B",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-C5421A6C5C",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CA48EF2CA0",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CA9032577F",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CB2C6CF014",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CB4CA9ED6B",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CBD7D894A6",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CBDCCA426D",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CC31B1AE68",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CC50E46C7C",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CC8214CDE9",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CD70721D8B",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CDF56CF6D6",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CF02D3901F",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CF1DE3CC43",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-CFADDDB742",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D0165CFBCB",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D1F0605AC8",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D23D7F6E6E",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D2B01A9ED4",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D38AB6D2E8",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D3A9B6C8FC",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D44741BADD",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D4D1E21E2E",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D51B87CCC6",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D53239FE1A",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D6CA853CA3",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D83FD690AA",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-D9E7C5AED3",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DA68BE1847",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DACA6BDFF4",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DB6EAE6604",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DD3409E2E3",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DDF3BF9E26",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DE5C2EE4A2",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DF4B66CED5",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-DF6F281D29",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E01E521517",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E0F192585F",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E110F48369",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E11C198B69",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E1CF6FC854",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E265AE27BB",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E2CD16EA4A",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E31FFF06E2",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E353CEB68F",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E3AE13A7EF",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E4F01E9C75",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E7747DCC29",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E81578C9B3",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-E90799F8E3",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EABDDEAF84",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EAEDA36CC3",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EAFCFA686A",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EB9E983B7D",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EBBD9EC4B9",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-ED381D4A8F",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-ED47CF3933",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EDA7DAD107",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EE665B3E98",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EE6679C7C4",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EEAB3CFE05",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-EFBAEA2555",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F0C13C683D",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F1F15154F4",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F384621346",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F449B3D263",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F56FD237B4",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F6421A70CE",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Education",
+        "person_ids": [],
+        "probe_ids": [
+          "education"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F654443D15",
+        "semantic_label": "Education",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F67EE917A4",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F6CC8F0B91",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-place"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F728C6A655",
+        "semantic_label": "Birth Place",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-date"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F89885ADEB",
+        "semantic_label": "Birth Date",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F8BC0388AE",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Birth Event",
+        "person_ids": [],
+        "probe_ids": [
+          "birth-memo"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F9346CEC2C",
+        "semantic_label": "Birth Memo",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-F9A6565898",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FACCDF925E",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FBDC6B9BF7",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FC31762264",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FC45D129E2",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Religion",
+        "person_ids": [],
+        "probe_ids": [
+          "religion"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FC89BA2877",
+        "semantic_label": "Religion",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FD3E9ECFB2",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Research Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "research-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FDD0DE4683",
+        "semantic_label": "Research Note",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Marriage Event",
+        "person_ids": [],
+        "probe_ids": [
+          "marriage"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FEDDE89BD2",
+        "semantic_label": "Marriage",
+        "unresolved": true
+      },
+      {
+        "after_spans": [],
+        "before_spans": [],
+        "candidate_keys": [
+          "probe_id"
+        ],
+        "object_type": "Misc Notes",
+        "person_ids": [],
+        "probe_ids": [
+          "misc-note"
+        ],
+        "record_ids": [],
+        "region_id": "CR-FF777547DD",
+        "semantic_label": "Misc Note",
+        "unresolved": true
+      }
+    ],
+    "schema": "reunion-companion.identity-archaeology.v1",
+    "summary": {
+      "regions_with_any_identity": 310,
+      "regions_with_person_id": 0,
+      "regions_with_probe_id": 310,
+      "regions_with_record_id": 0,
+      "total_regions": 310,
+      "unresolved_regions": 309,
+      "verdict": "STOP",
+      "verdict_reason": "The accumulated pipeline does not retain enough owner/locality evidence to recover object instances reliably."
+    },
+    "write_semantics_proven": false
+  },
+  "payload_hash": "48ef5f2e48c35f32eeddbecf36c975987dedc0a7e93a2c1dd677138e571cb8b8",
+  "schema": "reunion-companion.discovery-artifact.v1",
+  "stage": "identity-archaeology"
+}

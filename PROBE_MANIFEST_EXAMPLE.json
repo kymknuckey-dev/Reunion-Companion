@@ -1,0 +1,22 @@
+{
+  "probes": [
+    {
+      "id": "occupation-01",
+      "semantic_label": "Occupation",
+      "before": "/path/Occupation-Before-01.familyfile14",
+      "after": "/path/Occupation-After-01.familyfile14"
+    },
+    {
+      "id": "occupation-02",
+      "semantic_label": "Occupation",
+      "before": "/path/Occupation-Before-02.familyfile14",
+      "after": "/path/Occupation-After-02.familyfile14"
+    },
+    {
+      "id": "occupation-03",
+      "semantic_label": "Occupation",
+      "before": "/path/Occupation-Before-03.familyfile14",
+      "after": "/path/Occupation-After-03.familyfile14"
+    }
+  ]
+}

@@ -1,32 +1,29 @@
-# Foundation Layer v0.10.0-alpha5 — Install
-
-Alpha 5 is cumulative and additive relative to the verified v0.9 application.
-
-Merge:
-
-```text
-src/reunion_companion/foundation/
-tests/test_foundation*.py
-```
-
-into your existing project.
-
-Do not modify or replace the established `src/reunion_companion/model/`,
-decoder, engine, publisher, or CLI files.
-
-Then run:
+# Build 17 Installation
 
 ```bash
+python tools/apply_build17.py "$HOME/Development/Reunion Companion"
 cd "$HOME/Development/Reunion Companion"
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
 pytest
 ```
 
-Expected:
+Restart Discovery, then run:
 
 ```text
-95 passed
+architecture-summary "/path/PROBE_CORPUS_KNUCKEY.json"
+architecture-components "/path/PROBE_CORPUS_KNUCKEY.json"
+architecture-probe birth-date "/path/PROBE_CORPUS_KNUCKEY.json"
+pipeline-build "/path/PROBE_CORPUS_KNUCKEY.json"
+architecture-report "/path/PROBE_CORPUS_KNUCKEY.json"
 ```
 
-If the result differs, stop and send the complete output back.
+Please return:
+- `database_architecture.md`
+- `architecture_snapshot.json`
+
+Keep these locally:
+- `pipeline/stage-16-canonical-regions.json`
+- `pipeline/stage-17-architecture.json`
+
+They become persistent inputs for later builds.

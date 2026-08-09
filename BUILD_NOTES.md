@@ -1,40 +1,17 @@
-# Foundation Layer v0.10.0-alpha5
+# Phase 3 — Build 17
+## Database Architecture Reconstruction Foundation
 
-## Added
+Build 17 begins Phase 3 and converts Discovery into a versioned knowledge pipeline.
 
-- `FoundationNote`
-- `FoundationMedia`
-- `FoundationSource`
-- `FoundationCitation`
-- note attachment to people/families
-- media attachment to people/families
-- source repository and source-title index
-- citation repository and event/source/owner links
-- media filename index
-- expanded Foundation build report
-- six new content tests
+Added:
+- immutable stage artifacts with input/payload hashes;
+- Stage 16 canonical-region artifact;
+- Stage 17 architecture snapshot;
+- PRIMARY_CANDIDATE, STRUCTURAL_CANDIDATE, DERIVED_SAVE_STATE and UNRESOLVED roles;
+- evidence-linked architectural relations;
+- a small Build 17 console router instead of large console.py code injection.
 
-## Design
+Build 17 is a true delta over Build 16. The local project tree is now the source of truth.
 
-Notes, media, and citations do not currently have stable Reunion object IDs in
-the verified semantic model. Alpha 5 therefore assigns deterministic,
-Foundation-local integer IDs while preserving original offsets/keys in fields
-and metadata.
-
-## Safety
-
-The build remains one-way and read-only:
-
-```text
-.familyfile14
-    ↓
-verified v0.9 decoder
-    ↓
-verified semantic model
-    ↓
-FoundationBuilder
-    ↓
-FoundationDatabase
-```
-
-No established application module is replaced.
+Standalone regression: 3 passed.
+Python syntax checks: passed.

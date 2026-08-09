@@ -1,9 +1,6 @@
-# Reunion Companion Foundation Layer — Alpha 5
+# Reunion Companion — Phase 3 Build 17
 
-Alpha 5 expands the Foundation graph beyond people, families, events, and
-places. It now carries notes, media, sources, and citations from the verified
-semantic model into linked Foundation objects.
+Database Architecture Reconstruction Foundation.
 
-This means the Foundation Database can now represent the major genealogy
-content types required for richer querying, publishing, and eventually AI
-interrogation.
+This is a delta release over an installed Build 16 tree. The new architecture
+pipeline produces versioned knowledge artifacts that future builds can consume.

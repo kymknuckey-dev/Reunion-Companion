@@ -1,0 +1,67 @@
+{
+  "build": 24,
+  "manifest": "/Users/kymknuckey/Documents/Reunion Files/Navigation Probes/navigation_probe.json",
+  "navigation_reason": "Navigation/index evidence exists, but the Person-ID-to-record path is not yet fully demonstrated.",
+  "navigation_verdict": "PARTIAL",
+  "passed": true,
+  "schema": "reunion-companion.probe-regression.v1",
+  "snapshot_count": 4,
+  "validations": [
+    {
+      "known_person_ids_found": [
+        1,
+        2,
+        3
+      ],
+      "missing_person_ids": [],
+      "package": "/Users/kymknuckey/Documents/Reunion Files/Navigation Probes/Probe-21.familyfile14",
+      "package_exists": true,
+      "package_file_count": 25,
+      "person_id_hit_count": 6180,
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "known_person_ids_found": [
+        1,
+        2,
+        3
+      ],
+      "missing_person_ids": [],
+      "package": "/Users/kymknuckey/Documents/Reunion Files/Navigation Probes/Probe-22.familyfile14",
+      "package_exists": true,
+      "package_file_count": 19,
+      "person_id_hit_count": 6141,
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "known_person_ids_found": [
+        1,
+        2,
+        3
+      ],
+      "missing_person_ids": [],
+      "package": "/Users/kymknuckey/Documents/Reunion Files/Navigation Probes/Probe-23.familyfile14",
+      "package_exists": true,
+      "package_file_count": 17,
+      "person_id_hit_count": 6094,
+      "valid": true,
+      "warnings": []
+    },
+    {
+      "known_person_ids_found": [
+        1,
+        2,
+        3
+      ],
+      "missing_person_ids": [],
+      "package": "/Users/kymknuckey/Documents/Reunion Files/Navigation Probes/Probe-24.familyfile14",
+      "package_exists": true,
+      "package_file_count": 16,
+      "person_id_hit_count": 6644,
+      "valid": true,
+      "warnings": []
+    }
+  ]
+}
