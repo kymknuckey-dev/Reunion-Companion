@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import subprocess
+import shutil
 from .beta3_data_manager import ensure_companion_tables
 from .publishing_v11 import write_family_chapter,write_book,write_book_pdf
 from .publishing_v8 import write_biography
@@ -15,7 +16,7 @@ def _record(db,kind,subject,path,fmt):
     db.execute("INSERT INTO companion_publication_history(created_at,kind,subject,output_path,output_format) VALUES(?,?,?,?,?)",
                (datetime.now().isoformat(timespec="seconds"),kind,subject,str(path),fmt));db.commit();return str(path)
 
-def publication_history(db,limit=30):
+def publication_history(db,limit=10):
     ensure_companion_tables(db)
     return [dict(x) for x in db.execute("SELECT * FROM companion_publication_history ORDER BY id DESC LIMIT ?",(limit,)).fetchall()]
 
@@ -45,3 +46,22 @@ def open_output(path):
     p=Path(path).expanduser()
     if not p.exists():raise FileNotFoundError(str(p))
     subprocess.Popen(["open",str(p)]);return str(p)
+
+
+def remove_history(db, history_id):
+    ensure_companion_tables(db)
+    db.execute("DELETE FROM companion_publication_history WHERE id=?",(history_id,));db.commit()
+
+def delete_publication(db, history_id):
+    ensure_companion_tables(db)
+    row=db.execute("SELECT output_path FROM companion_publication_history WHERE id=?",(history_id,)).fetchone()
+    if not row:return False
+    p=Path(row["output_path"]).expanduser()
+    if p.exists() and p.is_file():
+        p.unlink()
+    # Report renderers keep copied media in a dedicated sibling <report>_assets directory.
+    # Delete only that exact, report-owned directory; never infer or remove broader folders.
+    assets=p.parent/(p.stem+"_assets")
+    if assets.exists() and assets.is_dir():
+        shutil.rmtree(assets)
+    remove_history(db,history_id);return True

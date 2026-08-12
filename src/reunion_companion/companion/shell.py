@@ -249,7 +249,7 @@ class CompanionShell:
         c=p[0].lower()
         if c=="ui":
             subprocess.Popen([sys.executable,"-m","reunion_companion.companion.ui","--db",str(self.db_path)])
-            return "Beta 3.2 Sprint 1 user interface opening at http://127.0.0.1:8765/"
+            return "FFD Build 1.2 user interface opening at http://127.0.0.1:8765/"
         if c=="help":return HELP
         if c in ("quit","exit"):return None
 
@@ -294,7 +294,7 @@ class CompanionShell:
             return format_documents(self.db," ".join(p[1:]) if len(p)>1 else None)
 
 
-        # Foundation 10 Timeline Intelligence Engine.
+        # Foundation 10 Presentation Mode.
         if c=="publication-capabilities":
             return format_publish_capabilities()
         if c=="publication-themes":
@@ -449,8 +449,8 @@ class CompanionShell:
 
     def run(self):
         print("========================================================")
-        print(" Reunion Companion — Version 1 Beta 3.2 Sprint 1")
-        print(" Timeline Intelligence Engine")
+        print(" Reunion Companion — FFD Build 1.2")
+        print(" Presentation Mode")
         print("========================================================")
         print(f"Database: {self.db_path}\n")
         print(HELP)

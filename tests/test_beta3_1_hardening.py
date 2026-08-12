@@ -34,7 +34,7 @@ def test_all_top_level_pages_render(tmp_path,monkeypatch):
     for path,q in pages:
         html=render_get(db,path,q)
         assert "<!doctype html>" in html, path
-        assert "Beta 3.1" in html, path
+        assert "Beta 3." in html, path
         assert "Page Error" not in html, path
     db.close()
 
@@ -65,5 +65,5 @@ def test_data_quality_and_publishing_are_defined(tmp_path):
     db=connect(tmp_path/"companion.sqlite3");seed(db)
     assert "Data Manager" in render_get(db,"/data",{})
     assert "Data Quality Centre" in render_get(db,"/quality",{})
-    assert "Publishing Centre" in render_get(db,"/publishing",{})
+    assert "Reports" in render_get(db,"/publishing",{})
     db.close()

@@ -60,29 +60,17 @@ def seed_history_from_current(db):
        _sha(p) if p.exists() else None,json.dumps(counts),json.dumps({}),"baseline"));db.commit()
 
 def staged_import(db_path,gedcom_path):
-    db_path=Path(db_path).expanduser().resolve();ged=Path(gedcom_path).expanduser().resolve()
-    if not ged.is_file():raise FileNotFoundError(str(ged))
-    src=connect(db_path);ensure_companion_tables(src);seed_history_from_current(src);before=dataset_counts(src)
-    fd,tmpname=tempfile.mkstemp(prefix="reunion-companion-stage-",suffix=".sqlite3",dir=str(db_path.parent));os.close(fd);tmp=Path(tmpname)
-    try:
-        clone=sqlite3.connect(tmp);src.backup(clone);clone.close();src.close()
-        work=connect(tmp);ensure_companion_tables(work)
-        result=import_gedcom(work,ged);after=dataset_counts(work);stat=ged.stat();now=datetime.now().isoformat(timespec="seconds")
-        work.execute("""INSERT INTO companion_import_history
-          (source_path,imported_at,source_size,source_mtime,source_sha256,counts_json,diff_json,status)
-          VALUES(?,?,?,?,?,?,?,?)""",
-          (str(ged),now,stat.st_size,stat.st_mtime,_sha(ged),json.dumps(after),json.dumps(_diff(before,after)),"success"))
-        work.commit();work.close();os.replace(tmp,db_path)
-        return {"source_path":str(ged),"counts":after,"diff":_diff(before,after),"import_result":result}
-    except Exception:
-        try:src.close()
-        except Exception:pass
-        if tmp.exists():tmp.unlink()
-        raise
+    # FFD 1.8 Build 1 compatibility wrapper. All imports now use the safe full-refresh engine.
+    from .safe_refresh import safe_refresh
+    r=safe_refresh(db_path,gedcom_path)
+    # Keep the older UI/API keys while exposing the richer change report.
+    flat={k: sum(v.get(x,0) for x in ("added","changed","removed")) for k,v in r["changes"].items()}
+    return {"source_path":r["source"]["path"],"counts":r["validation"],"diff":flat,"changes":r["changes"],
+            "backup_path":r["backup_path"],"validation":r["validation"],"promoted":r["promoted"]}
 
 def reload_current(db_path):
-    db=connect(db_path)
-    try:cur=current_gedcom(db)
-    finally:db.close()
-    if not cur:raise RuntimeError("No current GEDCOM is recorded.")
-    return staged_import(db_path,cur["source_path"])
+    from .safe_refresh import safe_reload_current
+    r=safe_reload_current(db_path)
+    flat={k: sum(v.get(x,0) for x in ("added","changed","removed")) for k,v in r["changes"].items()}
+    return {"source_path":r["source"]["path"],"counts":r["validation"],"diff":flat,"changes":r["changes"],
+            "backup_path":r["backup_path"],"validation":r["validation"],"promoted":r["promoted"]}

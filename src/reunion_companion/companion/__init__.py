@@ -1,1 +1,1 @@
-__version__="1.0.0b3.2-sprint1"
+__version__="1.0.0-ffd1.6b1.1.2"
