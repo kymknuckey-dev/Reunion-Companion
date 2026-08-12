@@ -20,7 +20,7 @@ def test_global_nav_is_home_search_reports(tmp_path):
 def test_research_home_exposes_dataset_explore_boxes(tmp_path):
     db=connect(tmp_path/'x.sqlite3')
     html=render_get(db,'/',{})
-    for label in ('Explore Research','Improve the Data','Places','Sources','Media','Data Import','Reports'):
+    for label in ('Knuckey Family History','Explore','Find a Person','Reports','Family to Explore','A Living Family History','Family History at a Glance'):
         assert label in html
     db.close()
 

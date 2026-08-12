@@ -80,16 +80,22 @@ def blood_relationship(db,a,b):
  if not common:return None
  ca=min(common,key=lambda x:(aa[x]+bb[x],max(aa[x],bb[x]),x));da,dbb=aa[ca],bb[ca];target=person(db,b)
  if da==dbb==1:label=sexword(target["sex"],"brother","sister","sibling")
- elif da==2 and dbb==1:
-  # b is a sibling of one of a's parents: uncle/aunt, with maternal/paternal qualifier when known.
+ elif da>=2 and dbb==1:
+  # b is a sibling of an ancestor of a.  Generalise the kinship name
+  # rather than falling through to cousin terminology for deeper generations.
+  # da=2 -> uncle/aunt; da=3 -> great-uncle/aunt; da=4 -> great-great-uncle/aunt.
   qualifier=""
-  pth=relationship_path(db,a,ca)
-  if len(pth)>=2 and (pth[1].get("edge") or "").casefold()=="parent":
-   par=pth[1]["person"]
-   qualifier="maternal " if _sex_code(par)=="F" else "paternal " if _sex_code(par)=="M" else ""
-  label=qualifier+sexword(target["sex"],"uncle","aunt","parent's sibling")
- elif da==1 and dbb==2:
-  label=sexword(target["sex"],"nephew","niece","sibling's child")
+  if da==2:
+   pth=relationship_path(db,a,ca)
+   if len(pth)>=2 and (pth[1].get("edge") or "").casefold()=="parent":
+    par=pth[1]["person"]
+    qualifier="maternal " if _sex_code(par)=="F" else "paternal " if _sex_code(par)=="M" else ""
+  greats="great-"*(da-2)
+  label=qualifier+greats+sexword(target["sex"],"uncle","aunt","ancestor's sibling")
+ elif da==1 and dbb>=2:
+  # b descends from a's sibling: nephew/niece with matching great depth.
+  greats="great-"*(dbb-2)
+  label=greats+sexword(target["sex"],"nephew","niece","sibling's descendant")
  else:
   degree=min(da,dbb)-1
   if degree<=0:return None
