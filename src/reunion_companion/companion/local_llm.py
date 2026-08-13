@@ -11,6 +11,7 @@ import json
 import os
 import socket
 from typing import Any
+from pathlib import Path
 from urllib import request, error, parse
 
 
@@ -28,12 +29,17 @@ class LocalLLMConfig:
 
     @classmethod
     def from_env(cls) -> "LocalLLMConfig":
+        saved={}
+        cfg=Path.home()/".reunion-companion"/"config.json"
+        try:
+            if cfg.exists(): saved=json.loads(cfg.read_text())
+        except Exception: saved={}
         return cls(
-            base_url=os.environ.get("REUNION_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/"),
-            model=(os.environ.get("REUNION_LLM_MODEL") or "").strip() or None,
-            timeout=float(os.environ.get("REUNION_LLM_TIMEOUT", "120")),
-            temperature=float(os.environ.get("REUNION_LLM_TEMPERATURE", "0.2")),
-            num_ctx=int(os.environ.get("REUNION_LLM_CONTEXT", "8192")),
+            base_url=os.environ.get("REUNION_OLLAMA_URL", saved.get("ollama_url","http://127.0.0.1:11434")).rstrip("/"),
+            model=(os.environ.get("REUNION_LLM_MODEL") or saved.get("llm_model") or "").strip() or None,
+            timeout=float(os.environ.get("REUNION_LLM_TIMEOUT", saved.get("llm_timeout",120))),
+            temperature=float(os.environ.get("REUNION_LLM_TEMPERATURE", saved.get("llm_temperature",0.2))),
+            num_ctx=int(os.environ.get("REUNION_LLM_CONTEXT", saved.get("llm_context",8192))),
         )
 
 

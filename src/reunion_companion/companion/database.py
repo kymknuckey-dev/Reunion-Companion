@@ -1,6 +1,6 @@
 from pathlib import Path
 import sqlite3
-SCHEMA_VERSION=5
+SCHEMA_VERSION=6
 SCHEMA="""
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -50,6 +50,9 @@ def migrate(db):
     db.execute("CREATE TABLE IF NOT EXISTS note_sources(note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,source_id INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE,relation TEXT NOT NULL DEFAULT 'GEDCOM',PRIMARY KEY(note_id,source_id,relation))")
     db.execute("CREATE TABLE IF NOT EXISTS family_sources(family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,source_id INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE,relation TEXT NOT NULL DEFAULT 'GEDCOM',PRIMARY KEY(family_id,source_id,relation))")
     db.execute("""CREATE TABLE IF NOT EXISTS citations(id INTEGER PRIMARY KEY,source_id INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE,owner_scope TEXT NOT NULL,person_id INTEGER REFERENCES people(id) ON DELETE CASCADE,family_id INTEGER REFERENCES families(id) ON DELETE CASCADE,event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,note_id INTEGER REFERENCES notes(id) ON DELETE CASCADE,gedcom_owner_xref TEXT,context_tag TEXT,context_path TEXT)""")
+    
+    from .family_files import ensure_family_files
+    ensure_family_files(db)
     db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('schema_version',?)",(str(SCHEMA_VERSION),));db.commit()
 def connect(path):
     p=Path(path).expanduser();p.parent.mkdir(parents=True,exist_ok=True)

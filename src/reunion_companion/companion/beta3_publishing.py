@@ -10,14 +10,25 @@ from .publish_profile import write_profile
 from .publishing_v10 import descendant_chart_html_document
 from .family_publication_model import family_partners
 from .publication_themes import DEFAULT_THEME
+from .family_files import active_family_file, ensure_family_files
 
 def _record(db,kind,subject,path,fmt):
-    ensure_companion_tables(db)
-    db.execute("INSERT INTO companion_publication_history(created_at,kind,subject,output_path,output_format) VALUES(?,?,?,?,?)",
-               (datetime.now().isoformat(timespec="seconds"),kind,subject,str(path),fmt));db.commit();return str(path)
+    ensure_companion_tables(db); ensure_family_files(db)
+    ff=active_family_file(db); wid=ff['id'] if ff else None
+    cols={r['name'] for r in db.execute('PRAGMA table_info(companion_publication_history)')}
+    if 'workspace_id' in cols:
+        db.execute("INSERT INTO companion_publication_history(created_at,kind,subject,output_path,output_format,workspace_id) VALUES(?,?,?,?,?,?)",
+                   (datetime.now().isoformat(timespec="seconds"),kind,subject,str(path),fmt,wid))
+    else:
+        db.execute("INSERT INTO companion_publication_history(created_at,kind,subject,output_path,output_format) VALUES(?,?,?,?,?)",
+                   (datetime.now().isoformat(timespec="seconds"),kind,subject,str(path),fmt))
+    db.commit();return str(path)
 
 def publication_history(db,limit=10):
-    ensure_companion_tables(db)
+    ensure_companion_tables(db); ensure_family_files(db)
+    ff=active_family_file(db); cols={r['name'] for r in db.execute('PRAGMA table_info(companion_publication_history)')}
+    if ff and 'workspace_id' in cols:
+        return [dict(x) for x in db.execute("SELECT * FROM companion_publication_history WHERE workspace_id=? ORDER BY id DESC LIMIT ?",(ff['id'],limit)).fetchall()]
     return [dict(x) for x in db.execute("SELECT * FROM companion_publication_history ORDER BY id DESC LIMIT ?",(limit,)).fetchall()]
 
 def family_chapter_html(db,fid,subject):

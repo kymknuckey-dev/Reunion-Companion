@@ -47,6 +47,9 @@ def featured_people(db,limit=6):
     return result[:limit]
 
 def home_body(db,quality_counts,presentation=False):
+    from .family_files import active_family_file
+    ff=active_family_file(db)
+    family_title=ff['display_name'] if ff else 'Family History'
     credit=_research_credit(db)
     people=featured_people(db)
 
@@ -101,7 +104,7 @@ def home_body(db,quality_counts,presentation=False):
     return f"""
 <section class='ffd-hero'>
   <div class='ffd-eyebrow'>Welcome to your family history</div>
-  <h1>Knuckey Family History</h1>
+  <h1>{esc(family_title)}</h1>
   {credit_html}
   <p class='ffd-intro'>
     Explore the people, families, evidence and publications preserved in Reunion,

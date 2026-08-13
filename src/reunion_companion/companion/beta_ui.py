@@ -16,6 +16,8 @@ from .ffd_relationship_questions import questions_body
 from .person_navigation import nav_html
 from .beta3_data_manager import current_gedcom,import_history,seed_history_from_current,reload_current,staged_import,dataset_counts
 from .beta3_quality import quick_wins,quality_items,person_quality
+from .family_files import (active_family_file,list_family_files,register_family_file,set_active_family,verify_refresh_for_workspace,record_workspace_import,
+    rename_family_file,set_default_family,delete_family_file,family_report_count)
 from .beta3_publishing import (
     publication_history,family_chapter_html,family_chapter_pdf,
     descendant_chart,person_output,open_output,remove_history,delete_publication
@@ -247,6 +249,19 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 def esc(v):
     return html.escape("" if v is None else str(v))
 
+def family_selector_html():
+    try:
+        from .database import connect as _connect
+        dbp=getattr(family_selector_html,'db_path',None)
+        if not dbp:return ''
+        db=_connect(dbp)
+        try:
+            fams=list_family_files(db); active=active_family_file(db)
+        finally: db.close()
+        opts=''.join(f"<option value='{f['id']}' {'selected' if active and f['id']==active['id'] else ''}>{esc(f['display_name'])}</option>" for f in fams)
+        return f"<form method='post' action='/family-file/select' style='margin-left:auto'><select name='workspace_id' onchange='this.form.submit()' aria-label='Family File'>{opts}</select></form>"
+    except Exception:return ''
+
 def layout(title,body):
     presentation=presentation_mode_enabled()
     html_class="presentation" if presentation else ""
@@ -264,7 +279,7 @@ def layout(title,body):
 </style></head><body>
 <header><strong><a href='/' style='margin-right:0'>Reunion Companion</a></strong><nav>
 <a href='/'>Home</a><a href='/search'>Search</a><a href='/reports'>Reports</a>
-</nav>
+</nav>{family_selector_html()}
 <form method='post' action='/presentation/toggle' style='margin-left:auto'>
 <button class='secondary'>{mode_label}</button></form>
 <span class='meta'>FFD 1.8 Build 1.3</span></header>
@@ -301,7 +316,25 @@ def data_page(db,msg=""):
     message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ""
     current=esc(cur["source_path"]) if cur else "No GEDCOM recorded"
     disabled="" if cur else "disabled"
+    ff=active_family_file(db); fams=list_family_files(db)
+    family_rows=""
+    for x in fams:
+        flags=[]
+        if x.get('is_default'):flags.append('Default')
+        if x.get('is_active'):flags.append('Active')
+        badges=(" · ".join(flags))
+        reports=family_report_count(db,x['id'])
+        actions=f"""<div class='publication-actions'>
+<form method='post' action='/family-file/rename' class='inline-form'><input type='hidden' name='workspace_id' value='{x['id']}'><input name='name' value='{esc(x['display_name'])}' required><button class='secondary'>Rename</button></form>
+"""
+        if not x.get('is_default'):
+            actions+=f"<form method='post' action='/family-file/default' class='inline-form'><input type='hidden' name='workspace_id' value='{x['id']}'><button class='secondary'>Make Default</button></form>"
+        if not x.get('is_active') and not x.get('is_default'):
+            actions+=f"""<form method='post' action='/family-file/delete' class='inline-form' onsubmit="return confirm('Delete {esc(x['display_name'])} from Reunion Companion? The original GEDCOM/family file is not changed.')"><input type='hidden' name='workspace_id' value='{x['id']}'><label class='small'><input type='checkbox' name='delete_reports' value='1'> Delete {reports} generated report(s) and assets</label><button class='secondary'>Delete Family File</button></form>"""
+        family_rows+=f"<div class='topic'><strong>{esc(x['display_name'])}</strong>{(' — '+esc(badges)) if badges else ''} — {esc(x.get('source_application') or 'GEDCOM')}<br><span class='small'>{esc(x.get('gedcom_path') or 'No GEDCOM recorded')} · Reports: {reports}</span>{actions}</div>"
     return layout("Data Manager",f"""<h1>Data Manager</h1>{message}
+<div class='card'><h2>Family Files</h2><p class='meta'>The active Family File is <strong>{esc(ff['display_name'] if ff else '')}</strong>. Rename and manage Family Files here. The internal Family File identity does not change when a name is changed.</p>{family_rows}
+<h3>Add Family File</h3><form method='post' action='/family-file/add'><input name='name' placeholder='Family File name' required><input name='path' placeholder='/Users/.../Family.ged' required><input name='source_application' placeholder='Source application (e.g. Reunion)'><button>Add Family</button></form></div>
 <div class='card'><h2>Current GEDCOM</h2><div class='small'>{current}</div>
 <div class='grid' style='margin-top:15px'>{stats}</div>
 <form method='post' action='/data/reload' style='margin-top:16px'><button {disabled}>Safe Refresh Current GEDCOM</button></form><p class='small'>Builds and verifies a staged database, backs up the current database, then atomically promotes the refresh.</p></div>
@@ -674,6 +707,7 @@ def _post_form(handler):
 
 def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
     db_path=Path(db_path).expanduser()
+    family_selector_html.db_path=db_path
     class Handler(BaseHTTPRequestHandler):
         def send_html(self,text,status=200):
             data=text.encode("utf-8")
@@ -719,9 +753,71 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     db.close()
                 return
 
+            if u.path=="/family-file/add":
+                db=connect(db_path)
+                try:
+                    wid=register_family_file(db,form.get('name','').strip(),form.get('path',''),form.get('source_application','GEDCOM'))
+                    self.send_html(data_page(db,f"Family File registered. Its GEDCOM identity will be checked before any refresh."))
+                except Exception as e:self.send_html(data_page(db,f"Add Family File failed: {type(e).__name__}: {e}"),500)
+                finally:db.close()
+                return
+            if u.path=="/family-file/rename":
+                db=connect(db_path)
+                try:
+                    rename_family_file(db,int(form.get('workspace_id','0')),form.get('name',''))
+                    self.send_html(data_page(db,"Family File renamed."))
+                except Exception as e:self.send_html(data_page(db,f"Rename failed: {e}"),400)
+                finally:db.close()
+                return
+            if u.path=="/family-file/default":
+                db=connect(db_path)
+                try:
+                    set_default_family(db,int(form.get('workspace_id','0')))
+                    self.send_html(data_page(db,"Default Family File updated."))
+                except Exception as e:self.send_html(data_page(db,f"Default change failed: {e}"),400)
+                finally:db.close()
+                return
+            if u.path=="/family-file/delete":
+                db=connect(db_path)
+                try:
+                    delete_family_file(db,int(form.get('workspace_id','0')),form.get('delete_reports','')=='1')
+                    self.send_html(data_page(db,"Family File deleted from Reunion Companion. The original GEDCOM/family file was not changed."))
+                except Exception as e:self.send_html(data_page(db,f"Delete failed: {e}"),400)
+                finally:db.close()
+                return
+
+            if u.path=="/family-file/select":
+                db=connect(db_path)
+                try:
+                    wid=int(form.get('workspace_id','0')); target=[x for x in list_family_files(db) if x['id']==wid][0]
+                    path=target.get('gedcom_path')
+                    if not path: raise ValueError('This Family File has no GEDCOM source yet.')
+                finally:db.close()
+                # Switching materialises the selected Family File through the same safe staged refresh path.
+                result=staged_import(db_path,path)
+                db=connect(db_path)
+                try:set_active_family(db,wid); record_workspace_import(db,wid,path); self.send_html(home(db))
+                finally:db.close()
+                return
+
             if u.path in ("/data/reload","/data/import"):
                 try:
-                    result=reload_current(db_path) if u.path=="/data/reload" else staged_import(db_path,form.get("path",""))
+                    
+                    if u.path=="/data/reload":
+                        result=reload_current(db_path)
+                    else:
+                        probe=connect(db_path)
+                        try:
+                            ff=active_family_file(probe); verdict=verify_refresh_for_workspace(probe,ff['id'],form.get('path','')) if ff else None
+                            if verdict and verdict['match']['classification']=='likely_different':
+                                raise RuntimeError(f"WRONG_FAMILY|{ff['display_name']}|{verdict['match']['score']:.6f}")
+                        finally:probe.close()
+                        result=staged_import(db_path,form.get("path",""))
+                        probe=connect(db_path)
+                        try:
+                            ff=active_family_file(probe)
+                            if ff:record_workspace_import(probe,ff['id'],form.get('path',''))
+                        finally:probe.close()
                     db=connect(db_path)
                     try:
                         from .safe_refresh import format_change_summary
@@ -732,10 +828,17 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     finally:
                         db.close()
                 except Exception as e:
-                    traceback.print_exc()
                     db=connect(db_path)
                     try:
-                        self.send_html(data_page(db,f"Safe refresh failed; current data retained. {type(e).__name__}: {e}"),500)
+                        text=str(e)
+                        if text.startswith('WRONG_FAMILY|'):
+                            _,name,score=text.split('|',2)
+                            pct=float(score)
+                            body=f"""<h1>GEDCOM does not match this Family File</h1><div class='card'><h2>This GEDCOM doesn't appear to belong to {esc(name)}.</h2><p>Companion found only a <strong>{pct:.0%}</strong> match with the existing family data. Nothing has been changed.</p><p><a class='btn' href='/data'>Add as a New Family File →</a></p><p><a href='/data'>Cancel</a></p></div>"""
+                            self.send_html(layout('Family File mismatch',body),400)
+                        else:
+                            traceback.print_exc()
+                            self.send_html(data_page(db,f"Safe refresh failed; current data retained. {type(e).__name__}: {e}"),500)
                     finally:
                         db.close()
                 return
@@ -787,7 +890,7 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
 
     server=ThreadingHTTPServer((host,port),Handler)
     url=f"http://{host}:{port}/"
-    print("Reunion Companion — FFD 1.8 Build 1.3 Global Navigation & Reports UX")
+    print("Reunion Companion — FFD 1.8 Build 2.1 Family File Management & Import Safety UX")
     print(f"Database: {db_path}")
     print(f"Open: {url}")
     print("Press Ctrl-C to stop.")
