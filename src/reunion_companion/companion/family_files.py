@@ -58,6 +58,24 @@ def active_family_file(db):
     r=db.execute('SELECT * FROM companion_family_files WHERE is_active=1 ORDER BY id LIMIT 1').fetchone()
     return dict(r) if r else None
 
+
+def default_family_file(db):
+    ensure_family_files(db)
+    r=db.execute('SELECT * FROM companion_family_files WHERE is_default=1 ORDER BY id LIMIT 1').fetchone()
+    if not r:
+        r=db.execute('SELECT * FROM companion_family_files ORDER BY id LIMIT 1').fetchone()
+    return dict(r) if r else None
+
+def deletion_lifecycle(db, workspace_id):
+    """Describe the safe state transition if a Family File is deleted."""
+    ensure_family_files(db)
+    rows=list_family_files(db)
+    target=next((x for x in rows if x['id']==workspace_id),None)
+    if not target: raise ValueError('Unknown Family File.')
+    if len(rows)<=1: raise ValueError('The only remaining Family File cannot be deleted.')
+    replacement=_replacement_family(rows,workspace_id)
+    return {'target':target,'replacement':replacement,'was_active':bool(target.get('is_active')),'was_default':bool(target.get('is_default'))}
+
 def gedcom_fingerprint(path):
     p=Path(path).expanduser().resolve(); roots=parse_gedcom(p)
     people=[]
@@ -95,6 +113,30 @@ def verify_refresh_for_workspace(db,workspace_id,gedcom_path):
     new=gedcom_fingerprint(gedcom_path); cmp=compare_fingerprint(row['fingerprint_json'],new)
     return {'workspace':dict(row),'incoming':new,'match':cmp}
 
+
+
+class FamilyFileMismatch(ValueError):
+    def __init__(self, workspace, incoming_path, match):
+        self.workspace=workspace
+        self.incoming_path=str(Path(incoming_path).expanduser().resolve())
+        self.match=match
+        super().__init__(f"Selected GEDCOM appears to belong to a different Family File (match score {match.get('score',0):.0%}).")
+
+def preflight_family_refresh(db, gedcom_path=None):
+    """Validate a refresh against the immutable identity of the active Family File.
+
+    Used by both 'Current GEDCOM' and explicitly selected GEDCOM refresh paths so
+    neither route can bypass Family File identity protection.
+    """
+    ff=active_family_file(db)
+    if not ff: raise ValueError('No active Family File is available.')
+    path=gedcom_path or ff.get('gedcom_path')
+    if not path: raise ValueError('No GEDCOM source is recorded for this Family File.')
+    verdict=verify_refresh_for_workspace(db,ff['id'],path)
+    if verdict['match']['classification']=='likely_different':
+        raise FamilyFileMismatch(ff,path,verdict['match'])
+    return {'workspace':ff,'path':str(Path(path).expanduser().resolve()),'verdict':verdict}
+
 def record_workspace_import(db,workspace_id,path):
     fp=gedcom_fingerprint(path); p=str(Path(path).expanduser().resolve())
     db.execute('UPDATE companion_family_files SET gedcom_path=?,fingerprint_json=?,updated_at=CURRENT_TIMESTAMP WHERE id=?',(p,json.dumps(fp),workspace_id))
@@ -128,14 +170,26 @@ def family_report_count(db,workspace_id):
         return db.execute('SELECT COUNT(*) FROM companion_publication_history WHERE workspace_id=?',(workspace_id,)).fetchone()[0]
     except Exception:return 0
 
+def _replacement_family(rows, deleting_id):
+    survivors=[x for x in rows if x['id']!=deleting_id]
+    if not survivors:return None
+    # Prefer the existing default, then the active family, then stable id order.
+    return sorted(survivors,key=lambda x:(0 if x.get('is_default') else 1,0 if x.get('is_active') else 1,x['id']))[0]
+
 def delete_family_file(db,workspace_id,delete_reports=False):
+    """Delete one Family File while preserving a valid active/default lifecycle.
+
+    The last Family File is protected.  Default and active are state, not deletion
+    locks: if either points at the deleted Family File, a surviving Family File is
+    promoted automatically.  The UI materialises a surviving GEDCOM before
+    deleting an *active* Family File so the live genealogy tables remain aligned.
+    """
     ensure_family_files(db)
     rows=list_family_files(db)
     row=next((x for x in rows if x['id']==workspace_id),None)
     if not row: raise ValueError('Unknown Family File.')
     if len(rows)<=1: raise ValueError('The only remaining Family File cannot be deleted.')
-    if row.get('is_default'): raise ValueError('Choose another default Family File before deleting this one.')
-    if row.get('is_active'): raise ValueError('Switch to another Family File before deleting this one.')
+    replacement=_replacement_family(rows,workspace_id)
     # Report files are optional destructive cleanup; otherwise retain history as unassigned legacy output.
     try:
         cols={r['name'] for r in db.execute('PRAGMA table_info(companion_publication_history)')}
@@ -149,4 +203,12 @@ def delete_family_file(db,workspace_id,delete_reports=False):
     except Exception:
         if delete_reports: raise
     db.execute('DELETE FROM companion_family_imports WHERE workspace_id=?',(workspace_id,))
-    db.execute('DELETE FROM companion_family_files WHERE id=?',(workspace_id,));db.commit()
+    db.execute('DELETE FROM companion_family_files WHERE id=?',(workspace_id,))
+    if row.get('is_default') and replacement:
+        db.execute('UPDATE companion_family_files SET is_default=0')
+        db.execute('UPDATE companion_family_files SET is_default=1 WHERE id=?',(replacement['id'],))
+    if row.get('is_active') and replacement:
+        db.execute('UPDATE companion_family_files SET is_active=0')
+        db.execute('UPDATE companion_family_files SET is_active=1 WHERE id=?',(replacement['id'],))
+    db.commit()
+    return {'deleted':row,'replacement':replacement}

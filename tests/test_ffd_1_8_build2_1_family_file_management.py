@@ -25,14 +25,20 @@ def test_family_file_can_be_renamed_without_identity_change(tmp_path):
     assert after['workspace_uuid']==before['workspace_uuid']
 
 
-def test_default_and_active_family_cannot_be_deleted(tmp_path):
+def test_active_or_default_family_can_be_deleted_when_another_family_survives(tmp_path):
     db=connect(tmp_path/'x.sqlite3'); g=ged(tmp_path/'a.ged')
     wid=register_family_file(db,'Hewitt Family',g)
-    with pytest.raises(ValueError,match='active|default|only'):
+    original=active_family_file(db)['id']
+    # Deleting the active/default original family promotes Hewitt.
+    delete_family_file(db,original)
+    ff=active_family_file(db)
+    assert ff['id']==wid and ff['is_default']==1
+
+
+def test_only_remaining_family_cannot_be_deleted(tmp_path):
+    db=connect(tmp_path/'x.sqlite3')
+    with pytest.raises(ValueError,match='only remaining'):
         delete_family_file(db,active_family_file(db)['id'])
-    set_default_family(db,wid)
-    with pytest.raises(ValueError,match='default'):
-        delete_family_file(db,wid)
 
 
 def test_inactive_nondefault_family_can_be_deleted(tmp_path):
