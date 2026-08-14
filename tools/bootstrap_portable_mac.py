@@ -3,7 +3,7 @@
 Does not silently install system software; reports exact prerequisites and prepares local config.
 """
 from pathlib import Path
-import argparse, json, platform, shutil, subprocess, sys
+import argparse, importlib.util, json, platform, shutil, subprocess, sys
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--model',default='gemma3:4b'); ap.add_argument('--write-config',action='store_true'); a=ap.parse_args()
@@ -13,6 +13,8 @@ def main():
       'Python >= 3.11': sys.version_info >= (3,11),
       'git': bool(shutil.which('git')),
       'ollama': bool(shutil.which('ollama')),
+      'Pillow publishing runtime': importlib.util.find_spec('PIL') is not None,
+      'PyMuPDF publishing runtime': importlib.util.find_spec('pymupdf') is not None,
     }
     model=False
     if checks['ollama']:
@@ -24,6 +26,8 @@ def main():
       cfg.parent.mkdir(parents=True,exist_ok=True); cfg.write_text(json.dumps({'llm_provider':'ollama','llm_model':a.model},indent=2)+'\n')
     for k,v in checks.items():print(('✓' if v else '✗'),k)
     print('Config:',cfg)
+    if not checks['Pillow publishing runtime'] or not checks['PyMuPDF publishing runtime']:
+      print('Next: install the project dependencies with: python -m pip install -e .')
     if not checks['ollama']: print('Next: install Ollama, then run: ollama pull',a.model)
     elif not model: print('Next: ollama pull',a.model)
     return 0 if all(checks.values()) else 2

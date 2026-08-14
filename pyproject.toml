@@ -12,7 +12,10 @@ license = {text = "MIT"}
 authors = [
   {name = "Kym Knuckey"}
 ]
-dependencies = []
+dependencies = [
+  "Pillow>=12.3.0",
+  "PyMuPDF>=1.28.2",
+]
 
 [project.optional-dependencies]
 dev = [
