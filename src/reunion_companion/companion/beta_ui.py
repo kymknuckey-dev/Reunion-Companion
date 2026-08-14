@@ -392,53 +392,46 @@ def quality_items_page(db,kind):
             body+=f"<div class='topic'><strong>{esc(title)}</strong><div class='small'>{esc(x.get('file_path') or '')}</div></div>"
     return layout("Quality Items",body+"</div>")
 
-def timeline_tab(db,pid,view="story"):
+def timeline_tab(db,pid,view="story",presentation=False):
+    """Mode-specific timeline: Story in Presentation, Research in Research mode."""
     model=timeline_for_person(db,pid)
     if not model:return "<div class='card'>Timeline unavailable.</div>"
-    if view not in {"story","research","data"}:view="story"
     summary=model["summary"]
-    body=f"""<div class='card'><h2>Life Timeline</h2>
-<p class='meta'>One event-driven timeline. Choose how much detail you want to see.</p>
-<div class='timeline-toolbar'>
-<a class='{"active" if view=="story" else ""}' href='/person/{pid}?tab=timeline&view=story'>Story</a>
-<a class='{"active" if view=="research" else ""}' href='/person/{pid}?tab=timeline&view=research'>Research</a>
-<a class='{"active" if view=="data" else ""}' href='/person/{pid}?tab=timeline&view=data'>Data</a>
-</div>
-<div class='timeline-meta'><span class='badge info'>{summary['event_count']} events</span>
-<span class='badge info'>{summary['dated_count']} dated</span>
-<span class='badge info'>{summary['supported_count']} with linked evidence</span>
-<span class='badge info'>{summary['observation_count']} review observations</span></div></div>
-<div class='timeline'>"""
-    for e in model["events"]:
-        evidence="<span class='badge good'>Linked evidence</span>" if e["evidence_status"]=="supported" else "<span class='badge warn'>No linked evidence</span>"
-        body+=f"<section class='event-card' id='event-{e['id']}'><div class='event-head'><div><a class='event-link' href='/event/{e['id']}?view={view}'><h2>{esc(e['type'])}</h2></a><div><strong>{esc(e['date']) or 'Undated'}</strong></div></div>{evidence}</div>"
-        if view=="story":
+    if presentation:
+        source_order=[]; seen=set()
+        for e in model["events"]:
+            for src in e.get("sources",[]):
+                sid=src.get("id")
+                if sid not in seen: seen.add(sid); source_order.append(src)
+        source_no={src.get("id"):i+1 for i,src in enumerate(source_order)}
+        body="<div class='card'><h2>Life Timeline</h2><p class='meta'>A chronological view of the recorded story.</p></div><div class='timeline'>"
+        for e in model["events"]:
+            body+=f"<section class='event-card' id='event-{e['id']}'><div class='event-head'><div><h2>{esc(e['type'])}</h2><div><strong>{esc(e['date']) or 'Undated'}</strong></div></div></div>"
             body+=f"<div class='timeline-story'>{esc(e['story'])}</div>"
             meta=[]
             if e["age"]:meta.append(f"Age {e['age']}")
             if e["since_previous"]:meta.append(f"{e['since_previous']} since previous dated event")
             if meta:body+="<div class='meta'>"+" · ".join(esc(x) for x in meta)+"</div>"
             if e["note"]:body+=f"<div class='panel-note'><strong>Note</strong><br>{esc(e['note'])}</div>"
-        elif view=="research":
-            if e["place"]:body+=f"<p><strong>Place</strong><br>{esc(e['place'])}</p>"
-            if e["value"]:body+=f"<p><strong>Detail</strong><br>{esc(e['value'])}</p>"
-            if e["age"]:body+=f"<p><strong>Age</strong> {esc(e['age'])}</p>"
-            if e["note"]:body+=f"<div class='panel-note'><strong>Event note</strong><br>{esc(e['note'])}</div>"
-            body+=f"<div class='timeline-meta'><span class='badge info'>{e['source_count']} source(s)</span><span class='badge info'>{e['media_count']} media item(s)</span></div>"
-            if e["sources"]:
-                body+="<ul class='evidence-list'>"+"".join(f"<li>{esc(source_label(s))}</li>" for s in e["sources"])+"</ul>"
-            for o in e["observations"]:body+=f"<div class='observation'>Review: {esc(o)}</div>"
-        else:
-            rows=[
-                ("Event ID",e["id"]),("GEDCOM Tag",e["gedcom_tag"]),("Original Date",e["date"]),
-                ("Date Precision",e["date_precision"]),("Date Qualifier",e["date_qualifier"]),
-                ("Place",e["place"]),("Value",e["value"]),("Source Count",e["source_count"]),
-                ("Media Count",e["media_count"]),("Age",e["age"]),
-                ("Since Previous",e["since_previous"]),("Until Next",e["until_next"])
-            ]
-            body+="<div class='raw-grid'>"+"".join(f"<strong>{esc(k)}</strong><span>{esc(v)}</span>" for k,v in rows)+"</div>"
-            for o in e["observations"]:body+=f"<div class='observation'>Review: {esc(o)}</div>"
-        body+=f"<p><a class='ffd-inline-link' href='/event/{e['id']}?view={view}'>View event →</a></p></section>"
+            refs=[source_no.get(x.get('id')) for x in e.get('sources',[]) if source_no.get(x.get('id'))]
+            if refs:body+="<div class='small source-refs'>Source " + ", ".join(f"[{n}]" for n in refs) + "</div>"
+            body+="</section>"
+        body+="</div>"
+        if source_order: body+="<div class='card presentation-timeline-sources'><h2>Sources</h2><ol>"+"".join(f"<li>{esc(source_label(src))}</li>" for src in source_order)+"</ol></div>"
+        return body
+    body=f"""<div class='card'><h2>Research Timeline</h2><p class='meta'>Recorded events with their evidence and research context.</p>
+<div class='timeline-meta'><span class='badge info'>{summary['event_count']} events</span><span class='badge info'>{summary['dated_count']} dated</span><span class='badge info'>{summary['supported_count']} with linked evidence</span><span class='badge info'>{summary['observation_count']} review observations</span></div></div><div class='timeline'>"""
+    for e in model["events"]:
+        evidence="<span class='badge good'>Linked evidence</span>" if e["evidence_status"]=="supported" else "<span class='badge warn'>No linked evidence</span>"
+        body+=f"<section class='event-card' id='event-{e['id']}'><div class='event-head'><div><a class='event-link' href='/event/{e['id']}?view=research'><h2>{esc(e['type'])}</h2></a><div><strong>{esc(e['date']) or 'Undated'}</strong></div></div>{evidence}</div>"
+        if e["place"]:body+=f"<p><strong>Place</strong><br>{esc(e['place'])}</p>"
+        if e["value"]:body+=f"<p><strong>Detail</strong><br>{esc(e['value'])}</p>"
+        if e["age"]:body+=f"<p><strong>Age</strong> {esc(e['age'])}</p>"
+        if e["note"]:body+=f"<div class='panel-note'><strong>Event note</strong><br>{esc(e['note'])}</div>"
+        body+=f"<div class='timeline-meta'><span class='badge info'>{e['source_count']} source(s)</span><span class='badge info'>{e['media_count']} media item(s)</span></div>"
+        if e["sources"]:body+="<ul class='evidence-list'>"+"".join(f"<li>{esc(source_label(src))}</li>" for src in e["sources"])+"</ul>"
+        for o in e["observations"]:body+=f"<div class='observation'>Review: {esc(o)}</div>"
+        body+=f"<p><a class='ffd-inline-link' href='/event/{e['id']}?view=research'>View event →</a></p></section>"
     return body+"</div>"
 
 def event_page(db,event_id,view="research"):
@@ -509,6 +502,27 @@ def _research_biography_body(w):
 def _presentation_biography_body(pid):
     return f"""<div class='card'><h2>Biography</h2><div id='person-biography'><div class='narrative-loading'><span class='rc-bio-spinner' aria-hidden='true'></span><strong>Preparing biography…</strong><p class='meta'>Companion is preparing a grounded narrative from the recorded family history.</p></div></div><style>@keyframes rc-bio-spin{{to{{transform:rotate(360deg)}}}}.rc-bio-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-bio-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.biography-prose{{white-space:pre-wrap;font-family:Georgia,"Times New Roman",serif;font-size:19px;line-height:1.65}}</style><script>fetch('/person-narrative/{pid}').then(r=>r.text()).then(t=>{{document.getElementById('person-biography').innerHTML=t;}}).catch(()=>{{document.getElementById('person-biography').innerHTML='<p>Biography could not be prepared.</p>';}});</script></div>"""
 
+def _research_sources_body(db,w,pid):
+    """Render person sources with deterministic attachment/usage context."""
+    uses={}
+    def add(sid,label):
+        if sid is None:return
+        uses.setdefault(sid,[])
+        if label not in uses[sid]:uses[sid].append(label)
+    for r in db.execute("SELECT source_id FROM person_sources WHERE person_id=?",(pid,)):add(r[0],"Person record")
+    for r in db.execute("SELECT es.source_id,e.event_type,e.date_text,e.place_text,e.value_text FROM event_sources es JOIN events e ON e.id=es.event_id WHERE e.person_id=? ORDER BY e.id",(pid,)):
+        detail=", ".join(str(x) for x in (r[2],r[3],r[4]) if x); add(r[0],f"{r[1] or 'Event'}"+(f" — {detail}" if detail else ""))
+    for r in db.execute("SELECT ns.source_id,n.note_type FROM note_sources ns JOIN notes n ON n.id=ns.note_id WHERE n.person_id=? ORDER BY n.id",(pid,)):
+        label=(r[1] or "Misc Notes").strip(); add(r[0],"Misc Notes" if label.casefold() in {"note","notes","misc","miscellaneous"} else label)
+    for r in db.execute("SELECT fs.source_id,f.marriage_date,f.marriage_place FROM family_sources fs JOIN families f ON f.id=fs.family_id WHERE f.id IN (SELECT family_id FROM family_members WHERE person_id=?) ORDER BY f.id",(pid,)):
+        detail=", ".join(str(x) for x in (r[1],r[2]) if x); add(r[0],"Marriage"+(f" — {detail}" if detail else ""))
+    body="<div class='card'><h2>Sources</h2><p class='meta'>Sources are shown with the parts of this person's record they support.</p>"
+    for src in w.get("sources",[]):
+        context=uses.get(src.get("id"),[]) or ["Attachment context not recorded"]
+        body+=f"<div class='topic'><strong>{esc(source_label(src))}</strong><div class='small'><strong>Attached to:</strong> {esc(' · '.join(context))}</div></div>"
+    if not w.get("sources"):body+="<p>No linked sources.</p>"
+    return body+"</div>"
+
 def person_page(db,pid,tab="overview",view="story",presentation_override=None):
     w=person_workspace(db,pid)
     if not w:
@@ -534,7 +548,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
             if detail: bits.append(f"<div class='topic'><h3>{esc(typ)}</h3><div>{esc(detail)}</div></div>")
         from .person_navigation import action_cards
         body="<div class='ffd-story-actions'>"+action_cards(pid,False)+"</div><div class='card'><h2>Person Overview</h2>"+("".join(bits) or "<p>No summary facts.</p>")+"</div>"
-    elif tab=="timeline": body=timeline_tab(db,pid,view)
+    elif tab=="timeline": body=timeline_tab(db,pid,view,presentation)
     elif tab=="biography":
         body=_presentation_biography_body(pid) if presentation else _research_biography_body(w)
     elif tab=="family":
@@ -542,7 +556,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
             return f"<div class='card'><h2>{esc(title)}</h2>"+("".join(f"<a class='result' href='/person/{x['id']}'>{esc(x['display_name'])}</a>" for x in rows) or "<p>None recorded.</p>")+"</div>"
         c=w["connections"];body="<div class='grid'>"+block("Parents",c["parents"])+block("Spouses",c["spouses"])+block("Children",c["children"])+block("Siblings",c["siblings"])+"</div>"
     elif tab=="sources":
-        body="<div class='card'><h2>Sources</h2>"+("".join(f"<div class='topic'><strong>{esc(source_label(x))}</strong></div>" for x in w["sources"]) or "<p>No linked sources.</p>")+"</div>"
+        body="<div class='card'><h2>Sources</h2><p>Sources are shown with the relevant story events in Presentation mode.</p></div>" if presentation else _research_sources_body(db,w,pid)
     elif tab=="media":
         body="<div class='card'><h2>Media</h2>"
         for m in w["media"]:

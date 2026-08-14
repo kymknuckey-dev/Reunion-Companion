@@ -8,8 +8,7 @@ def test_timeline_views(tmp_path,monkeypatch):
  monkeypatch.setenv("HOME",str(tmp_path));db=connect(tmp_path/"x.sqlite3");seed(db);set_presentation_mode(True)
  for view in ("story","research","data"):
   p=render_get(db,"/person/1",{"tab":"timeline","view":view})
-  assert "View event →" in p and "ffd-inline-link" in p and "Open event workspace" not in p
-  assert f"/event/1?view={view}" in p
+  assert "Life Timeline" in p and "View event →" not in p
  db.close()
 def test_event_return(tmp_path,monkeypatch):
  monkeypatch.setenv("HOME",str(tmp_path));db=connect(tmp_path/"x.sqlite3");seed(db);set_presentation_mode(True)

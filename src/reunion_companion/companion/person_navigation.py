@@ -8,7 +8,6 @@ PRESENTATION_ITEMS = [
     ("biography", "Biography"),
     ("family", "Family"),
     ("media", "Media"),
-    ("sources", "Sources"),
     ("ask", "Ask about the Family"),
     ("publish", "Publish"),
 ]

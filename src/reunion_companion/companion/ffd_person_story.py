@@ -104,7 +104,6 @@ def person_story_body(db,w,presentation=True):
 <div class='ffd-milestone-type'>{esc(e['event_type'])}</div>
 <div class='ffd-milestone-title'>{detail or 'Recorded event'}</div>
 {f"<p>{esc(note)}</p>" if note else ""}
-<a class='ffd-inline-link' href='/event/{e["id"]}'>View event →</a>
 </div>"""
     if not mh:mh="<p class='meta'>No dated milestones are currently available.</p>"
     immediate=[r for r in family if r[0]==0]

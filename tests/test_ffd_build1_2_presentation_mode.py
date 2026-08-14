@@ -57,7 +57,11 @@ def test_person_tabs_are_simpler(tmp_path,monkeypatch):
     set_presentation_mode(True)
     page=render_get(db,"/person/1",{})
     assert "Overview" in page and "Timeline" in page and "Biography" in page
-    assert "Family" in page and "Media" in page and "Sources" in page and "Publish" in page
+    assert "Family" in page and "Media" in page and "Publish" in page
+    # Sources is no longer a Presentation navigation tab; source wording may
+    # still appear in secondary explanatory/action content.
+    from reunion_companion.companion.person_navigation import PRESENTATION_ITEMS
+    assert "Sources" not in [label for _,label in PRESENTATION_ITEMS]
     assert "Data Quality" not in page
     set_presentation_mode(False)
     page=render_get(db,"/person/1",{})
@@ -69,9 +73,9 @@ def test_timeline_intelligence_retained(tmp_path,monkeypatch):
     db=connect(tmp_path/"x.sqlite3");seed(db)
     set_presentation_mode(True)
     page=render_get(db,"/person/1",{"tab":"timeline","view":"story"})
-    assert "One event-driven timeline" in page
-    assert "Story" in page and "Research" in page and "Data" in page
-    assert "/event/1" in page
+    assert "Life Timeline" in page
+    assert "Research Timeline" not in page and "Data" not in page
+    assert "View event →" not in page
     db.close()
 
 def test_mode_does_not_modify_genealogy(tmp_path,monkeypatch):

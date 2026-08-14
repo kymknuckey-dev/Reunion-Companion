@@ -5,7 +5,7 @@ from reunion_companion.companion.beta3_publishing import publication_history
 from reunion_companion.companion.ffd_person_story import _events
 
 def test_presentation_navigation_order_and_publish_last():
-    assert [x[1] for x in PRESENTATION_ITEMS] == ["Overview","Interactive Family Chart","Timeline","Biography","Family","Media","Sources","Ask about the Family","Publish"]
+    assert [x[1] for x in PRESENTATION_ITEMS] == ["Overview","Interactive Family Chart","Timeline","Biography","Family","Media","Ask about the Family","Publish"]
 
 def test_research_navigation_order_and_publish_last():
     labels=[x[1] for x in RESEARCH_ITEMS]

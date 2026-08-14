@@ -35,7 +35,7 @@ def test_event_display_is_label_first_not_raw_link(tmp_path,monkeypatch):
     db,p=page(tmp_path,monkeypatch)
     assert "Key Life Events" in p
     assert "ffd-milestone-title" in p
-    assert "View event →" in p
+    assert "View event →" not in p
     db.close()
 
 def test_family_display_keeps_correct_relationships(tmp_path,monkeypatch):

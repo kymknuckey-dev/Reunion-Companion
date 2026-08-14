@@ -17,11 +17,12 @@ def test_three_timeline_personas_render(tmp_path,monkeypatch):
     story=render_get(db,"/person/1",{"tab":"timeline","view":"story"})
     research=render_get(db,"/person/1",{"tab":"timeline","view":"research"})
     data=render_get(db,"/person/1",{"tab":"timeline","view":"data"})
-    assert "One event-driven timeline" in story
-    assert "Mervyn Knuckey was born" in story
-    assert "Source 7 — Birth Certificate." in research
-    assert "GEDCOM Tag" in data
-    assert "/event/1" in story
+    # Build 3 collapses the old Story/Research/Data selector by mode.
+    for page in (story,research,data):
+        assert "Research Timeline" in page
+        assert "View event →" in page
+        assert "Source 7 — Birth Certificate." in page
+        assert "GEDCOM Tag" not in page
     db.close()
 
 def test_event_workspace_renders(tmp_path,monkeypatch):

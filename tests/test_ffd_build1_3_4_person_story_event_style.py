@@ -20,7 +20,7 @@ def test_key_life_events_content_and_layout_retained(tmp_path,monkeypatch):
     assert "24 SEP 1933" in p
     assert "Unley Private Hospital, Unley" in p
     assert "BD&amp;M b: 305A-239." in p
-    assert "View event →" in p
+    assert "View event →" not in p
     db.close()
 
 def test_style_override_matches_timeline_heading_hierarchy():
@@ -40,9 +40,8 @@ def test_timeline_markup_not_reworked(tmp_path,monkeypatch):
     db=connect(tmp_path/"x.sqlite3");seed(db);set_presentation_mode(True)
     p=render_get(db,"/person/1",{"tab":"timeline","view":"story"})
     assert "Life Timeline" in p
-    assert "Story" in p and "Research" in p and "Data" in p
-    assert "View event →" in p
-    assert "/event/1?view=story" in p
+    assert "Research Timeline" not in p and "Data" not in p
+    assert "View event →" not in p
     db.close()
 
 def test_event_workspace_navigation_retained(tmp_path,monkeypatch):

@@ -40,9 +40,9 @@ def test_timeline_intelligence_unchanged(tmp_path,monkeypatch):
     monkeypatch.setenv("HOME",str(tmp_path))
     db=connect(tmp_path/"x.sqlite3");seed(db)
     page=render_get(db,"/person/1",{"tab":"timeline","view":"story"})
-    assert "One event-driven timeline" in page
-    assert "Story" in page and "Research" in page and "Data" in page
-    assert "/event/1" in page
+    assert "Research Timeline" in page
+    assert "View event →" in page
+    assert "/event/1?view=research" in page
     db.close()
 
 def test_existing_top_level_routes_remain(tmp_path,monkeypatch):

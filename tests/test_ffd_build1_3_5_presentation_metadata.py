@@ -18,8 +18,8 @@ def test_sources_tab_uses_numbered_source_label(tmp_path,monkeypatch):
     monkeypatch.setenv("HOME",str(tmp_path))
     db=connect(tmp_path/"x.sqlite3");seed(db)
     set_presentation_mode(True)
-    p=render_get(db,"/person/1",{"tab":"sources"})
-    assert "Source 7" in p
+    p=render_get(db,"/person/1",{"tab":"timeline","view":"story"})
+    assert "Source [1]" in p
     assert "Birth Certificate" in p
     db.close()
 
@@ -64,7 +64,7 @@ def test_timeline_and_event_navigation_retained(tmp_path,monkeypatch):
     db=connect(tmp_path/"x.sqlite3");seed(db)
     set_presentation_mode(True)
     timeline=render_get(db,"/person/1",{"tab":"timeline","view":"story"})
-    assert "View event →" in timeline
+    assert "View event →" not in timeline
     event=render_get(db,"/event/1",{"view":"story"})
     assert "← Timeline" in event
     db.close()
