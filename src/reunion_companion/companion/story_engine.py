@@ -5,6 +5,9 @@ from .timeline_engine import intelligent_timeline
 def clean_text(s):
     return re.sub(r"\s+"," ",s or "").strip()
 
+def preserve_note_text(s):
+    return (s or "").replace("\r\n","\n").replace("\r","\n").strip()
+
 def story_sections(db,pid):
     p=db.execute("SELECT * FROM people WHERE id=?",(pid,)).fetchone()
     events=db.execute("SELECT * FROM events WHERE person_id=? AND event_type<>'Changed' ORDER BY id",(pid,)).fetchall()
@@ -38,11 +41,11 @@ def story_sections(db,pid):
             elif e["date_text"] or e["place_text"]:
                 b=[e["event_type"]]+[x for x in (e["date_text"],e["place_text"],e["value_text"]) if x and x!="Y"]
                 sentences.append(" — ".join(clean_text(x) for x in b)+".")
-        if sentences:sections.append((chapter," ".join(sentences)))
+        if sentences:sections.append((chapter,("\n" if chapter=="Education & Working Life" else " ").join(sentences)))
 
     # Typed notes are retained as authored source material, not rewritten.
     for n in notes:
-        txt=clean_text(n["text"])
+        txt=preserve_note_text(n["text"])
         if not txt:continue
         label=n["note_type"] or n["gedcom_tag"] or "Note"
         sections.append((label,txt))

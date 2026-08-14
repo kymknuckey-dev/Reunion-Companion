@@ -34,7 +34,8 @@ def chart_text(db,husband_id,wife_id,generations=3):
         dates=[]
         if r["birth"]:dates.append("b. "+r["birth"])
         if r["death"]:dates.append("d. "+r["death"])
-        L.append(prefix+r["name"]+(" — "+" · ".join(dates) if dates else ""))
+        sp = " & " + " & ".join(x["name"] for x in r.get("spouses",[])) if r.get("spouses") else ""
+        L.append(prefix+r["name"]+sp+(" — "+" · ".join(dates) if dates else ""))
     return "\n".join(L)
 
 def chart_html(db,husband_id,wife_id,generations=3):
@@ -53,7 +54,9 @@ def chart_html(db,husband_id,wife_id,generations=3):
         dates=[]
         if r["birth"]:dates.append("b. "+r["birth"])
         if r["death"]:dates.append("d. "+r["death"])
-        P.append(f"<div class='tree-row level-{min(r['level'],8)}'><strong>{esc(r['name'])}</strong>"
+        spouse_names=" & ".join(x["name"] for x in r.get("spouses",[]))
+        couple=r["name"] + ((" & "+spouse_names) if spouse_names else "")
+        P.append(f"<div class='tree-row level-{min(r['level'],8)}'><strong>{esc(couple)}</strong>"
                  + (f"<span>{esc(' · '.join(dates))}</span>" if dates else "") + "</div>")
     P.append("</div></section>")
     return "".join(P)

@@ -153,8 +153,10 @@ def descendant_rows(db,pid,generations=4):
         p=person(db,cur)
         if not p:return
         dates=life_dates(db,cur)
+        spouses=relationship_connections(db,cur)["spouses"]
         rows.append({"id":cur,"name":p["display_name"],"level":level,
-                     "birth":dates["birth"],"death":dates["death"]})
+                     "birth":dates["birth"],"death":dates["death"],
+                     "spouses":[{"id":sp["id"],"name":sp["display_name"]} for sp in spouses]})
         if level==generations:return
         for ch in relationship_connections(db,cur)["children"]:
             walk(ch["id"],level+1,path|{cur})

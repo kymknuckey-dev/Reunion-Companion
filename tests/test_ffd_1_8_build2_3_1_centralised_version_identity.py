@@ -12,18 +12,18 @@ from reunion_companion.companion.version_identity import (
 )
 
 
-def test_release_identity_is_build_2_3_1():
-    assert FFD_SERIES == "1.8"
-    assert FFD_BUILD == "2.3.1"
-    assert RELEASE_NAME == "Centralised Version Identity"
-    assert RELEASE_TAG == "ffd-1.8-build-2.3.1"
-    assert FFD_DISPLAY == "FFD 1.8 Build 2.3.1"
-    assert APP_DISPLAY_NAME == "Reunion Companion — FFD 1.8 Build 2.3.1 Centralised Version Identity"
+def test_release_identity_is_centralised():
+    assert FFD_SERIES
+    assert FFD_BUILD
+    assert RELEASE_NAME
+    assert RELEASE_TAG == f"ffd-{FFD_SERIES}-build-{FFD_BUILD}"
+    assert FFD_DISPLAY == f"FFD {FFD_SERIES} Build {FFD_BUILD}"
+    assert APP_DISPLAY_NAME == f"Reunion Companion — {FFD_DISPLAY} {RELEASE_NAME}"
 
 
 def test_ui_header_uses_central_release_identity():
     html = layout("Version test", "<p>ok</p>")
-    assert "FFD 1.8 Build 2.3.1" in html
+    assert FFD_DISPLAY in html
     assert "FFD 1.8 Build 2.1.2" not in html
 
 

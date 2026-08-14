@@ -11,6 +11,7 @@ from .family_publication_model import (
     spouse_families,resolve_family_for_people,person_media
 )
 from .story_engine import story_sections
+from .publication_narrative import publication_narrative, preserve_note_layout
 from .descendant_chart import chart_html
 from .document_renderer import render_pdf,copy_original,pdf_render_capability
 
@@ -34,6 +35,9 @@ a { color:inherit; }
 .title-page { min-height:245mm; display:flex; flex-direction:column; justify-content:center; text-align:center; }
 .title-page h1 { border:0; font-size:30pt; }
 .chapter { break-before:page; }
+.couple-title { text-align:center; }
+.couple-title span { display:block; }
+.couple-title .couple-and { font-size:.55em; font-weight:normal; margin:.08em 0; }
 .chapter-kicker { text-align:center; text-transform:uppercase; letter-spacing:.12em; font-size:8.5pt; }
 .overview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:3mm; margin:4mm 0; }
 .overview-item { border:1px solid #ccc; padding:3mm; }
@@ -46,7 +50,32 @@ a { color:inherit; }
   max-height:70vh;
   object-fit:contain;
 }
-.person-summary { border:1px solid #bbb; padding:4mm; margin:3mm 0 5mm; }
+.media-card {
+  border:0;
+  padding:0;
+  margin:5mm 0 7mm;
+  text-align:center;
+  break-inside:avoid;
+}
+.media-card img {
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:100%;
+  margin:0 auto 2mm;
+  object-fit:contain;
+}
+.media-card.media-landscape img,
+.media-card.media-portrait img,
+.media-card.media-square img,
+.media-card.hero img {
+  width:auto;
+  max-width:100%;
+  height:auto;
+  max-height:none;
+}
+.media-card figcaption { margin-top:2mm; }
+.person-summary { border:0; padding:0; margin:3mm 0 5mm; }
 .person-topic { margin:0 0 4mm; break-inside:avoid; }
 .person-topic:last-child { margin-bottom:0; }
 .person-topic h3 { margin:0 0 1mm; font-size:11pt; }
@@ -66,7 +95,7 @@ a { color:inherit; }
   margin:0;
   white-space:pre-wrap;
 }
-.document-card { border:1px solid #ccc; padding:4mm; margin:3mm 0; break-inside:avoid; }
+.document-card { border:0; padding:0; margin:4mm 0; break-inside:avoid; }
 .document-card .preview { text-align:center; margin:2mm 0; }
 .document-card .preview img {
   width:auto;
@@ -205,6 +234,21 @@ def _caption(m,person_name=None,family_names=None,page=None):
         bits.append(f"Page {page}")
     return " — ".join(bits)
 
+def _image_presentation(path):
+    """Return publication orientation/size hints without cropping the source image."""
+    try:
+        from PIL import Image
+        with Image.open(Path(path).expanduser()) as im:
+            w,h=im.size
+    except Exception:
+        return "square", False
+    ratio=(w / h) if h else 1.0
+    shape="landscape" if ratio>=1.15 else "portrait" if ratio<=0.87 else "square"
+    # Roughly one A4 content width at 150 dpi.  Small originals should not be
+    # forced to full page width and visibly upscaled.
+    small=max(w,h)<900
+    return shape, small
+
 def _image_block(m,hero=False,output_html=None):
     uri=_embedded_image_uri(m["file_path"])
     if not uri:return None
@@ -216,9 +260,12 @@ def _image_block(m,hero=False,output_html=None):
     else:
         image=f"<img src='{esc(uri)}' alt='{esc(title)}'>"
         open_link=""
-    extra=" hero" if hero else ""
+    shape,small=_image_presentation(m["file_path"])
+    classes=["media-card",f"media-{shape}"]
+    if hero: classes.append("hero")
+    if small: classes.append("media-small")
     return (
-        f"<figure class='media-card{extra}'>"
+        f"<figure class='{" ".join(classes)}'>"
         f"{image}<figcaption class='caption'>{esc(title)}</figcaption>{open_link}"
         f"</figure>"
     )
@@ -309,15 +356,22 @@ def _person_section(db,pid,output_html,anchor=None):
 
     P.append("<h2>Life &amp; Notes</h2>")
     sections=story_sections(db,pid)
-    if sections:
-        for heading,text in sections:
-            P.append(
-                f"<section class='life-topic keep'>"
-                f"<h3>{esc(heading)}</h3>"
-                f"<div class='note'>{esc(text)}</div>"
-                f"</section>"
-            )
-    else:
+    note_meta=db.execute("SELECT note_type,gedcom_tag FROM notes WHERE person_id=? ORDER BY id",(pid,)).fetchall()
+    note_labels={(n["note_type"] or n["gedcom_tag"] or "Note") for n in note_meta}
+    structured=[(h,t) for h,t in sections if h not in note_labels]
+    for heading,text in structured:
+        P.append(f"<section class='life-topic keep'><h3>{esc(heading)}</h3><div class='note'>{esc(text)}</div></section>")
+    note_rows=db.execute("SELECT text FROM notes WHERE person_id=? ORDER BY id",(pid,)).fetchall()
+    notes=[preserve_note_layout(n["text"]) for n in note_rows if preserve_note_layout(n["text"])]
+    facts=[]
+    for e in person_events(db,pid):
+        bits=[e["event_type"],e["date_text"],e["place_text"],e["value_text"]]
+        fact=" — ".join(str(x) for x in bits if x and x!="Y")
+        if fact:facts.append(fact)
+    narrative=publication_narrative(p["display_name"],notes,facts) if notes else ""
+    if narrative:
+        P.append(f"<section class='life-topic publication-narrative'><h3>Publication Narrative</h3><div class='note'>{esc(narrative)}</div></section>")
+    elif not structured:
         P.append("<p>No narrative notes are recorded.</p>")
 
     ordered=(("birth","Birth Documents"),("death","Death & Burial Documents"),
@@ -342,21 +396,16 @@ def _family_title(db,family_id):
     h,w=family_partners(db,family_id)
     return " and ".join(x["display_name"] for x in (h,w) if x) or f"Family {family_id}"
 
+def _family_title_html(db,family_id):
+    h,w=family_partners(db,family_id)
+    if h and w:
+        return f"<span class='couple-name'>{esc(h['display_name'])}</span><span class='couple-and'>and</span><span class='couple-name'>{esc(w['display_name'])}</span>"
+    return esc(_family_title(db,family_id))
+
 def _family_intro(db,family_id,anchor=None):
     o=family_overview(db,family_id);f=o["family"];h=o["husband"];w=o["wife"]
-    title=_family_title(db,family_id)
     aid=f" id='{esc(anchor)}'" if anchor else ""
-    P=[f"<section{aid}><div class='chapter-kicker'>Family Chapter</div><h1>{esc(title)}</h1>",
-       "<div class='overview-grid'>"]
-    stats=[
-      ("Marriage",f["marriage_date"] or "Not recorded"),
-      ("Children",o["children_count"]),("Known descendants",o["known_descendants"]),
-      ("Media",o["media_count"]),("Sources",o["source_count"]),
-    ]
-    for label,val in stats:
-        P.append(f"<div class='overview-item'><span>{esc(label)}</span><strong>{esc(val)}</strong></div>")
-    P.append("</div>")
-    if f["marriage_place"]:P.append(f"<p><strong>Marriage place</strong><br>{esc(f['marriage_place'])}</p>")
+    P=[f"<section{aid}><div class='chapter-kicker'>Family Chapter</div><h1 class='couple-title'>{_family_title_html(db,family_id)}</h1>"]
     if h and w:
         intro=f"{h['display_name']} and {w['display_name']}"
         if f["marriage_date"]:intro+=f" were married on {f['marriage_date']}"
@@ -364,10 +413,11 @@ def _family_intro(db,family_id,anchor=None):
         if f["marriage_place"]:intro+=f" at {f['marriage_place']}"
         intro+="."
         if o["children_count"]:
-            intro+=f" The imported Reunion family records {o['children_count']} child{'ren' if o['children_count']!=1 else ''}."
-        P.append(f"<h2>About This Family</h2><p>{esc(intro)}</p>")
+            intro+=f" They had {o['children_count']} child{'ren' if o['children_count']!=1 else ''}."
+        P.append(f"<h2>About the Family</h2><p>{esc(intro)}</p>")
     P.append("</section>")
     return "".join(P)
+
 
 def _chapter_sources(db,family_id,h,w):
     src={}
