@@ -22,6 +22,7 @@ from .beta3_publishing import (
     publication_history,family_chapter_html,family_chapter_pdf,
     descendant_chart,person_output,open_output,remove_history,delete_publication
 )
+from .version_identity import APP_DISPLAY_NAME, FFD_DISPLAY
 
 CSS="""
 :root{--bg:#f4f4f1;--card:#fff;--text:#222;--muted:#6c6c68;--line:#d9d9d4;--good:#246b3a;--warn:#945d00;--accent:#36424e;--soft:#eef0ed;--danger:#9c2f2f}
@@ -282,7 +283,7 @@ def layout(title,body):
 </nav>{family_selector_html()}
 <form method='post' action='/presentation/toggle' style='margin-left:auto'>
 <button class='secondary'>{mode_label}</button></form>
-<span class='meta'>FFD 1.8 Build 2.1.2</span></header>
+<span class='meta'>{FFD_DISPLAY}</span></header>
 <div class='presentation-banner'><strong>{mode_status}</strong></div>
 <main>{body}</main></body></html>"""
 
@@ -940,7 +941,7 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
 
     server=ThreadingHTTPServer((host,port),Handler)
     url=f"http://{host}:{port}/"
-    print("Reunion Companion — FFD 1.8 Build 2.1 Family File Management & Import Safety UX")
+    print(APP_DISPLAY_NAME)
     print(f"Database: {db_path}")
     print(f"Open: {url}")
     print("Press Ctrl-C to stop.")
