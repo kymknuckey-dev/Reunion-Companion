@@ -6,7 +6,7 @@ from pathlib import Path
 import argparse, importlib.util, json, platform, shutil, subprocess, sys
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--model',default='gemma3:4b'); ap.add_argument('--write-config',action='store_true'); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument('--model',default='gemma3:4b'); ap.add_argument('--write-config',action='store_true'); ap.add_argument('--install-commands',action='store_true'); a=ap.parse_args()
     checks={
       'macOS': platform.system()=='Darwin',
       'Apple Silicon': platform.machine()=='arm64',
@@ -24,11 +24,21 @@ def main():
     cfg=Path.home()/'.reunion-companion'/'config.json'
     if a.write_config:
       cfg.parent.mkdir(parents=True,exist_ok=True); cfg.write_text(json.dumps({'llm_provider':'ollama','llm_model':a.model},indent=2)+'\n')
+    if a.install_commands:
+      try:
+        from install_companion_commands import install
+        repo=Path(__file__).resolve().parents[1]
+        install(repo,Path.home()/'.local'/'bin',True)
+        checks['companion commands installed']=True
+      except Exception as exc:
+        checks['companion commands installed']=False
+        print('Command installation:',exc)
     for k,v in checks.items():print(('✓' if v else '✗'),k)
     print('Config:',cfg)
     if not checks['Pillow publishing runtime'] or not checks['PyMuPDF publishing runtime']:
       print('Next: install the project dependencies with: python -m pip install -e .')
     if not checks['ollama']: print('Next: install Ollama, then run: ollama pull',a.model)
     elif not model: print('Next: ollama pull',a.model)
+    if not a.install_commands: print('Optional: add --install-commands to install companion and companion-update')
     return 0 if all(checks.values()) else 2
 if __name__=='__main__': raise SystemExit(main())
