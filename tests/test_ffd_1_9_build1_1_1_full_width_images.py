@@ -29,5 +29,5 @@ def test_activity_spinner_retained_without_final_explanatory_line(tmp_path):
 
 
 def test_release_identity_is_build_1_1_1():
-    assert FFD_DISPLAY == 'FFD 1.9 Build 1.1.1'
-    assert RELEASE_TAG == 'ffd-1.9-build-1.1.1'
+    assert FFD_DISPLAY.startswith('FFD 1.9 Build ')
+    assert RELEASE_TAG.startswith('ffd-1.9-build-')

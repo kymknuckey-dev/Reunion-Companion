@@ -160,7 +160,7 @@ pre.note{white-space:pre-wrap;font-family:inherit}
   border-radius:7px;background:#fff;color:var(--text);text-decoration:none
 }
 .ffd-nav-pill:hover{background:var(--soft);text-decoration:none}
-.ffd-story-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ffd-story-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:24px}
 .ffd-action-card{
   display:block;padding:14px 15px;border:1px solid var(--line);
   border-radius:10px;background:#fff;color:var(--text);text-decoration:none
@@ -276,7 +276,7 @@ def layout(title,body):
 .ffd-person-nav a.active{{background:var(--accent);color:#fff;border-color:var(--accent)}}
 .media-row{{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text)}}
 .media-row span span{{display:block;margin-top:4px}}.media-thumb{{width:84px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--line);flex:0 0 auto}}.media-file-icon{{display:flex;align-items:center;justify-content:center;background:var(--soft);font-size:12px;color:var(--muted)}}
-.person-heading{{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}}.person-portrait{{width:180px;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}}.publication-actions{{display:flex;gap:8px;margin-top:7px}}.inline-form{{display:inline-block}}
+.person-heading{{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}}.person-portrait{{width:180px;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}}.publication-actions{{display:flex;gap:8px;margin-top:7px}}.inline-form{{display:inline-block}}
 </style></head><body>
 <header><strong><a href='/' style='margin-right:0'>Reunion Companion</a></strong><nav>
 <a href='/'>Home</a><a href='/search'>Search</a><a href='/reports'>Reports</a>
@@ -498,11 +498,22 @@ def _person_portrait(w):
         if m.get("exists_on_disk") and _media_is_image(m): return m
     return None
 
-def person_page(db,pid,tab="overview",view="story"):
+def _research_biography_body(w):
+    body="<div class='card'><h2>Biography / Original Narrative Material</h2><p class='meta'>Research mode preserves the original Reunion note structure.</p>"
+    for n in w["notes"]:
+        body+=f"<div class='topic'><h3>{esc(n.get('note_type') or n.get('gedcom_tag') or 'Note')}</h3><pre class='note'>{esc(n.get('text') or '')}</pre></div>"
+    if not w["notes"]: body+="<p>No narrative notes.</p>"
+    body+="</div>"
+    return body
+
+def _presentation_biography_body(pid):
+    return f"""<div class='card'><h2>Biography</h2><div id='person-biography'><div class='narrative-loading'><span class='rc-bio-spinner' aria-hidden='true'></span><strong>Preparing biography…</strong><p class='meta'>Companion is preparing a grounded narrative from the recorded family history.</p></div></div><style>@keyframes rc-bio-spin{{to{{transform:rotate(360deg)}}}}.rc-bio-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-bio-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.biography-prose{{white-space:pre-wrap;font-family:Georgia,"Times New Roman",serif;font-size:19px;line-height:1.65}}</style><script>fetch('/person-narrative/{pid}').then(r=>r.text()).then(t=>{{document.getElementById('person-biography').innerHTML=t;}}).catch(()=>{{document.getElementById('person-biography').innerHTML='<p>Biography could not be prepared.</p>';}});</script></div>"""
+
+def person_page(db,pid,tab="overview",view="story",presentation_override=None):
     w=person_workspace(db,pid)
     if not w:
         return layout("Not found","<div class='card'><h1>Person not found</h1></div>")
-    p=w["person"];presentation=presentation_mode_enabled()
+    p=w["person"];presentation=presentation_mode_enabled() if presentation_override is None else bool(presentation_override)
     try:
         from datetime import datetime
         db.execute("CREATE TABLE IF NOT EXISTS companion_recent_people(person_id INTEGER PRIMARY KEY, viewed_at TEXT NOT NULL)")
@@ -525,10 +536,7 @@ def person_page(db,pid,tab="overview",view="story"):
         body="<div class='ffd-story-actions'>"+action_cards(pid,False)+"</div><div class='card'><h2>Person Overview</h2>"+("".join(bits) or "<p>No summary facts.</p>")+"</div>"
     elif tab=="timeline": body=timeline_tab(db,pid,view)
     elif tab=="biography":
-        body="<div class='card'><h2>Biography / Narrative Material</h2>"
-        for n in w["notes"]: body+=f"<div class='topic'><h3>{esc(n.get('note_type') or n.get('gedcom_tag') or 'Note')}</h3><pre class='note'>{esc(n.get('text') or '')}</pre></div>"
-        if not w["notes"]:body+="<p>No narrative notes.</p>"
-        body+="</div>"
+        body=_presentation_biography_body(pid) if presentation else _research_biography_body(w)
     elif tab=="family":
         def block(title,rows):
             return f"<div class='card'><h2>{esc(title)}</h2>"+("".join(f"<a class='result' href='/person/{x['id']}'>{esc(x['display_name'])}</a>" for x in rows) or "<p>None recorded.</p>")+"</div>"
@@ -709,6 +717,11 @@ def render_get(db,path,query=None):
     if path.startswith("/family-chart/"):
         pid=int(path.rsplit("/",1)[1])
         return layout("Interactive Family Chart",nav_html(pid,presentation_mode_enabled(),"family-chart")+family_chart_body(db,pid,query.get("offset","0")))
+    if path.startswith("/person-narrative/"):
+        pid=int(path.rsplit("/",1)[1])
+        from .person_narrative import person_narrative
+        result=person_narrative(db,pid)
+        return "<div class='biography-prose'>"+esc(result.get("narrative") or "No biographical material is recorded.")+"</div>"
     if path.startswith("/person/"):
         tab=query.get("tab","overview")
         state=query.get("offset","0") if tab=="family-chart" else query.get("view","story")
