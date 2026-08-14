@@ -7,9 +7,9 @@ itself to a user.
 from __future__ import annotations
 
 FFD_SERIES = "1.9"
-FFD_BUILD = "3"
-RELEASE_NAME = "Timeline & Sources Presentation/Research Separation"
-RELEASE_TAG = "ffd-1.9-build-3"
+FFD_BUILD = "4.0.1"
+RELEASE_NAME = "Relationship-Aware Family Coverage"
+RELEASE_TAG = f"ffd-{FFD_SERIES}-build-{FFD_BUILD}"
 FFD_DISPLAY = f"FFD {FFD_SERIES} Build {FFD_BUILD}"
 APP_DISPLAY_NAME = f"Reunion Companion — {FFD_DISPLAY} {RELEASE_NAME}"
 
