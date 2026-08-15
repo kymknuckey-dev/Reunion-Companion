@@ -6,8 +6,8 @@ import argparse, plistlib, shutil, subprocess
 
 APP_NAME="Reunion Companion"
 APP_VERSION="2.0"
-APP_BUILD="5"
-APP_RELEASE="FFD 2.0 Build 5 — Installation & First-Run Experience"
+APP_BUILD="6"
+APP_RELEASE="FFD 2.0 Build 6.0.2 — Backend Ownership Hardening"
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
 
@@ -22,14 +22,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     var backendLog: FileHandle?
     var window: NSWindow?
     var webView: WKWebView?
+    var reunionFilesURL: URL?
+    var reunionFilesAccessActive = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        configureMenu(); NSApp.setActivationPolicy(.regular); createWindow(); NSApp.activate(ignoringOtherApps: true); startOrAttach()
+        configureMenu(); NSApp.setActivationPolicy(.regular); restoreReunionFilesAccess(); createWindow(); NSApp.activate(ignoringOtherApps: true); startOrAttach()
     }
     func configureMenu() {
         let mainMenu=NSMenu(); let appItem=NSMenuItem(); let appMenu=NSMenu()
         appMenu.addItem(withTitle:"About Reunion Companion",action:#selector(showAbout),keyEquivalent:"")
         appMenu.addItem(withTitle:"Diagnostics…",action:#selector(showDiagnostics),keyEquivalent:"")
+        appMenu.addItem(withTitle:"Reunion Files Access…",action:#selector(chooseReunionFilesAccess),keyEquivalent:"")
         appMenu.addItem(NSMenuItem.separator()); appMenu.addItem(withTitle:"Quit Reunion Companion",action:#selector(NSApplication.terminate(_:)),keyEquivalent:"q")
         appItem.submenu=appMenu; mainMenu.addItem(appItem)
         let editItem=NSMenuItem(); let editMenu=NSMenu(title:"Edit")
@@ -50,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let web=WKWebView(frame:w.contentView?.bounds ?? frame,configuration:WKWebViewConfiguration()); web.autoresizingMask=[.width,.height]; web.navigationDelegate=self
         w.contentView=web; window=w; webView=web; w.makeKeyAndOrderFront(nil)
     }
-    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 Build 5 — Installation & First-Run Experience\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
+    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 Build 6.0.2 — Backend Ownership Hardening\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
     @objc func reloadCurrentPage() { webView?.reload() }
     @objc func showDiagnostics() {
         let backendState = isCompanionReady() ? "Running" : "Not responding"
@@ -60,9 +63,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let runtimePath = Bundle.main.resourceURL?.appendingPathComponent("Runtime/ReunionCompanionBackend/ReunionCompanionBackend").path ?? "(not found)"
         let model = ProcessInfo.processInfo.environment["REUNION_LLM_MODEL"] ?? configuredModel()
         let modelDisplay = model.isEmpty ? "(automatic)" : model
+        let reunionFilesDisplay = reunionFilesURL?.path ?? "(not granted)"
         let a=NSAlert(); a.messageText="Reunion Companion Diagnostics"
-        a.informativeText="Application: FFD 2.0 Build 5 — Installation & First-Run Experience\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nLog: \(logPath)"
+        a.informativeText="Application: FFD 2.0 Build 6.0.2 — Backend Ownership Hardening\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
         a.addButton(withTitle:"OK"); a.runModal()
+    }
+    func reunionBookmarkURL() -> URL {
+        let dir=FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".reunion-companion",isDirectory:true)
+        try? FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true)
+        return dir.appendingPathComponent("reunion-files.bookmark")
+    }
+    func restoreReunionFilesAccess() {
+        let bookmarkURL=reunionBookmarkURL()
+        guard let data=try? Data(contentsOf:bookmarkURL) else { return }
+        var stale=false
+        guard let url=try? URL(resolvingBookmarkData:data,options:[.withSecurityScope],relativeTo:nil,bookmarkDataIsStale:&stale) else { return }
+        if stale, let refreshed=try? url.bookmarkData(options:[.withSecurityScope],includingResourceValuesForKeys:nil,relativeTo:nil) { try? refreshed.write(to:bookmarkURL,options:.atomic) }
+        if url.startAccessingSecurityScopedResource() { reunionFilesURL=url; reunionFilesAccessActive=true }
+    }
+    @objc func chooseReunionFilesAccess() {
+        let panel=NSOpenPanel(); panel.title="Choose your Reunion Files folder"; panel.message="Select the folder containing Reunion media and related files."; panel.prompt="Grant Access"
+        panel.canChooseFiles=false; panel.canChooseDirectories=true; panel.allowsMultipleSelection=false
+        if let current=reunionFilesURL { panel.directoryURL=current }
+        guard panel.runModal() == .OK, let url=panel.url else { return }
+        if reunionFilesAccessActive { reunionFilesURL?.stopAccessingSecurityScopedResource(); reunionFilesAccessActive=false }
+        guard url.startAccessingSecurityScopedResource() else {
+            let a=NSAlert(); a.alertStyle = .warning; a.messageText="Reunion Files access was not granted"; a.informativeText="Choose the Reunion Files folder again."; a.runModal(); return
+        }
+        reunionFilesURL=url; reunionFilesAccessActive=true
+        do {
+            let data=try url.bookmarkData(options:[.withSecurityScope],includingResourceValuesForKeys:nil,relativeTo:nil)
+            try data.write(to:reunionBookmarkURL(),options:.atomic)
+            let a=NSAlert(); a.messageText="Reunion Files access granted"; a.informativeText=url.path+"\n\nReunion Companion will restore this access on future launches."; a.addButton(withTitle:"OK"); a.runModal()
+            webView?.reload()
+        } catch {
+            let a=NSAlert(); a.alertStyle = .warning; a.messageText="Reunion Files access could not be saved"; a.informativeText=error.localizedDescription; a.runModal()
+        }
     }
     func configuredModel() -> String {
         let url=FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".reunion-companion/config.json")
@@ -134,6 +170,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func startOrAttach() {
         DispatchQueue.global(qos:.userInitiated).async {
             if self.isCompanionReady() { DispatchQueue.main.async { self.finishStartup() }; return }
+            if self.port8765Occupied() { DispatchQueue.main.async { self.showStartupError("Port 8765 is already in use by an incompatible or unidentified service. Reunion Companion will not attach to it.\n\nQuit the older Reunion Companion or other service using port 8765, then reopen this application.") }; return }
             do { try self.launchBackend() } catch { DispatchQueue.main.async { self.showStartupError("Companion could not be started.\n\n\(error.localizedDescription)") }; return }
             for _ in 0..<80 { if self.isCompanionReady() { DispatchQueue.main.async { self.finishStartup() }; return }; if let p=self.backend,!p.isRunning { break }; Thread.sleep(forTimeInterval:0.25) }
             DispatchQueue.main.async { self.showStartupError("Companion did not become ready on 127.0.0.1:8765.\n\nSee ~/Library/Logs/Reunion Companion/backend.log") }
@@ -149,9 +186,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let p=Process(); p.executableURL=executable; p.arguments=["--no-browser"]; p.currentDirectoryURL=resources
         p.environment=ProcessInfo.processInfo.environment; p.standardOutput=log; p.standardError=log; try p.run(); backend=p
     }
+    func backendIdentity()->[String:Any]? {
+        guard let url=URL(string:"http://127.0.0.1:8765/runtime/identity") else { return nil }
+        let sem=DispatchSemaphore(value:0); var identity:[String:Any]?; var request=URLRequest(url:url); request.timeoutInterval=1.0
+        URLSession.shared.dataTask(with:request) { data,response,error in
+            defer { sem.signal() }
+            guard error==nil,let data=data,let http=response as? HTTPURLResponse,http.statusCode==200,let obj=try? JSONSerialization.jsonObject(with:data) as? [String:Any] else { return }
+            identity=obj
+        }.resume(); _=sem.wait(timeout:.now()+1.5); return identity
+    }
     func isCompanionReady()->Bool {
-        let sem=DispatchSemaphore(value:0); var ready=false; var request=URLRequest(url:companionURL); request.timeoutInterval=1.0
-        URLSession.shared.dataTask(with:request) { data,response,error in defer { sem.signal() }; guard error==nil,let data=data,let http=response as? HTTPURLResponse,(200..<500).contains(http.statusCode),let body=String(data:data,encoding:.utf8) else { return }; ready=body.localizedCaseInsensitiveContains("Reunion Companion") }.resume(); _=sem.wait(timeout:.now()+1.5); return ready
+        guard let identity=backendIdentity() else { return false }
+        return identity["service"] as? String == "reunion-companion-backend" && identity["protocol"] as? Int == 1 && identity["application"] as? String == "FFD 2.0 Build 6.0.2" && identity["engine_baseline"] as? String == "FFD 1.9 RC1"
+    }
+    func port8765Occupied()->Bool {
+        guard let url=URL(string:"http://127.0.0.1:8765/") else { return false }
+        let sem=DispatchSemaphore(value:0); var occupied=false; var request=URLRequest(url:url); request.timeoutInterval=0.5
+        URLSession.shared.dataTask(with:request) { _,response,error in occupied = (response != nil || error == nil); sem.signal() }.resume(); _=sem.wait(timeout:.now()+0.75); return occupied
     }
     func loadCompanion() { guard let web=webView else { return }; web.load(URLRequest(url:companionURL)); showMainWindow() }
     func webView(_ webView:WKWebView,decidePolicyFor navigationAction:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
@@ -159,7 +210,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         if local { decisionHandler(.allow) } else { NSWorkspace.shared.open(url); decisionHandler(.cancel) }
     }
     func showStartupError(_ text:String) { let a=NSAlert(); a.alertStyle = .critical; a.messageText="Reunion Companion could not start"; a.informativeText=text; a.addButton(withTitle:"Quit"); a.runModal(); NSApp.terminate(nil) }
-    func applicationWillTerminate(_ notification:Notification) { if let p=backend,p.isRunning { p.terminate(); Thread.sleep(forTimeInterval:0.2); if p.isRunning { p.interrupt() } }; try? backendLog?.close() }
+    func applicationWillTerminate(_ notification:Notification) { if let p=backend,p.isRunning { p.terminate(); Thread.sleep(forTimeInterval:0.2); if p.isRunning { p.interrupt() } }; try? backendLog?.close(); if reunionFilesAccessActive { reunionFilesURL?.stopAccessingSecurityScopedResource() } }
 }
 let app=NSApplication.shared; let delegate=AppDelegate(); app.delegate=delegate; app.run()
 '''

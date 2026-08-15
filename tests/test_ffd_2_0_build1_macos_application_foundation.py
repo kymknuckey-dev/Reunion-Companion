@@ -32,7 +32,7 @@ def test_launcher_preserves_hidden_backend_lifecycle_contract():
 def test_launcher_preserves_readiness_and_diagnostics_contract():
     src=m.swift_source(Path("/tmp/Reunion Companion"))
     assert "isCompanionReady()" in src
-    assert 'localizedCaseInsensitiveContains("Reunion Companion")' in src
+    assert '/runtime/identity' in src
     assert "backend.log" in src
     assert "About Reunion Companion" in src
 

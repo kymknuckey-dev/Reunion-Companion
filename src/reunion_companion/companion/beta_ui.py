@@ -800,6 +800,10 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
 
         def do_GET(self):
             u=urlparse(self.path)
+            if u.path=="/runtime/identity":
+                from reunion_companion.app_identity import APP_RELEASE_DISPLAY, APP_RELEASE_NAME, ENGINE_BASELINE
+                self.send_json({"service":"reunion-companion-backend","protocol":1,"application":APP_RELEASE_DISPLAY,"release_name":APP_RELEASE_NAME,"engine_baseline":ENGINE_BASELINE})
+                return
             if u.path=="/setup/status":
                 db=connect(db_path)
                 try:
@@ -816,7 +820,11 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     row=db.execute("SELECT file_path FROM media WHERE id=?",(mid,)).fetchone()
                     fp=Path(row["file_path"]).expanduser() if row else None
                     if not fp or not fp.exists() or not fp.is_file(): self.send_error(404);return
-                    data=fp.read_bytes();self.send_response(200);self.send_header("Content-Type",mimetypes.guess_type(str(fp))[0] or "application/octet-stream");self.send_header("Content-Length",str(len(data)));self.end_headers();self.wfile.write(data);return
+                    try:
+                        data=fp.read_bytes()
+                    except PermissionError:
+                        self.send_error(403,"Reunion media folder access has not been granted");return
+                    self.send_response(200);self.send_header("Content-Type",mimetypes.guess_type(str(fp))[0] or "application/octet-stream");self.send_header("Content-Length",str(len(data)));self.end_headers();self.wfile.write(data);return
                 finally: db.close()
             db=connect(db_path)
             try:

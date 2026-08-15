@@ -4,8 +4,8 @@ MODULE=Path(__file__).parents[1]/"macos_app"/"build_app.py"
 spec=importlib.util.spec_from_file_location("b5",MODULE); m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.exec_module(m)
 
 def test_identity_preserves_frozen_engine():
-    assert m.APP_BUILD=="5"
-    assert m.APP_RELEASE=="FFD 2.0 Build 5 — Installation & First-Run Experience"
+    assert int(m.APP_BUILD)>=5
+    assert m.APP_RELEASE.startswith("FFD 2.0 Build ")
     assert m.ENGINE_BASELINE=="FFD 1.9 RC1"
 
 def test_first_run_is_native_and_only_needed_without_genealogy_data():
@@ -48,9 +48,10 @@ def test_install_cleans_duplicate_discoverable_dist_app():
 
 def test_diagnostics_and_shell_identity():
     s=m.swift_source(Path("/tmp/x"))
-    assert "FFD 2.0 Build 5 — Installation & First-Run Experience" in s
+    assert "Reunion Companion Diagnostics" in s
+    assert "Genealogy Engine: FFD 1.9 RC1" in s
     assert "Runtime: \\(runtimePath)" in s
     from reunion_companion import app_identity
-    assert app_identity.APP_DISPLAY=="FFD 2.0 Build 5"
-    assert app_identity.APP_RELEASE_NAME=="Installation & First-Run Experience"
+    assert int(app_identity.APP_BUILD)>=5
+    assert app_identity.APP_RELEASE_NAME
     assert app_identity.ENGINE_BASELINE=="FFD 1.9 RC1"
