@@ -6,14 +6,15 @@ import argparse, plistlib, shutil, subprocess
 
 APP_NAME="Reunion Companion"
 APP_VERSION="2.0"
-APP_BUILD="4"
-APP_RELEASE="FFD 2.0 Build 4 — Self-Contained Application Runtime"
+APP_BUILD="5"
+APP_RELEASE="FFD 2.0 Build 5 — Installation & First-Run Experience"
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
 
 SWIFT_TEMPLATE=r'''import AppKit
 import Foundation
 import WebKit
+import UniformTypeIdentifiers
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate {
     let companionURL = URL(string: "http://127.0.0.1:8765/")!
@@ -49,7 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let web=WKWebView(frame:w.contentView?.bounds ?? frame,configuration:WKWebViewConfiguration()); web.autoresizingMask=[.width,.height]; web.navigationDelegate=self
         w.contentView=web; window=w; webView=web; w.makeKeyAndOrderFront(nil)
     }
-    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 Build 4 — Self-Contained Application Runtime\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
+    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 Build 5 — Installation & First-Run Experience\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
     @objc func reloadCurrentPage() { webView?.reload() }
     @objc func showDiagnostics() {
         let backendState = isCompanionReady() ? "Running" : "Not responding"
@@ -60,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let model = ProcessInfo.processInfo.environment["REUNION_LLM_MODEL"] ?? configuredModel()
         let modelDisplay = model.isEmpty ? "(automatic)" : model
         let a=NSAlert(); a.messageText="Reunion Companion Diagnostics"
-        a.informativeText="Application: FFD 2.0 Build 4 — Self-Contained Application Runtime\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nLog: \(logPath)"
+        a.informativeText="Application: FFD 2.0 Build 5 — Installation & First-Run Experience\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nLog: \(logPath)"
         a.addButton(withTitle:"OK"); a.runModal()
     }
     func configuredModel() -> String {
@@ -74,14 +75,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         URLSession.shared.dataTask(with:req) { _,response,error in if error == nil, let http=response as? HTTPURLResponse, (200..<500).contains(http.statusCode) { ready=true }; sem.signal() }.resume()
         _=sem.wait(timeout:.now()+1.0); return ready
     }
+    func ollamaModelStatus() -> String {
+        guard let url=URL(string:"http://127.0.0.1:11434/api/tags") else { return "⚠ AI model status unavailable" }
+        let sem=DispatchSemaphore(value:0); var status="⚠ No local AI model detected"
+        var req=URLRequest(url:url); req.timeoutInterval=1.0
+        URLSession.shared.dataTask(with:req) { data,response,error in
+            defer { sem.signal() }
+            guard error == nil, let data=data, let obj=try? JSONSerialization.jsonObject(with:data) as? [String:Any], let models=obj["models"] as? [[String:Any]] else { return }
+            let names=models.compactMap { $0["name"] as? String }
+            let configured=ProcessInfo.processInfo.environment["REUNION_LLM_MODEL"] ?? self.configuredModel()
+            if !configured.isEmpty { status=names.contains(configured) ? "✓ AI model available: \(configured)" : "⚠ Configured AI model is not installed: \(configured)" }
+            else if !names.isEmpty { status="✓ AI model available (automatic selection)" }
+        }.resume(); _=sem.wait(timeout:.now()+1.5); return status
+    }
+    func setupRequired() -> Bool {
+        guard let url=URL(string:"http://127.0.0.1:8765/setup/status") else { return false }
+        let sem=DispatchSemaphore(value:0); var required=false; var req=URLRequest(url:url); req.timeoutInterval=1.0
+        URLSession.shared.dataTask(with:req) { data,response,error in
+            defer { sem.signal() }
+            guard error == nil, let data=data, let obj=try? JSONSerialization.jsonObject(with:data) as? [String:Any] else { return }
+            required=(obj["needs_genealogy_data"] as? Bool) ?? false
+        }.resume(); _=sem.wait(timeout:.now()+1.5); return required
+    }
+    func finishStartup() {
+        if setupRequired() { showFirstRun() } else { loadCompanion() }
+    }
+    func showFirstRun() {
+        let ollama = isOllamaReady() ? "✓ Ollama detected" : "⚠ Ollama not detected — Biography AI will be unavailable until Ollama is installed and running"
+        let a=NSAlert(); a.messageText="Welcome to Reunion Companion"
+        a.informativeText="✓ Application runtime ready\n✓ User data area ready\n✓ Companion database ready\n\(ollama)\n\nGenealogy data\nNo family history has been loaded yet.\n\nYou can import a Reunion GEDCOM now or continue to Companion and import later."
+        a.addButton(withTitle:"Import GEDCOM…"); a.addButton(withTitle:"Continue")
+        if a.runModal() == .alertFirstButtonReturn { chooseAndImportGEDCOM() } else { loadCompanion() }
+    }
+    func chooseAndImportGEDCOM() {
+        let panel=NSOpenPanel(); panel.title="Import Reunion GEDCOM"; panel.prompt="Import"; panel.canChooseFiles=true; panel.canChooseDirectories=false; panel.allowsMultipleSelection=false
+        panel.allowedContentTypes=[UTType(filenameExtension:"ged") ?? .data, UTType(filenameExtension:"gedcom") ?? .data]
+        guard panel.runModal() == .OK, let file=panel.url else { showFirstRun(); return }
+        importGEDCOM(file)
+    }
+    func importGEDCOM(_ file:URL) {
+        guard let url=URL(string:"http://127.0.0.1:8765/setup/import") else { loadCompanion(); return }
+        var req=URLRequest(url:url); req.httpMethod="POST"; req.timeoutInterval=120
+        var components=URLComponents(); components.queryItems=[URLQueryItem(name:"path",value:file.path)]
+        req.httpBody=components.percentEncodedQuery?.data(using:.utf8); req.setValue("application/x-www-form-urlencoded",forHTTPHeaderField:"Content-Type")
+        let sem=DispatchSemaphore(value:0); var ok=false; var message="Import failed."
+        URLSession.shared.dataTask(with:req) { data,response,error in
+            defer { sem.signal() }
+            if let http=response as? HTTPURLResponse, (200..<300).contains(http.statusCode) { ok=true }
+            if let data=data, let obj=try? JSONSerialization.jsonObject(with:data) as? [String:Any], let text=obj["message"] as? String { message=text }
+            if let error=error { message=error.localizedDescription }
+        }.resume(); _=sem.wait(timeout:.now()+125)
+        if ok { let a=NSAlert(); a.messageText="GEDCOM imported"; a.informativeText=message; a.addButton(withTitle:"Continue"); a.runModal(); loadCompanion() }
+        else { let a=NSAlert(); a.alertStyle = .warning; a.messageText="GEDCOM could not be imported"; a.informativeText=message; a.addButton(withTitle:"Choose Another…"); a.addButton(withTitle:"Continue Without Importing"); if a.runModal() == .alertFirstButtonReturn { chooseAndImportGEDCOM() } else { loadCompanion() } }
+    }
     @objc func showMainWindow() { window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps:true) }
     func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows flag:Bool)->Bool { showMainWindow(); return true }
     func windowShouldClose(_ sender:NSWindow)->Bool { sender.orderOut(nil); return false }
     func startOrAttach() {
         DispatchQueue.global(qos:.userInitiated).async {
-            if self.isCompanionReady() { DispatchQueue.main.async { self.loadCompanion() }; return }
+            if self.isCompanionReady() { DispatchQueue.main.async { self.finishStartup() }; return }
             do { try self.launchBackend() } catch { DispatchQueue.main.async { self.showStartupError("Companion could not be started.\n\n\(error.localizedDescription)") }; return }
-            for _ in 0..<80 { if self.isCompanionReady() { DispatchQueue.main.async { self.loadCompanion() }; return }; if let p=self.backend,!p.isRunning { break }; Thread.sleep(forTimeInterval:0.25) }
+            for _ in 0..<80 { if self.isCompanionReady() { DispatchQueue.main.async { self.finishStartup() }; return }; if let p=self.backend,!p.isRunning { break }; Thread.sleep(forTimeInterval:0.25) }
             DispatchQueue.main.async { self.showStartupError("Companion did not become ready on 127.0.0.1:8765.\n\nSee ~/Library/Logs/Reunion Companion/backend.log") }
         }
     }
@@ -155,7 +209,7 @@ def build(plan:BuildPlan)->Path:
     macos=app/"Contents"/"MacOS"; resources=app/"Contents"/"Resources"; macos.mkdir(parents=True); resources.mkdir(parents=True)
     source=resources/"ReunionCompanionLauncher.swift"; source.write_text(swift_source(plan.repo))
     with (app/"Contents"/"Info.plist").open("wb") as f: plistlib.dump(info_plist(),f)
-    subprocess.run([plan.swiftc,str(source),"-framework","AppKit","-framework","WebKit","-o",str(macos/APP_NAME)],check=True)
+    subprocess.run([plan.swiftc,str(source),"-framework","AppKit","-framework","WebKit","-framework","UniformTypeIdentifiers","-o",str(macos/APP_NAME)],check=True)
     build_embedded_runtime(plan,resources)
     return app
 
@@ -169,5 +223,8 @@ def main():
     if args.plan:
         print(f"Release: {APP_RELEASE}\nEngine: {ENGINE_BASELINE}\nRepository: {plan.repo}\nBuild Python: {plan.python}\nRuntime: embedded PyInstaller onedir backend\nOutput: {plan.output}\nswiftc: {plan.swiftc or '(not found)'}"); return
     app=build(plan); print(f"Built: {app}")
-    if args.install: print(f"Installed: {install(app,args.install)}")
+    if args.install:
+        installed=install(app,args.install); print(f"Installed: {installed}")
+        if app.resolve()!=installed.resolve() and app.exists():
+            shutil.rmtree(app); print(f"Cleaned build artifact: {app}")
 if __name__=="__main__": main()

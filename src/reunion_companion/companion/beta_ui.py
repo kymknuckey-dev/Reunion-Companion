@@ -3,6 +3,7 @@ from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from urllib.parse import urlparse,parse_qs,quote
 from pathlib import Path
 import html,re,webbrowser,threading,traceback,mimetypes
+import json
 
 from .database import connect
 from .beta_ui_service import search_people,person_workspace,family_workspace,family_choices_for_person
@@ -789,8 +790,23 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             self.end_headers()
             self.wfile.write(data)
 
+        def send_json(self,obj,status=200):
+            data=json.dumps(obj).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type","application/json; charset=utf-8")
+            self.send_header("Content-Length",str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
         def do_GET(self):
             u=urlparse(self.path)
+            if u.path=="/setup/status":
+                db=connect(db_path)
+                try:
+                    people=db.execute("SELECT COUNT(*) FROM people").fetchone()[0]
+                    self.send_json({"needs_genealogy_data":people==0,"people":people,"database":str(db_path)})
+                finally: db.close()
+                return
             q={k:v[0] for k,v in parse_qs(u.query).items()}
             if u.path.startswith("/media-file/"):
                 db=connect(db_path)
@@ -815,6 +831,24 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
         def do_POST(self):
             form=_post_form(self)
             u=urlparse(self.path)
+
+            if u.path=="/setup/import":
+                incoming=(form.get("path") or "").strip()
+                try:
+                    if not incoming: raise ValueError("No GEDCOM file was selected.")
+                    from .safe_refresh import safe_refresh
+                    result=safe_refresh(db_path,incoming)
+                    db=connect(db_path)
+                    try:
+                        ff=active_family_file(db)
+                        if not ff: raise ValueError("Companion could not establish a Family File.")
+                        record_workspace_import(db,ff["id"],incoming)
+                        count=db.execute("SELECT COUNT(*) FROM people").fetchone()[0]
+                    finally: db.close()
+                    self.send_json({"status":"success","message":f"Imported {count} people. Reunion Companion is ready."})
+                except Exception as e:
+                    traceback.print_exc(); self.send_json({"status":"error","message":f"{type(e).__name__}: {e}"},400)
+                return
 
             if u.path=="/presentation/toggle":
                 toggle_presentation_mode()
