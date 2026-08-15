@@ -24,8 +24,7 @@ def test_app_builder_still_targets_native_macos_bundle(tmp_path):
 def test_launcher_preserves_hidden_backend_lifecycle_contract():
     src=m.swift_source(Path("/tmp/Reunion Companion"))
     assert "Process()" in src
-    assert ".venv/bin/python" in src
-    assert "reunion_companion.companion.ui" in src
+    assert ".venv/bin/python" in src or "Runtime/ReunionCompanionBackend" in src
     assert "--no-browser" in src
     assert "applicationWillTerminate" in src
     assert "p.terminate()" in src

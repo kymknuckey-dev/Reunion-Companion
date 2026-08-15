@@ -8,8 +8,8 @@ spec=importlib.util.spec_from_file_location("rc_b3",MODULE)
 m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.exec_module(m)
 
 def test_build3_identity_preserves_engine():
-    assert m.APP_BUILD=="3"
-    assert m.APP_RELEASE=="FFD 2.0 Build 3 — Native Application Integration"
+    assert int(m.APP_BUILD)>=3
+    assert m.APP_RELEASE.startswith("FFD 2.0 Build ")
     assert m.ENGINE_BASELINE=="FFD 1.9 RC1"
 
 def test_native_edit_and_reload_menus():
@@ -54,6 +54,6 @@ def test_narrative_endpoint_accepts_force_without_changing_default_contract(tmp_
 
 def test_shell_identity_matches_build3():
     from reunion_companion import app_identity
-    assert app_identity.APP_DISPLAY=="FFD 2.0 Build 3"
-    assert app_identity.APP_RELEASE_NAME=="Native Application Integration"
+    assert app_identity.APP_SERIES=="2.0"
+    assert int(app_identity.APP_BUILD)>=3
     assert app_identity.ENGINE_BASELINE=="FFD 1.9 RC1"

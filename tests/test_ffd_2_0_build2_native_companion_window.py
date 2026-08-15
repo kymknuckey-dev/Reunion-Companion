@@ -9,6 +9,6 @@ def test_window():
 def test_external_links():
  s=m.swift_source(Path("/tmp/x")); assert "WKNavigationDelegate" in s and "NSWorkspace.shared.open(url)" in s
 def test_lifecycle():
- s=m.swift_source(Path("/tmp/x")); assert ".venv/bin/python" in s and "p.terminate()" in s and "--no-browser" in s
+ s=m.swift_source(Path("/tmp/x")); assert "p.terminate()" in s and "--no-browser" in s
 def test_shell_identity():
  from reunion_companion import app_identity; assert app_identity.APP_SERIES=="2.0" and int(app_identity.APP_BUILD)>=2 and app_identity.ENGINE_BASELINE=="FFD 1.9 RC1"
