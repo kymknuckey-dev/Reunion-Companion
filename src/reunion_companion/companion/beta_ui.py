@@ -500,7 +500,7 @@ def _research_biography_body(w):
     return body
 
 def _presentation_biography_body(pid):
-    return f"""<div class='card'><h2>Biography</h2><div id='person-biography'><div class='narrative-loading'><span class='rc-bio-spinner' aria-hidden='true'></span><strong>Preparing biography…</strong><p class='meta'>Companion is preparing a grounded narrative from the recorded family history.</p></div></div><style>@keyframes rc-bio-spin{{to{{transform:rotate(360deg)}}}}.rc-bio-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-bio-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.biography-prose{{white-space:pre-wrap;font-family:Georgia,"Times New Roman",serif;font-size:19px;line-height:1.65}}</style><script>fetch('/person-narrative/{pid}').then(r=>r.text()).then(t=>{{document.getElementById('person-biography').innerHTML=t;}}).catch(()=>{{document.getElementById('person-biography').innerHTML='<p>Biography could not be prepared.</p>';}});</script></div>"""
+    return f"""<div class='card'><h2>Biography</h2><p><button class='button secondary' type='button' id='regenerate-biography'>Regenerate Biography</button></p><div id='person-biography'><div class='narrative-loading'><span class='rc-bio-spinner' aria-hidden='true'></span><strong>Preparing biography…</strong><p class='meta'>Companion is preparing a grounded narrative from the recorded family history.</p></div></div><style>@keyframes rc-bio-spin{{to{{transform:rotate(360deg)}}}}.rc-bio-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-bio-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.biography-prose{{white-space:pre-wrap;font-family:Georgia,"Times New Roman",serif;font-size:19px;line-height:1.65}}</style><script>const bio=document.getElementById('person-biography');function loadBiography(force=false){{if(force)bio.innerHTML='<div class="narrative-loading"><span class="rc-bio-spinner" aria-hidden="true"></span><strong>Regenerating biography…</strong><p class="meta">Companion is rebuilding the grounded narrative from the current recorded family history.</p></div>';fetch('/person-narrative/{pid}'+(force?'?force=1':'')).then(r=>r.text()).then(t=>{{bio.innerHTML=t;}}).catch(()=>{{bio.innerHTML='<p>Biography could not be prepared.</p>';}});}}document.getElementById('regenerate-biography').addEventListener('click',()=>loadBiography(true));loadBiography(false);</script></div>"""
 
 def _research_sources_body(db,w,pid):
     """Render person sources with deterministic attachment/usage context."""
@@ -734,7 +734,8 @@ def render_get(db,path,query=None):
     if path.startswith("/person-narrative/"):
         pid=int(path.rsplit("/",1)[1])
         from .person_narrative import person_narrative
-        result=person_narrative(db,pid)
+        force=str(query.get("force","")).casefold() in {"1","true","yes"}
+        result=person_narrative(db,pid,force=force)
         return "<div class='biography-prose'>"+esc(result.get("narrative") or "No biographical material is recorded.")+"</div>"
     if path.startswith("/person/"):
         tab=query.get("tab","overview")
