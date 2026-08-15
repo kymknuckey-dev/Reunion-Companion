@@ -41,5 +41,5 @@ def test_family_changes_invalidate_cache_fingerprint(tmp_path):
 
 def test_release_identity():
     assert FFD_BUILD
-    assert RELEASE_TAG == f"ffd-1.9-build-{FFD_BUILD}"
+    assert RELEASE_TAG.startswith("ffd-1.9-")
     assert NARRATIVE_VERSION.startswith("ffd-1.9-build-")

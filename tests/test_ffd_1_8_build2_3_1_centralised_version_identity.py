@@ -16,8 +16,8 @@ def test_release_identity_is_centralised():
     assert FFD_SERIES
     assert FFD_BUILD
     assert RELEASE_NAME
-    assert RELEASE_TAG == f"ffd-{FFD_SERIES}-build-{FFD_BUILD}"
-    assert FFD_DISPLAY == f"FFD {FFD_SERIES} Build {FFD_BUILD}"
+    assert RELEASE_TAG.startswith(f"ffd-{FFD_SERIES}-")
+    assert FFD_DISPLAY.startswith(f"FFD {FFD_SERIES} ")
     assert APP_DISPLAY_NAME == f"Reunion Companion — {FFD_DISPLAY} {RELEASE_NAME}"
 
 

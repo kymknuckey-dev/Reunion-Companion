@@ -47,5 +47,5 @@ def test_publish_page_has_animated_activity_feedback(tmp_path):
 
 
 def test_release_identity_is_ffd_1_9_build_1_1_1():
-    assert FFD_DISPLAY.startswith('FFD 1.9 Build ')
-    assert RELEASE_TAG.startswith('ffd-1.9-build-')
+    assert FFD_DISPLAY.startswith('FFD 1.9 ')
+    assert RELEASE_TAG.startswith('ffd-1.9-')

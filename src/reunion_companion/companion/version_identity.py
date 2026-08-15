@@ -7,10 +7,10 @@ itself to a user.
 from __future__ import annotations
 
 FFD_SERIES = "1.9"
-FFD_BUILD = "4.0.1"
-RELEASE_NAME = "Relationship-Aware Family Coverage"
-RELEASE_TAG = f"ffd-{FFD_SERIES}-build-{FFD_BUILD}"
-FFD_DISPLAY = f"FFD {FFD_SERIES} Build {FFD_BUILD}"
+FFD_BUILD = "RC1"
+RELEASE_NAME = "Consolidation Release Candidate"
+RELEASE_TAG = "ffd-1.9-rc1"
+FFD_DISPLAY = "FFD 1.9 RC1"
 APP_DISPLAY_NAME = f"Reunion Companion — {FFD_DISPLAY} {RELEASE_NAME}"
 
 

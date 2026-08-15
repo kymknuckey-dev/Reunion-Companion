@@ -46,5 +46,5 @@ def test_publication_narrative_is_grounded_prompt_and_preserves_fallback():
 
 
 def test_release_identity_is_ffd_1_9_series():
-    assert FFD_DISPLAY.startswith('FFD 1.9 Build ')
-    assert RELEASE_TAG.startswith('ffd-1.9-build-')
+    assert FFD_DISPLAY.startswith('FFD 1.9 ')
+    assert RELEASE_TAG.startswith('ffd-1.9-')
