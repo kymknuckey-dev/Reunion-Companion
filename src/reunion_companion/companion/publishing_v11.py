@@ -16,6 +16,7 @@ from .publication_narrative import preserve_note_layout
 from .person_narrative import cached_person_narrative
 from .descendant_chart import chart_html
 from .document_renderer import render_pdf,copy_original,pdf_render_capability
+from .branding import publishing_mark_uri
 
 PRO_CSS=r"""
 @page {
@@ -36,6 +37,8 @@ a { color:inherit; }
 .keep { break-inside:avoid; }
 .title-page { min-height:245mm; display:flex; flex-direction:column; justify-content:center; text-align:center; }
 .title-page h1 { border:0; font-size:30pt; }
+.publishing-mark { width:38mm; height:38mm; object-fit:contain; margin:0 auto 7mm; display:block; }
+.title-page .chapter-kicker { color:#60743a; }
 .chapter { break-before:page; }
 .couple-title { text-align:center; }
 .couple-title span { display:block; }
@@ -779,7 +782,7 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME):
     P=["<!doctype html><html><head><meta charset='utf-8'>",
        f"<title>{esc(start['display_name'])} — Family History</title>",
        f"<style>{CSS}{PRO_CSS}{theme_css(theme)}</style></head><body>",
-       "<section class='title-page'><div class='chapter-kicker'>Reunion Companion</div>",
+       f"<section class='title-page'><img class='publishing-mark' src='{publishing_mark_uri()}' alt='Reunion Companion'><div class='chapter-kicker'>Reunion Companion</div>",
        "<h1>Family History</h1>",
        f"<h2>{esc(start['display_name'])} and Descendants</h2>",
        f"<p>{len(fam_ids)} family chapter{'s' if len(fam_ids)!=1 else ''}</p>",

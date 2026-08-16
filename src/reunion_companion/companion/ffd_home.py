@@ -1,5 +1,6 @@
 from __future__ import annotations
 import html
+from .branding import home_brand_html
 
 def esc(v):
     return html.escape("" if v is None else str(v))
@@ -103,6 +104,7 @@ def home_body(db,quality_counts,presentation=False):
 
     return f"""
 <section class='ffd-hero'>
+  {home_brand_html()}
   <div class='ffd-eyebrow'>Welcome to your family history</div>
   <h1>{esc(family_title)}</h1>
   {credit_html}

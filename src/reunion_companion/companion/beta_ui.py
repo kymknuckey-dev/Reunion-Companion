@@ -24,13 +24,15 @@ from .beta3_publishing import (
     descendant_chart,person_output,open_output,remove_history,delete_publication
 )
 from .version_identity import APP_DISPLAY_NAME, FFD_DISPLAY
+from .branding import header_brand_html
 
 CSS="""
-:root{--bg:#f4f4f1;--card:#fff;--text:#222;--muted:#6c6c68;--line:#d9d9d4;--good:#246b3a;--warn:#945d00;--accent:#36424e;--soft:#eef0ed;--danger:#9c2f2f}
+:root{--bg:#f4f4f1;--card:#fff;--text:#222;--muted:#6c6c68;--line:#d9d9d4;--good:#246b3a;--warn:#945d00;--accent:#294a67;--brand-navy:#102b4e;--brand-olive:#60743a;--soft:#eef0ed;--danger:#9c2f2f}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text)}
 header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:14px 22px;display:flex;gap:20px;align-items:center}
 header a{color:var(--text);text-decoration:none;margin-right:13px}
+.rc-brand{display:flex;align-items:center;gap:9px;margin-right:0!important;color:var(--brand-navy)!important;font-weight:700;white-space:nowrap}.rc-header-mark{width:40px;height:40px;object-fit:contain;display:block}.rc-brand span{font-size:18px}.presentation .rc-header-mark{width:46px;height:46px}.presentation .rc-brand span{font-size:20px}
 main{max-width:1200px;margin:24px auto;padding:0 22px 60px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
@@ -89,6 +91,7 @@ pre.note{white-space:pre-wrap;font-family:inherit}
   font-family:Georgia,"Times New Roman",serif;
   font-size:42px;font-weight:500;line-height:1.08;margin:5px 0 10px
 }
+.rc-home-brand{display:flex;align-items:center;gap:24px;margin:0 0 28px}.rc-home-icon{width:150px;height:150px;object-fit:contain;flex:0 0 auto}.rc-home-name{font-family:Georgia,"Times New Roman",serif;font-size:34px;font-weight:600;color:var(--brand-navy);line-height:1.05}.rc-home-tagline{margin-top:9px;color:var(--brand-olive);font-size:18px;font-weight:650}.presentation .rc-home-icon{width:180px;height:180px}.presentation .rc-home-name{font-size:42px}.presentation .rc-home-tagline{font-size:21px}@media(max-width:650px){.rc-home-brand{align-items:flex-start;gap:16px}.rc-home-icon{width:105px;height:105px}.rc-home-name{font-size:27px}.rc-home-tagline{font-size:15px}}
 .ffd-eyebrow{
   color:var(--muted);font-size:13px;font-weight:650;
   letter-spacing:.07em;text-transform:uppercase
@@ -279,7 +282,7 @@ def layout(title,body):
 .media-row span span{{display:block;margin-top:4px}}.media-thumb{{width:84px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--line);flex:0 0 auto}}.media-file-icon{{display:flex;align-items:center;justify-content:center;background:var(--soft);font-size:12px;color:var(--muted)}}
 .person-heading{{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}}.person-portrait{{width:180px;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}}.publication-actions{{display:flex;gap:8px;margin-top:7px}}.inline-form{{display:inline-block}}
 </style></head><body>
-<header><strong><a href='/' style='margin-right:0'>Reunion Companion</a></strong><nav>
+<header>{header_brand_html()}<nav>
 <a href='/'>Home</a><a href='/search'>Search</a><a href='/reports'>Reports</a>
 </nav>{family_selector_html()}
 <form method='post' action='/presentation/toggle' style='margin-left:auto'>

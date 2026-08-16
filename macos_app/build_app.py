@@ -10,7 +10,7 @@ import os
 APP_NAME="Reunion Companion"
 APP_VERSION="2.0"
 APP_BUILD="6"
-APP_RELEASE="FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair"
+APP_RELEASE="FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2"
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
 
@@ -56,7 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let web=WKWebView(frame:w.contentView?.bounds ?? frame,configuration:WKWebViewConfiguration()); web.autoresizingMask=[.width,.height]; web.navigationDelegate=self
         w.contentView=web; window=w; webView=web; w.makeKeyAndOrderFront(nil)
     }
-    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
+    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
     @objc func reloadCurrentPage() { webView?.reload() }
     @objc func showDiagnostics() {
         let backendState = isCompanionReady() ? "Running" : "Not responding"
@@ -68,7 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let modelDisplay = model.isEmpty ? "(automatic)" : model
         let reunionFilesDisplay = reunionFilesURL?.path ?? "(not granted)"
         let a=NSAlert(); a.messageText="Reunion Companion Diagnostics"
-        a.informativeText="Application: FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
+        a.informativeText="Application: FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
         a.addButton(withTitle:"OK"); a.runModal()
     }
     func reunionBookmarkURL() -> URL {
@@ -235,7 +235,27 @@ def make_plan(repo:Path|None=None,output:Path|None=None)->BuildPlan:
 def swift_source(repo:Path)->str: return SWIFT_TEMPLATE
 
 def info_plist()->dict:
-    return {"CFBundleDevelopmentRegion":"en","CFBundleDisplayName":APP_NAME,"CFBundleExecutable":APP_NAME,"CFBundleIdentifier":BUNDLE_ID,"CFBundleInfoDictionaryVersion":"6.0","CFBundleName":APP_NAME,"CFBundlePackageType":"APPL","CFBundleShortVersionString":APP_VERSION,"CFBundleVersion":APP_BUILD,"LSMinimumSystemVersion":"13.0","NSHighResolutionCapable":True,"LSApplicationCategoryType":"public.app-category.reference"}
+    return {"CFBundleDevelopmentRegion":"en","CFBundleDisplayName":APP_NAME,"CFBundleExecutable":APP_NAME,"CFBundleIdentifier":BUNDLE_ID,"CFBundleInfoDictionaryVersion":"6.0","CFBundleName":APP_NAME,"CFBundlePackageType":"APPL","CFBundleShortVersionString":APP_VERSION,"CFBundleVersion":APP_BUILD,"CFBundleIconFile":"ReunionCompanion.icns","CFBundleIconName":"ReunionCompanion","LSMinimumSystemVersion":"13.0","NSHighResolutionCapable":True,"LSApplicationCategoryType":"public.app-category.reference"}
+
+def build_app_icon(plan:BuildPlan,resources:Path)->Path:
+    master=plan.repo/"macos_app/assets/AppIconMaster.png"
+    if not master.is_file():
+        raise SystemExit(f"Application icon master missing: {master}")
+    sips=shutil.which("sips")
+    iconutil=shutil.which("iconutil")
+    if not sips or not iconutil:
+        raise SystemExit("sips and iconutil are required to build the macOS application icon.")
+    iconset=plan.repo/"build/macos-icon/ReunionCompanion.iconset"
+    if iconset.parent.exists(): shutil.rmtree(iconset.parent)
+    iconset.mkdir(parents=True)
+    sizes=[(16,"icon_16x16.png"),(32,"icon_16x16@2x.png"),(32,"icon_32x32.png"),(64,"icon_32x32@2x.png"),(128,"icon_128x128.png"),(256,"icon_128x128@2x.png"),(256,"icon_256x256.png"),(512,"icon_256x256@2x.png"),(512,"icon_512x512.png"),(1024,"icon_512x512@2x.png")]
+    for size,name in sizes:
+        subprocess.run([sips,"-z",str(size),str(size),str(master),"--out",str(iconset/name)],check=True,stdout=subprocess.DEVNULL)
+    out=resources/"ReunionCompanion.icns"
+    subprocess.run([iconutil,"-c","icns",str(iconset),"-o",str(out)],check=True)
+    if not out.is_file() or out.stat().st_size < 1024:
+        raise SystemExit(f"macOS application icon was not produced correctly: {out}")
+    return out
 
 def pyinstaller_available(python:Path)->bool:
     return subprocess.run([str(python),"-c","import PyInstaller"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
@@ -243,6 +263,7 @@ def pyinstaller_available(python:Path)->bool:
 def validate(plan:BuildPlan)->list[str]:
     problems=[]
     if not plan.repo.joinpath("src/reunion_companion/companion/ui.py").exists(): problems.append("Repository does not contain the Companion UI module.")
+    if not plan.repo.joinpath("macos_app/assets/AppIconMaster.png").exists(): problems.append("RC1.0.5 application icon master was not found.")
     if not plan.python.exists(): problems.append(f"Build virtual environment Python not found: {plan.python}")
     if plan.python.exists() and not pyinstaller_available(plan.python): problems.append("PyInstaller is required to build the self-contained runtime. Run: python -m pip install PyInstaller")
     if plan.python.exists():
@@ -685,6 +706,7 @@ if getattr(sys, "frozen", False) and sys.platform == "darwin":
         "--collect-all","cssselect2",
         "--collect-all","pyphen",
         "--collect-all","fontTools",
+        "--collect-data","reunion_companion",
         "--distpath",str(dist),
         "--workpath",str(work),
         "--specpath",str(spec),
@@ -710,6 +732,7 @@ def build(plan:BuildPlan)->Path:
     macos=app/"Contents"/"MacOS"; resources=app/"Contents"/"Resources"; macos.mkdir(parents=True); resources.mkdir(parents=True)
     source=resources/"ReunionCompanionLauncher.swift"; source.write_text(swift_source(plan.repo))
     with (app/"Contents"/"Info.plist").open("wb") as f: plistlib.dump(info_plist(),f)
+    build_app_icon(plan,resources)
     subprocess.run([plan.swiftc,str(source),"-framework","AppKit","-framework","WebKit","-framework","UniformTypeIdentifiers","-o",str(macos/APP_NAME)],check=True)
     build_embedded_runtime(plan,resources)
     return app

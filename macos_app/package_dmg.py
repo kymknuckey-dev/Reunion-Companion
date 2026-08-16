@@ -6,7 +6,7 @@ import argparse, plistlib, shutil, subprocess, tempfile
 
 APP_NAME="Reunion Companion"
 APP_BUILD="6"
-APP_RELEASE="FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair"
+APP_RELEASE="FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2"
 ENGINE_BASELINE="FFD 1.9 RC1"
 VOLUME_NAME="Reunion Companion"
 DMG_NAME="Reunion Companion.dmg"
@@ -38,6 +38,11 @@ def verify_app_identity(app:Path)->None:
     if plist.get('CFBundleDisplayName') != APP_NAME: raise SystemExit('Built application identity is not Reunion Companion.')
     if str(plist.get('CFBundleVersion')) != APP_BUILD:
         raise SystemExit(f"Built application is Build {plist.get('CFBundleVersion')}, expected Build {APP_BUILD}.")
+    if plist.get('CFBundleIconFile') != 'ReunionCompanion.icns':
+        raise SystemExit('Built application does not declare ReunionCompanion.icns as its bundle icon.')
+    icon=app/'Contents/Resources/ReunionCompanion.icns'
+    if not icon.is_file() or icon.stat().st_size < 1024:
+        raise SystemExit(f'Built application icon missing or invalid: {icon}')
     runtime=app/'Contents/Resources/Runtime/ReunionCompanionBackend/ReunionCompanionBackend'
     if not runtime.is_file(): raise SystemExit(f'Bundled runtime missing: {runtime}')
 
