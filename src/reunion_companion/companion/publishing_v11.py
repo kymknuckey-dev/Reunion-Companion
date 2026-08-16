@@ -821,7 +821,7 @@ def export_pdf_from_html(html_path,pdf_path=None):
         from weasyprint import HTML
     except Exception as e:
         raise RuntimeError(
-            "WeasyPrint is not installed. Install it in the Companion virtual environment to enable direct PDF export."
+            f"PDF publishing runtime could not be loaded: {type(e).__name__}: {e}"
         ) from e
     HTML(filename=str(html_path),base_url=str(html_path.parent)).write_pdf(str(pdf_path))
     return pdf_path

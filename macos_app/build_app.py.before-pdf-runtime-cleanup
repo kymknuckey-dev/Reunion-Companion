@@ -189,8 +189,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let p=Process(); p.executableURL=executable; p.arguments=["--no-browser"]; p.currentDirectoryURL=resources
         var env=ProcessInfo.processInfo.environment
         let runtimeRoot=resources.appendingPathComponent("Runtime/ReunionCompanionBackend")
-        let internalLibs=runtimeRoot.appendingPathComponent("_internal").path
+        let nativeLibs=runtimeRoot.appendingPathComponent("weasyprint-libs").path
         let fontconfigRoot=runtimeRoot.appendingPathComponent("fontconfig")
+        let existingDYLD=env["DYLD_LIBRARY_PATH"] ?? ""
+        env["DYLD_LIBRARY_PATH"]=nativeLibs + (existingDYLD.isEmpty ? "" : ":" + existingDYLD)
         env["FONTCONFIG_FILE"]=fontconfigRoot.appendingPathComponent("etc/fonts/fonts.conf").path
         env["FONTCONFIG_PATH"]=fontconfigRoot.appendingPathComponent("etc/fonts").path
         p.environment=env; p.standardOutput=log; p.standardError=log; try p.run(); backend=p
@@ -383,158 +385,6 @@ def bundle_weasyprint_native_libraries(frozen:Path)->Path:
     return libdir
 
 
-
-def add_weasyprint_compatibility_aliases(frozen:Path)->Path:
-    """Add cffi/WeasyPrint probe names to PyInstaller's native runtime.
-
-    Do not copy another Pango/GLib stack. PyInstaller already bundles and
-    rewrites these libraries under _internal; aliases must resolve to that
-    single native stack.
-    """
-    internal=frozen/"_internal"
-    if not internal.is_dir():
-        raise SystemExit(f"PyInstaller internal runtime not found: {internal}")
-
-    aliases = {
-        "libgobject-2.0-0": (
-            "libgobject-2.0.0.dylib",
-            "libgobject-2.0.dylib",
-        ),
-        "libglib-2.0-0": (
-            "libglib-2.0.0.dylib",
-            "libglib-2.0.dylib",
-        ),
-        "libgio-2.0-0": (
-            "libgio-2.0.0.dylib",
-            "libgio-2.0.dylib",
-        ),
-        "libpango-1.0-0": (
-            "libpango-1.0.0.dylib",
-            "libpango-1.0.dylib",
-        ),
-        "libpangocairo-1.0-0": (
-            "libpangocairo-1.0.0.dylib",
-            "libpangocairo-1.0.dylib",
-        ),
-        "libpangoft2-1.0-0": (
-            "libpangoft2-1.0.0.dylib",
-            "libpangoft2-1.0.dylib",
-        ),
-        "libfontconfig-1": (
-            "libfontconfig.1.dylib",
-            "libfontconfig.dylib",
-        ),
-        "libharfbuzz-0": (
-            "libharfbuzz.0.dylib",
-            "libharfbuzz.dylib",
-        ),
-        "libcairo-2": (
-            "libcairo.2.dylib",
-            "libcairo.dylib",
-        ),
-    }
-
-    for alias,candidates in aliases.items():
-        target=next((name for name in candidates if (internal/name).exists()),None)
-        if not target:
-            # Some optional Pango components may not be required by this
-            # particular PyInstaller/WeasyPrint build.
-            continue
-
-        link=internal/alias
-        if link.exists() or link.is_symlink():
-            link.unlink()
-        link.symlink_to(target)
-
-    return internal
-
-
-
-def normalize_weasyprint_harfbuzz(frozen:Path)->None:
-    """Ensure WeasyPrint uses a matched HarfBuzz core/subset pair.
-
-    PyInstaller/Pillow may expose Pillow's older private HarfBuzz as the
-    top-level libharfbuzz.0.dylib. WeasyPrint's subset library must instead
-    use the matching Homebrew HarfBuzz core collected for the PDF runtime.
-    Pillow's private PIL/.dylibs copy is left untouched.
-    """
-    internal=frozen/"_internal"
-    core=internal/"libharfbuzz.0.dylib"
-    subset=internal/"libharfbuzz-subset.0.dylib"
-
-    hb_prefix=Path(
-        subprocess.check_output(
-            ["brew","--prefix","harfbuzz"],
-            text=True,
-        ).strip()
-    )
-
-    source_core=hb_prefix/"lib"/"libharfbuzz.0.dylib"
-    source_subset=hb_prefix/"lib"/"libharfbuzz-subset.0.dylib"
-
-    if not source_core.is_file() or not source_subset.is_file():
-        raise SystemExit("Matched Homebrew HarfBuzz runtime was not found.")
-
-    # Remove PyInstaller's top-level symlink into Pillow's private older
-    # HarfBuzz. Do not modify PIL/.dylibs itself.
-    if core.exists() or core.is_symlink():
-        core.unlink()
-
-    shutil.copy2(source_core,core)
-    shutil.copy2(source_subset,subset)
-
-    subprocess.run(
-        ["install_name_tool","-id","@rpath/libharfbuzz.0.dylib",str(core)],
-        check=True,
-    )
-
-    core_changes = (
-        ("/opt/homebrew/opt/freetype/lib/libfreetype.6.dylib",
-         "@rpath/libfreetype.6.dylib"),
-        ("/opt/homebrew/opt/glib/lib/libglib-2.0.0.dylib",
-         "@rpath/libglib-2.0.0.dylib"),
-        ("/opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib",
-         "@rpath/libgraphite2.3.dylib"),
-    )
-    for old,new in core_changes:
-        subprocess.run(
-            ["install_name_tool","-change",old,new,str(core)],
-            check=True,
-        )
-
-    subprocess.run(
-        ["install_name_tool","-id","@rpath/libharfbuzz-subset.0.dylib",str(subset)],
-        check=True,
-    )
-
-    # Homebrew's subset library may encode either the opt or Cellar path.
-    out=subprocess.check_output(["otool","-L",str(subset)],text=True)
-    for line in out.splitlines()[1:]:
-        dep=line.strip().split(" (",1)[0]
-        if dep.startswith("/opt/homebrew/") and dep.endswith("/libharfbuzz.0.dylib"):
-            subprocess.run(
-                ["install_name_tool","-change",dep,
-                 "@rpath/libharfbuzz.0.dylib",str(subset)],
-                check=True,
-            )
-
-    for dylib in (core,subset):
-        subprocess.run(
-            ["codesign","--force","--sign","-",str(dylib)],
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-    # Refuse to package another incompatible pair.
-    core_info=subprocess.check_output(["otool","-L",str(core)],text=True)
-    subset_info=subprocess.check_output(["otool","-L",str(subset)],text=True)
-    if "compatibility version 61430" not in core_info:
-        raise SystemExit("Bundled HarfBuzz core is not the expected matched runtime.")
-    if "compatibility version 61430" not in subset_info:
-        raise SystemExit("Bundled HarfBuzz subset is not the expected matched runtime.")
-
-
 def bundle_weasyprint_fontconfig(frozen:Path)->Path:
     """Bundle Fontconfig configuration required by Pango/WeasyPrint.
 
@@ -589,8 +439,10 @@ def bundle_weasyprint_fontconfig(frozen:Path)->Path:
     return root
 
 
-def verify_frozen_pdf_runtime(executable:Path,fontconfig_root:Path)->None:
+def verify_frozen_pdf_runtime(executable:Path,libdir:Path,fontconfig_root:Path)->None:
     env=dict(os.environ)
+    existing=env.get("DYLD_LIBRARY_PATH","")
+    env["DYLD_LIBRARY_PATH"]=str(libdir)+((":"+existing) if existing else "")
     env["FONTCONFIG_FILE"]=str(fontconfig_root/"etc"/"fonts"/"fonts.conf")
     env["FONTCONFIG_PATH"]=str(fontconfig_root/"etc"/"fonts")
 
@@ -614,49 +466,6 @@ def build_embedded_runtime(plan:BuildPlan,resources:Path)->Path:
     if stage.exists(): shutil.rmtree(stage)
     work=stage/"work"; spec=stage/"spec"; dist=stage/"dist"
     for x in (work,spec,dist): x.mkdir(parents=True,exist_ok=True)
-    runtime_hook=stage/"weasyprint_frozen_runtime.py"
-    runtime_hook.write_text("""import sys
-from pathlib import Path
-
-if getattr(sys, "frozen", False) and sys.platform == "darwin":
-    from cffi.api import FFI
-
-    _original_dlopen = FFI.dlopen
-
-    # Map WeasyPrint/cffi probe names directly to PyInstaller's canonical
-    # libraries. Do not use compatibility symlinks/copies: Pango's linked
-    # dependencies must resolve to these exact same Mach-O images.
-    _weasy_libraries = {
-        "libgobject-2.0-0": "libgobject-2.0.0.dylib",
-        "libglib-2.0-0": "libglib-2.0.0.dylib",
-        "libgio-2.0-0": "libgio-2.0.0.dylib",
-        "libpango-1.0-0": "libpango-1.0.0.dylib",
-        "libpangocairo-1.0-0": "libpangocairo-1.0.0.dylib",
-        "libpangoft2-1.0-0": "libpangoft2-1.0.dylib",
-        "libharfbuzz-0": "libharfbuzz.0.dylib",
-        "libharfbuzz-subset-0": "libharfbuzz-subset.0.dylib",
-        "libfontconfig-1": "libfontconfig.1.dylib",
-        "libcairo-2": "libcairo.2.dylib",
-    }
-
-    def _frozen_dlopen(self, name, *args, **kwargs):
-        if isinstance(name, str) and name in _weasy_libraries:
-            candidate = Path(sys._MEIPASS) / _weasy_libraries[name]
-            if candidate.is_file():
-                if "--verify-pdf-runtime" in sys.argv:
-                    print(
-                        "WeasyPrint frozen dlopen:",
-                        name,
-                        "->",
-                        candidate,
-                        file=sys.stderr,
-                    )
-                name = str(candidate)
-        return _original_dlopen(self, name, *args, **kwargs)
-
-    FFI.dlopen = _frozen_dlopen
-""")
-
     entry=stage/"backend_entry.py"
     entry.write_text(
         "import sys,tempfile\n"
@@ -676,7 +485,6 @@ if getattr(sys, "frozen", False) and sys.platform == "darwin":
         "--noconfirm","--clean","--onedir",
         "--name","ReunionCompanionBackend",
         "--paths",str(plan.repo/"src"),
-        "--runtime-hook",str(runtime_hook),
         "--collect-all","PIL",
         "--collect-all","pymupdf",
         "--collect-all","weasyprint",
@@ -694,9 +502,9 @@ if getattr(sys, "frozen", False) and sys.platform == "darwin":
     frozen=dist/"ReunionCompanionBackend"; exe=frozen/"ReunionCompanionBackend"
     if not exe.is_file(): raise SystemExit(f"Embedded runtime build did not produce {exe}")
 
-    normalize_weasyprint_harfbuzz(frozen)
+    native_libs=bundle_weasyprint_native_libraries(frozen)
     fontconfig_root=bundle_weasyprint_fontconfig(frozen)
-    verify_frozen_pdf_runtime(exe,fontconfig_root)
+    verify_frozen_pdf_runtime(exe,native_libs,fontconfig_root)
 
     target=resources/"Runtime"/"ReunionCompanionBackend"
     shutil.copytree(frozen,target)
