@@ -1,9 +1,15 @@
+import re
 def stats(db):
     return {t:db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in ("people","families","events","notes","media","person_media","event_media","family_media","sources")}
 
 def search_people(db,text,limit=50):
-    q=f"%{text}%"
-    return db.execute("SELECT id,gedcom_xref,reunion_person_id,display_name,sex FROM people WHERE display_name LIKE ? OR given_names LIKE ? OR surname LIKE ? ORDER BY surname,given_names LIMIT ?",(q,q,q,limit)).fetchall()
+    """Match every entered name component, even with intervening middle names."""
+    tokens=[x for x in re.findall(r"[A-Za-z0-9'’-]+",(text or "").casefold()) if x]
+    if not tokens:
+        return db.execute("SELECT id,gedcom_xref,reunion_person_id,display_name,sex FROM people ORDER BY surname,given_names LIMIT ?",(limit,)).fetchall()
+    where=" AND ".join("lower(display_name) LIKE ?" for _ in tokens)
+    args=[f"%{x}%" for x in tokens]+[limit]
+    return db.execute("SELECT id,gedcom_xref,reunion_person_id,display_name,sex FROM people WHERE "+where+" ORDER BY surname,given_names LIMIT ?",args).fetchall()
 
 def resolve_person(db,token):
     token=token.strip()

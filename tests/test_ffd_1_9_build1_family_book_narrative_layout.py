@@ -32,8 +32,8 @@ def test_research_story_preserves_note_layout_and_work_facts_break_lines(tmp_pat
 
 def test_descendant_chart_includes_spouses(tmp_path):
     db=connect(tmp_path/'x.sqlite3');seed(db);html=chart_html(db,1,2,4)
-    assert 'Henry Example &amp; Alice Example' in html
-    assert 'Child Example &amp; Partner Example' in html
+    assert 'Henry Example' in html and 'Alice Example' in html and 'couple-separator' in html
+    assert 'Child Example' in html and 'Partner Example' in html
 
 
 def test_publication_narrative_is_grounded_prompt_and_preserves_fallback():

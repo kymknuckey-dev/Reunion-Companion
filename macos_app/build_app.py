@@ -7,7 +7,7 @@ import argparse, plistlib, shutil, subprocess
 APP_NAME="Reunion Companion"
 APP_VERSION="2.0"
 APP_BUILD="6"
-APP_RELEASE="FFD 2.0 Build 6.0.2 — Backend Ownership Hardening"
+APP_RELEASE="FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair"
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
 
@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let web=WKWebView(frame:w.contentView?.bounds ?? frame,configuration:WKWebViewConfiguration()); web.autoresizingMask=[.width,.height]; web.navigationDelegate=self
         w.contentView=web; window=w; webView=web; w.makeKeyAndOrderFront(nil)
     }
-    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 Build 6.0.2 — Backend Ownership Hardening\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
+    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
     @objc func reloadCurrentPage() { webView?.reload() }
     @objc func showDiagnostics() {
         let backendState = isCompanionReady() ? "Running" : "Not responding"
@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let modelDisplay = model.isEmpty ? "(automatic)" : model
         let reunionFilesDisplay = reunionFilesURL?.path ?? "(not granted)"
         let a=NSAlert(); a.messageText="Reunion Companion Diagnostics"
-        a.informativeText="Application: FFD 2.0 Build 6.0.2 — Backend Ownership Hardening\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
+        a.informativeText="Application: FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
         a.addButton(withTitle:"OK"); a.runModal()
     }
     func reunionBookmarkURL() -> URL {
@@ -197,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func isCompanionReady()->Bool {
         guard let identity=backendIdentity() else { return false }
-        return identity["service"] as? String == "reunion-companion-backend" && identity["protocol"] as? Int == 1 && identity["application"] as? String == "FFD 2.0 Build 6.0.2" && identity["engine_baseline"] as? String == "FFD 1.9 RC1"
+        return identity["service"] as? String == "reunion-companion-backend" && identity["protocol"] as? Int == 1 && identity["application"] as? String == "FFD 2.0 RC1.0.3" && identity["engine_baseline"] as? String == "FFD 1.9 RC1"
     }
     func port8765Occupied()->Bool {
         guard let url=URL(string:"http://127.0.0.1:8765/") else { return false }

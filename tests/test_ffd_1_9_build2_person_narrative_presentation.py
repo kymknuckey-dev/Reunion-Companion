@@ -19,7 +19,8 @@ def test_narrative_is_cached_and_invalidated_by_source_change(tmp_path):
     assert b['cached'] and llm.calls==1
     before=source_fingerprint(db,1); db.execute("UPDATE notes SET text=text||' Changed.' WHERE person_id=1");db.commit()
     assert source_fingerprint(db,1)!=before
-    person_narrative(db,1,llm); assert llm.calls==2
+    c=person_narrative(db,1,llm); assert c['cached'] and llm.calls==1
+    person_narrative(db,1,llm,force=True); assert llm.calls==2
     db.close()
 
 def test_research_biography_preserves_original_notes(tmp_path):

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from .discovery import relationship_connections
 from .family_publication_model import (
     life_dates,person_events,person_notes,person_sources,person_media,
@@ -12,10 +13,10 @@ def search_people(db,text,limit=40):
     if not q:
         rows=db.execute("SELECT id,display_name,sex,gedcom_xref FROM people ORDER BY display_name LIMIT ?",(limit,)).fetchall()
     else:
-        rows=db.execute("""SELECT id,display_name,sex,gedcom_xref FROM people
-                           WHERE lower(display_name) LIKE ?
-                           ORDER BY CASE WHEN lower(display_name)=? THEN 0 ELSE 1 END,display_name
-                           LIMIT ?""",(f"%{q.lower()}%",q.lower(),limit)).fetchall()
+        tokens=[x for x in re.findall(r"[A-Za-z0-9'’-]+",q.casefold()) if x]
+        where=" AND ".join("lower(display_name) LIKE ?" for _ in tokens)
+        args=[f"%{x}%" for x in tokens]+[q.casefold(),limit]
+        rows=db.execute("SELECT id,display_name,sex,gedcom_xref FROM people WHERE "+where+" ORDER BY CASE WHEN lower(display_name)=? THEN 0 ELSE 1 END,display_name LIMIT ?",args).fetchall()
     return _dicts(rows)
 
 def person_confidence(db,pid):

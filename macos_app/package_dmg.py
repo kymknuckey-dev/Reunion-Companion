@@ -6,7 +6,7 @@ import argparse, plistlib, shutil, subprocess, tempfile
 
 APP_NAME="Reunion Companion"
 APP_BUILD="6"
-APP_RELEASE="FFD 2.0 Build 6.0.2 — Backend Ownership Hardening"
+APP_RELEASE="FFD 2.0 RC1.0.3 — Birth Document Fitted Page Structural Repair"
 ENGINE_BASELINE="FFD 1.9 RC1"
 VOLUME_NAME="Reunion Companion"
 DMG_NAME="Reunion Companion.dmg"

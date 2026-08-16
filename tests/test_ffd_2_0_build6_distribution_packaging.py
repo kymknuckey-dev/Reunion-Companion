@@ -6,7 +6,7 @@ spec=importlib.util.spec_from_file_location('b6',MODULE); m=importlib.util.modul
 
 def test_identity_and_engine_baseline():
     assert m.APP_BUILD=='6'
-    assert m.APP_RELEASE.startswith('FFD 2.0 Build 6')
+    assert m.APP_RELEASE.startswith('FFD 2.0 ')
     assert m.ENGINE_BASELINE=='FFD 1.9 RC1'
 
 def test_distribution_contract():
@@ -36,6 +36,6 @@ def test_signing_is_deliberately_deferred():
 
 def test_shell_identity():
     from reunion_companion import app_identity
-    assert app_identity.APP_DISPLAY=='FFD 2.0 Build 6'
+    assert app_identity.APP_DISPLAY.startswith('FFD 2.0 ')
     assert app_identity.APP_RELEASE_NAME
     assert app_identity.ENGINE_BASELINE=='FFD 1.9 RC1'

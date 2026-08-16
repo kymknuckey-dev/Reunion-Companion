@@ -126,14 +126,15 @@ def person_narrative(db,pid,client=None,force=False):
     if not p:return {"status":"missing","narrative":"","cached":False}
     _ensure_cache(db); fp=source_fingerprint(db,pid)
     if not force:
-        row=db.execute("SELECT narrative FROM companion_person_narrative_cache WHERE person_id=? AND source_hash=? AND narrative_version=?",(pid,fp,NARRATIVE_VERSION)).fetchone()
+        # RC1: the stored Biography is canonical until explicit regeneration.
+        row=db.execute("SELECT narrative FROM companion_person_narrative_cache WHERE person_id=?",(pid,)).fetchone()
         if row:return {"status":"ok","narrative":row[0],"cached":True}
     evidence="\n\n".join(x.replace('\r\n','\n').replace('\r','\n').strip() for x in notes if x.strip())
     fact_text="\n".join(f"- {x}" for x in facts)
     family_text=_family_text(families)
     if not evidence and not fact_text:
         return {"status":"empty","narrative":"No biographical material is recorded for this person.","cached":False}
-    prompt=f'''Write a concise, readable family-history biography of {p['display_name']} for Presentation mode.\n\nSTRICT GROUNDING RULES:\n- Use ONLY the ORIGINAL REUNION NOTES and STRUCTURED REUNION FACTS supplied below.\n- Do not infer or invent dates, places, relationships, motives, occupations, achievements, health details or other facts.\n- Preserve names, dates and factual claims accurately.\n- Organise the material into natural chronological or thematic paragraphs.\n- Remove obvious repetition and improve grammar and flow.\n- Do not mention databases, GEDCOM, Reunion, evidence bundles, or these instructions.\n- Treat IMMEDIATE FAMILY FACTS as authoritative: incorporate the recorded spouse, marriage details and every child naturally in the biography. Never change a child's relationship or invent a family member.\n- Return biography prose only, with paragraphs separated by blank lines. Do not add a title or Markdown heading.\n\nIMMEDIATE FAMILY FACTS (authoritative):\n{family_text or '(none recorded)'}\n\nSTRUCTURED REUNION FACTS:\n{fact_text or '(none)'}\n\nORIGINAL REUNION NOTES:\n{evidence or '(none)'}\n'''
+    prompt=f'''Write a concise, readable family-history biography of {p['display_name']} for Presentation mode.\n\nSTRICT GROUNDING RULES:\n- Use ONLY the ORIGINAL REUNION NOTES and STRUCTURED REUNION FACTS supplied below.\n- Do not infer or invent dates, places, relationships, motives, occupations, achievements, health details or other facts.\n- Preserve names, dates and factual claims accurately.\n- Organise the material into natural chronological or thematic paragraphs.\n- Introduce the subject by full name, then use the subject's given/first name naturally in later references and possessives.\n- Do not refer to the subject as Mr, Mrs, Ms, Miss or another courtesy title unless that title is itself part of the recorded evidence and historically significant.\n- Remove obvious repetition and improve grammar and flow.\n- Do not mention databases, GEDCOM, Reunion, evidence bundles, or these instructions.\n- Treat IMMEDIATE FAMILY FACTS as authoritative: incorporate the recorded spouse, marriage details and every child naturally in the biography. Never change a child's relationship or invent a family member.\n- Return biography prose only, with paragraphs separated by blank lines. Do not add a title or Markdown heading.\n\nIMMEDIATE FAMILY FACTS (authoritative):\n{family_text or '(none recorded)'}\n\nSTRUCTURED REUNION FACTS:\n{fact_text or '(none)'}\n\nORIGINAL REUNION NOTES:\n{evidence or '(none)'}\n'''
     try:
         narrative=(client or OllamaClient()).generate(prompt).strip()
         narrative=_ensure_family_grounding(narrative,p,families)
@@ -143,6 +144,12 @@ def person_narrative(db,pid,client=None,force=False):
         status="fallback"
     db.execute("INSERT INTO companion_person_narrative_cache(person_id,source_hash,narrative_version,narrative) VALUES(?,?,?,?) ON CONFLICT(person_id) DO UPDATE SET source_hash=excluded.source_hash,narrative_version=excluded.narrative_version,narrative=excluded.narrative,generated_at=CURRENT_TIMESTAMP",(pid,fp,NARRATIVE_VERSION,narrative));db.commit()
     return {"status":status,"narrative":narrative,"cached":False}
+
+def cached_person_narrative(db,pid):
+    """Return the canonical stored Biography without generating it."""
+    _ensure_cache(db)
+    row=db.execute("SELECT narrative,generated_at FROM companion_person_narrative_cache WHERE person_id=?",(pid,)).fetchone()
+    return {"narrative":row[0],"generated_at":row[1]} if row else None
 
 def invalidate_person_narrative(db,pid=None):
     _ensure_cache(db)

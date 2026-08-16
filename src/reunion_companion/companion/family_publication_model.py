@@ -93,10 +93,10 @@ def media_kind(m):
     ext=Path(m["file_path"]).suffix.lower()
     t=_title(m).lower()
     if ext in IMAGE_EXT:
-        if any(x in t for x in ("wedding","marriage","wed ")):
-            return "wedding-photo"
         if any(x in t for x in ("birth certificate","death certificate","marriage certificate","wedding certificate","burial","certificate","extract")):
             return "document-image"
+        if any(x in t for x in ("wedding","marriage","wed ")):
+            return "wedding-photo"
         return "photo"
     if ext in PDF_EXT:
         if any(x in t for x in ("marriage","wedding")):return "marriage-document"

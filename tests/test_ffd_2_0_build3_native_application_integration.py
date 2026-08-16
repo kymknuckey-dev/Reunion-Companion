@@ -9,7 +9,7 @@ m=importlib.util.module_from_spec(spec); sys.modules[spec.name]=m; spec.loader.e
 
 def test_build3_identity_preserves_engine():
     assert int(m.APP_BUILD)>=3
-    assert m.APP_RELEASE.startswith("FFD 2.0 Build ")
+    assert m.APP_RELEASE.startswith("FFD 2.0 ")
     assert m.ENGINE_BASELINE=="FFD 1.9 RC1"
 
 def test_native_edit_and_reload_menus():

@@ -140,7 +140,7 @@ def test_family_chapter_structure(tmp_path):
         t.index("<section class='person-summary'><h2>Charles Henry James Knuckey"),
         t.index("<section class='person-summary'><h2>Elizabeth Anne Hunter"),
         t.index("<h2>Children</h2>"),
-        t.index("Family Context &amp; Descendants"),
+        t.index("Family &amp; Descendants"),
         t.index("Sources Used in This Chapter"),
     ]
     assert order==sorted(order)
@@ -167,7 +167,9 @@ def test_book_assembly(tmp_path):
     assert "Family History" in text
     assert "Chapter 1" in text
 
-def test_shell_publishing_commands(tmp_path):
+def test_shell_publishing_commands(tmp_path,monkeypatch):
+    reports=tmp_path/"reports"
+    monkeypatch.setenv("REUNION_COMPANION_REPORT_DIR",str(reports))
     ged=tmp_path/"x.ged";ged.write_text(make_ged(tmp_path))
     path=tmp_path/"shell.sqlite3";d=connect(path);import_gedcom(d,ged);d.close()
     sh=CompanionShell(path)
@@ -177,3 +179,6 @@ def test_shell_publishing_commands(tmp_path):
     assert "Family chapter written:" in sh.command('publish-family-chapter "Charles Henry James Knuckey" "Elizabeth Anne Hunter"')
     assert "Descendant chart written:" in sh.command('publish-descendant-chart "Charles Henry James Knuckey" "Elizabeth Anne Hunter" 3')
     assert "Family-history book written:" in sh.command('publish-book "Charles Henry James Knuckey" 3')
+    produced=list(reports.glob("*.html"))
+    assert len(produced)==3
+    assert all(x.parent==reports for x in produced)

@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from collections import defaultdict
 import re
+import tempfile
 from .publishing_v7 import CSS,esc,slug,default_report_dir
 from .publishing_v8 import _embedded_image_uri
 from .publication_themes import theme_css,DEFAULT_THEME
@@ -11,7 +12,8 @@ from .family_publication_model import (
     spouse_families,resolve_family_for_people,person_media
 )
 from .story_engine import story_sections
-from .publication_narrative import publication_narrative, preserve_note_layout
+from .publication_narrative import preserve_note_layout
+from .person_narrative import cached_person_narrative
 from .descendant_chart import chart_html
 from .document_renderer import render_pdf,copy_original,pdf_render_capability
 
@@ -75,6 +77,26 @@ a { color:inherit; }
   max-height:none;
 }
 .media-card figcaption { margin-top:2mm; }
+.media-card { break-inside:avoid; page-break-inside:avoid; }
+.media-card .open-original { display:block; margin-top:1.5mm; break-inside:avoid; page-break-inside:avoid; }
+
+.photo-grid { display:block; }
+.photo-page { break-inside:avoid; page-break-inside:avoid; display:flex; flex-direction:column; gap:5mm; margin:0 0 6mm; }
+.photo-page.landscape-pair { break-after:page; page-break-after:always; }
+.photo-page.single-photo { break-after:page; page-break-after:always; }
+.photo-page .media-card { margin:0; break-inside:avoid; page-break-inside:avoid; }
+.photo-page .media-card figcaption { break-inside:avoid; page-break-inside:avoid; }
+.photo-page.landscape-pair .media-card { flex:0 0 auto; }
+.photo-page.landscape-pair .media-card img { width:100%; max-width:100%; max-height:92mm; object-fit:contain; }
+.photo-page.single-photo .media-card img { width:auto; max-width:100%; max-height:202mm; object-fit:contain; }
+@media screen {
+  .photo-page.landscape-pair, .photo-page.single-photo { break-after:auto; page-break-after:auto; }
+}
+.person-name { font-weight:700; font-size:1em; }
+.person-dates { font-weight:400; font-size:0.84em; color:#555; white-space:nowrap; }
+.person-line { margin:1.2mm 0; }
+.citation-ref { font-weight:bold; white-space:nowrap; }
+.fact-line { margin:1.2mm 0; }
 .person-summary { border:0; padding:0; margin:3mm 0 5mm; }
 .person-topic { margin:0 0 4mm; break-inside:avoid; }
 .person-topic:last-child { margin-bottom:0; }
@@ -129,6 +151,8 @@ a { color:inherit; }
   margin:2mm auto 0;
   font-size:9pt;
 }
+.birth-documents-section { margin:0; padding:0; }
+
 .archive-page {
   display:none;
   break-before:page;
@@ -149,6 +173,72 @@ a { color:inherit; }
   width:238mm; max-height:172mm;
   transform:translate(-50%,-50%) rotate(90deg);
 }
+
+/* RC1.0.3 true structural Birth Documents page.
+   This is a separate print renderer, not an archive-page override. */
+.birth-document-page {
+  display:none;
+  break-before:page;
+  page-break-before:always;
+  height:258mm;
+  position:relative;
+  text-align:center;
+  overflow:hidden;
+}
+.birth-document-page .birth-document-heading {
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  margin:0;
+  padding:0 0 1mm;
+  border-bottom:1px solid #aaa;
+  text-align:left;
+  font-size:15pt;
+  line-height:1.15;
+}
+.birth-document-page .birth-document-title {
+  position:absolute;
+  top:12mm;
+  left:0;
+  right:0;
+  font-size:9pt;
+  font-weight:bold;
+}
+.birth-document-page .birth-document-preview {
+  position:absolute;
+  left:50%;
+  object-fit:contain;
+}
+.birth-document-page.portrait .birth-document-preview {
+  top:23mm;
+  max-width:170mm;
+  max-height:207mm;
+  transform:translateX(-50%);
+}
+.birth-document-page.landscape .birth-document-preview {
+  top:50%;
+  width:210mm;
+  max-height:150mm;
+  transform:translate(-50%,-47%) rotate(90deg);
+}
+.birth-document-page .birth-document-caption {
+  position:absolute;
+  bottom:7mm;
+  left:0;
+  right:0;
+  font-size:8pt;
+  color:#555;
+}
+.birth-document-page .birth-document-original {
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  font-size:8pt;
+  font-weight:bold;
+}
+
 .parent-context { display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
 .tree { margin-top:3mm; }
 .tree-row { padding:1mm 0; border-bottom:1px dotted #ddd; }
@@ -174,9 +264,14 @@ a { color:inherit; }
 
 @media print {
   a { color:#222; text-decoration:none; }
+  figure.media-card.media-portrait { break-inside:avoid !important; page-break-inside:avoid !important; }
+  figure.media-card.media-portrait img { max-height:198mm !important; width:auto !important; max-width:100% !important; object-fit:contain; }
+  figure.media-card.media-square { break-inside:avoid !important; page-break-inside:avoid !important; }
+  figure.media-card.media-square img { max-height:198mm !important; width:auto !important; max-width:100% !important; object-fit:contain; }
   .web-only { display:none !important; }
   .print-only { display:block; }
   .archive-page { display:block !important; }
+  .birth-document-page { display:block !important; }
   .pdf-extra-page { display:block !important; }
   .toc a::after {
     content: leader(".") target-counter(attr(href), page);
@@ -200,6 +295,22 @@ def source_label(source):
 
 def source_text(source):
     return source["display_text"] or source["text"] or source["title"] or "(undescribed source)"
+
+def event_source_labels(db,event_id):
+    rows=db.execute("""SELECT s.* FROM sources s JOIN event_sources es ON es.source_id=s.id
+                       WHERE es.event_id=? ORDER BY s.id""",(event_id,)).fetchall()
+    return [source_label(x) for x in rows]
+
+def media_source_labels(db,media_id):
+    """Sources deterministically associated through the media attachment context."""
+    rows=db.execute("""SELECT DISTINCT s.* FROM sources s WHERE s.id IN (
+      SELECT es.source_id FROM event_sources es JOIN event_media em ON em.event_id=es.event_id WHERE em.media_id=?
+      UNION SELECT fs.source_id FROM family_sources fs JOIN family_media fm ON fm.family_id=fs.family_id WHERE fm.media_id=?
+    ) ORDER BY s.id""",(media_id,media_id)).fetchall()
+    return [source_label(x) for x in rows]
+
+def citation_suffix(labels):
+    return " ".join(labels)
 
 def media_title(m):
     return m["title"] or Path(m["file_path"]).name
@@ -249,7 +360,7 @@ def _image_presentation(path):
     small=max(w,h)<900
     return shape, small
 
-def _image_block(m,hero=False,output_html=None):
+def _image_block(m,hero=False,output_html=None,citation=""):
     uri=_embedded_image_uri(m["file_path"])
     if not uri:return None
     title=media_title(m)
@@ -264,131 +375,214 @@ def _image_block(m,hero=False,output_html=None):
     classes=["media-card",f"media-{shape}"]
     if hero: classes.append("hero")
     if small: classes.append("media-small")
+    caption=esc(title)+(f" <span class='citation-ref'>{esc(citation)}</span>" if citation else "")
     return (
-        f"<figure class='{" ".join(classes)}'>"
-        f"{image}<figcaption class='caption'>{esc(title)}</figcaption>{open_link}"
+        f"<figure class='{' '.join(classes)}'>"
+        f"{image}<figcaption class='caption'>{caption}</figcaption>{open_link}"
         f"</figure>"
     )
 
-def _pdf_block(m,output_html,person_name=None,family_names=None):
+def _pdf_block(m,output_html,person_name=None,family_names=None,citation=""):
     """Screen: first page preview + link. Print: every PDF page, one archive page each."""
     title=media_title(m)
     r=render_pdf(m["file_path"],output_html,m["id"],dpi=150)
-    original=r["original"]
-    pages=r["pages"]
+    original=r["original"]; pages=r["pages"]
+    cite=f" {citation}" if citation else ""
     if not pages:
         href=original
         link=f"<a class='open-original' href='{esc(href)}'>Open original PDF</a>" if href else ""
         warning=f"<p class='small'>{esc(r['warning'])}</p>" if r["warning"] else ""
-        return (
-          f"<div class='document-card'><strong>{esc(title)}</strong>"
-          f"<p>PDF · {'Available' if m['exists_on_disk'] else 'Missing'}</p>{link}{warning}</div>"
-        )
-
-    first=pages[0]
-    link=f"<a class='open-original' href='{esc(original)}'>Open original PDF</a>" if original else ""
-    caption=_caption(m,person_name,family_names,None)
-    screen=[
-      "<section class='pdf-web-plate web-only'>",
-      f"<h3>{esc(_clean_document_title(title,person_name,family_names))}</h3>",
+        return f"<div class='document-card'><strong>{esc(_clean_document_title(title,person_name,family_names))}{esc(cite)}</strong><p>PDF · {'Available' if m['exists_on_disk'] else 'Missing'}</p>{link}{warning}</div>"
+    first=pages[0]; link=f"<a class='open-original' href='{esc(original)}'>Open original PDF</a>" if original else ""
+    caption=_caption(m,person_name,family_names,None)+cite
+    screen=["<section class='pdf-web-plate web-only'>",
+      f"<h3>{esc(_clean_document_title(title,person_name,family_names))}{f' <span class=\"citation-ref\">{esc(citation)}</span>' if citation else ''}</h3>",
       f"<div class='preview'><a href='{esc(original)}'>" if original else "<div class='preview'>",
       f"<img src='{esc(first['preview_rel'])}' alt='{esc(caption)} preview'>",
       "</a></div>" if original else "</div>",
       f"<p class='pdf-caption'>{esc(caption)}</p>",
-      f"<p class='small'>{len(pages)} PDF page{'s' if len(pages)!=1 else ''}</p>" if len(pages)>1 else "",
-      link,
-    ]
+      f"<p class='small'>{len(pages)} PDF page{'s' if len(pages)!=1 else ''}</p>" if len(pages)>1 else "",link]
     if r["warning"]:screen.append(f"<p class='small'>{esc(r['warning'])}</p>")
     screen.append("</section>")
-
     printed=[]
-    for i,p in enumerate(pages):
+    for i,page in enumerate(pages):
         extra=" pdf-extra-page" if i else ""
-        cap=_caption(m,person_name,family_names,p["page"])
-        printed.append(
-          f"<section class='archive-page {esc(p['orientation'])}{extra}'>"
-          f"<div class='archive-title'>{esc(title)}</div>"
-          f"<img class='doc-preview' src='{esc(p['preview_rel'])}' alt='{esc(cap)}'>"
-          f"<div class='archive-caption'>{esc(cap)}</div>"
-          f"</section>"
-        )
+        cap=_caption(m,person_name,family_names,page["page"])+cite
+        printed.append(f"<section class='archive-page {esc(page['orientation'])}{extra}'><div class='archive-title'>{esc(_clean_document_title(title,person_name,family_names))}{esc(cite)}</div><img class='doc-preview' src='{esc(page['preview_rel'])}' alt='{esc(cap)}'><div class='archive-caption'>{esc(cap)}</div></section>")
     return "".join(screen+printed)
 
-def _media_block(m,output_html,hero=False,person_name=None,family_names=None):
+def _media_block(m,output_html,hero=False,person_name=None,family_names=None,db=None):
+    citation=citation_suffix(media_source_labels(db,m["id"])) if db is not None else ""
     ext=Path(m["file_path"]).suffix.lower()
-    if ext==".pdf":
-        return _pdf_block(m,output_html,person_name,family_names)
-    image=_image_block(m,hero=hero,output_html=output_html)
+    if ext==".pdf": return _pdf_block(m,output_html,person_name,family_names,citation)
+    image=_image_block(m,hero=hero,output_html=output_html,citation=citation)
     if image:return image
-
     original=copy_original(m["file_path"],output_html,m["id"]) if output_html else None
     link=f"<a class='open-original' href='{esc(original)}'>Open original document</a>" if original else ""
-    return (
-      f"<div class='document-card'><strong>{esc(media_title(m))}</strong>"
-      f"<p>{esc(ext.upper().lstrip('.') or 'FILE')} · {'Available' if m['exists_on_disk'] else 'Missing'}</p>"
-      f"{link}</div>"
-    )
+    label=_clean_document_title(media_title(m),person_name,family_names)
+    return f"<div class='document-card'><strong>{esc(label)}{(' '+esc(citation)) if citation else ''}</strong><p>{esc(ext.upper().lstrip('.') or 'FILE')} · {'Available' if m['exists_on_disk'] else 'Missing'}</p>{link}</div>"
+
+def _birth_document_block(m,output_html,person_name=None,db=None):
+    """Render the first Birth Documents PDF as one fitted print page.
+
+    The section heading, document title/source, first PDF preview, caption and
+    original-PDF link are emitted in one dedicated page. Remaining PDF pages
+    continue through ordinary archive pages.
+    """
+    citation=citation_suffix(media_source_labels(db,m["id"])) if db is not None else ""
+    title=media_title(m)
+    r=render_pdf(m["file_path"],output_html,m["id"],dpi=150)
+    original=r["original"]; pages=r["pages"]
+    cite=f" {citation}" if citation else ""
+
+    # If rendering is unavailable, retain a normal visible Birth Documents
+    # heading and deterministic document fallback.
+    if not pages:
+        fallback=_pdf_block(m,output_html,person_name,None,citation)
+        return "<h2>Birth Documents</h2>"+fallback
+
+    first=pages[0]
+    label=_clean_document_title(title,person_name,None)
+    cap=_caption(m,person_name,None,first["page"])+cite
+
+    # Web/HTML retains the familiar section heading and natural first-page preview.
+    link=f"<a class='open-original' href='{esc(original)}'>Open original PDF</a>" if original else ""
+    web_caption=_caption(m,person_name,None,None)+cite
+    screen=[
+      "<div class='web-only'><h2>Birth Documents</h2></div>",
+      "<section class='pdf-web-plate web-only'>",
+      f"<h3>{esc(label)}{f' <span class=\"citation-ref\">{esc(citation)}</span>' if citation else ''}</h3>",
+      f"<div class='preview'><a href='{esc(original)}'>" if original else "<div class='preview'>",
+      f"<img src='{esc(first['preview_rel'])}' alt='{esc(web_caption)} preview'>",
+      "</a></div>" if original else "</div>",
+      f"<p class='pdf-caption'>{esc(web_caption)}</p>",
+      f"<p class='small'>{len(pages)} PDF page{'s' if len(pages)!=1 else ''}</p>" if len(pages)>1 else "",
+      link,
+      "</section>",
+    ]
+
+    original_print=(f"<a class='birth-document-original' href='{esc(original)}'>Open original PDF</a>" if original else "")
+    printed=[
+      f"<section class='birth-document-page {esc(first['orientation'])}'>"
+      f"<h2 class='birth-document-heading'>Birth Documents</h2>"
+      f"<div class='birth-document-title'>{esc(label)}{esc(cite)}</div>"
+      f"<img class='birth-document-preview' src='{esc(first['preview_rel'])}' alt='{esc(cap)}'>"
+      f"<div class='birth-document-caption'>{esc(cap)}</div>"
+      f"{original_print}"
+      f"</section>"
+    ]
+
+    # Pages 2+ use the ordinary archive layout and therefore begin on their own pages.
+    for i,page in enumerate(pages[1:],start=1):
+        page_cap=_caption(m,person_name,None,page["page"])+cite
+        printed.append(
+          f"<section class='archive-page {esc(page['orientation'])} pdf-extra-page'>"
+          f"<div class='archive-title'>{esc(label)}{esc(cite)}</div>"
+          f"<img class='doc-preview' src='{esc(page['preview_rel'])}' alt='{esc(page_cap)}'>"
+          f"<div class='archive-caption'>{esc(page_cap)}</div>"
+          f"</section>"
+        )
+    if r["warning"]:
+        screen.insert(-1,f"<p class='small'>{esc(r['warning'])}</p>")
+    return "".join(screen+printed)
+
+def _publication_fact_sections(db,pid):
+    """Deterministic, topic-separated facts for Life & Notes."""
+    groups=[("Life Events",[]),("Education",[]),("Work Life",[])]
+    by=dict(groups)
+    for e in person_events(db,pid):
+        typ=(e["event_type"] or "Event").strip()
+        if typ.casefold()=="changed":continue
+        low=typ.casefold()
+        heading="Education" if "educat" in low or "school" in low else "Work Life" if any(x in low for x in ("occupation","employment","work","career")) else "Life Events"
+        vals=[x for x in (e["date_text"],e["place_text"],e["value_text"]) if x and x!="Y"]
+        detail=" — ".join(str(x) for x in vals)
+        refs=citation_suffix(event_source_labels(db,e["id"]))
+        line=f"<div class='fact-line'><strong>{esc(typ)}:</strong> {esc(detail) if detail else 'Recorded'}"
+        if refs:line+=f" <span class='citation-ref'>{esc(refs)}</span>"
+        line+="</div>"
+        by[heading].append(line)
+    return [(h,rows) for h,rows in groups if rows]
+
+
 
 def _person_summary_html(db,pid,anchor=None):
     p=db.execute("SELECT * FROM people WHERE id=?",(pid,)).fetchone()
-    dates=life_dates(db,pid);events=person_events(db,pid)
-    vals={}
-    for typ in ("Occupation","Education","Religion"):
-        vals[typ]=next((e["value_text"] for e in events if e["event_type"]==typ and e["value_text"]),None)
-    rows=[
-      ("Birth"," — ".join(x for x in (dates["birth"],dates["birth_place"]) if x)),
-      ("Death"," — ".join(x for x in (dates["death"],dates["death_place"]) if x)),
-      ("Occupation",vals["Occupation"]),("Education",vals["Education"]),("Religion",vals["Religion"])
-    ]
     aid=f" id='{esc(anchor)}'" if anchor else ""
-    P=[f"<section class='person-summary'{aid}><h2>{esc(p['display_name'])}</h2>"]
-    for label,val in rows:
-        if val:P.append(f"<div class='person-topic'><h3>{esc(label)}</h3><p>{esc(val)}</p></div>")
-    P.append("</section>")
-    return "".join(P)
+    return f"<section class='person-summary'{aid}><h2>{esc(p['display_name'])}</h2></section>"
 
 def _person_section(db,pid,output_html,anchor=None):
     p=db.execute("SELECT * FROM people WHERE id=?",(pid,)).fetchone()
     groups=person_document_groups(db,pid)
     P=["<div class='pagebreak'></div>",_person_summary_html(db,pid,anchor)]
     if groups["portrait"]:
-        P.append(_media_block(groups["portrait"][0],output_html,hero=True,person_name=p["display_name"]))
+        P.append(_media_block(groups["portrait"][0],output_html,hero=True,person_name=p["display_name"],db=db))
 
     P.append("<h2>Life &amp; Notes</h2>")
-    sections=story_sections(db,pid)
-    note_meta=db.execute("SELECT note_type,gedcom_tag FROM notes WHERE person_id=? ORDER BY id",(pid,)).fetchall()
-    note_labels={(n["note_type"] or n["gedcom_tag"] or "Note") for n in note_meta}
-    structured=[(h,t) for h,t in sections if h not in note_labels]
-    for heading,text in structured:
-        P.append(f"<section class='life-topic keep'><h3>{esc(heading)}</h3><div class='note'>{esc(text)}</div></section>")
-    note_rows=db.execute("SELECT text FROM notes WHERE person_id=? ORDER BY id",(pid,)).fetchall()
-    notes=[preserve_note_layout(n["text"]) for n in note_rows if preserve_note_layout(n["text"])]
-    facts=[]
-    for e in person_events(db,pid):
-        bits=[e["event_type"],e["date_text"],e["place_text"],e["value_text"]]
-        fact=" — ".join(str(x) for x in bits if x and x!="Y")
-        if fact:facts.append(fact)
-    narrative=publication_narrative(p["display_name"],notes,facts) if notes else ""
-    if narrative:
-        P.append(f"<section class='life-topic publication-narrative'><h3>Publication Narrative</h3><div class='note'>{esc(narrative)}</div></section>")
-    elif not structured:
-        P.append("<p>No narrative notes are recorded.</p>")
+    fact_sections=_publication_fact_sections(db,pid)
+    for heading,rows in fact_sections:
+        P.append(f"<section class='life-topic keep'><h3>{esc(heading)}</h3>{''.join(rows)}</section>")
+
+    cached=cached_person_narrative(db,pid)
+    if cached and (cached.get("narrative") or "").strip():
+        P.append(f"<section class='life-topic publication-narrative'><h3>Biography</h3><div class='note'>{esc(cached['narrative'])}</div></section>")
+    elif not fact_sections:
+        P.append("<p>No life facts or stored Biography are currently available.</p>")
 
     ordered=(("birth","Birth Documents"),("death","Death & Burial Documents"),
              ("military","Military Documents"),("other-documents","Other Documents"))
     for key,label in ordered:
-        if groups[key]:
+        if not groups[key]:
+            continue
+
+        P.append(f"<section class='document-section{' birth-documents-section' if key=='birth' else ''}'>")
+
+        if key=="birth":
+            first=groups[key][0]
+            first_is_pdf=Path(first["file_path"]).suffix.lower()==".pdf"
+            if first_is_pdf:
+                # The dedicated birth renderer owns the heading and first PDF page.
+                P.append(_birth_document_block(first,output_html,person_name=p["display_name"],db=db))
+                remaining=groups[key][1:]
+            else:
+                P.append(f"<h2>{esc(label)}</h2>")
+                P.append(_media_block(first,output_html,person_name=p["display_name"],db=db))
+                remaining=groups[key][1:]
+            for m in remaining:
+                P.append(_media_block(m,output_html,person_name=p["display_name"],db=db))
+        else:
             P.append(f"<h2>{esc(label)}</h2>")
             for m in groups[key]:
-                P.append(_media_block(m,output_html,person_name=p["display_name"]))
+                P.append(_media_block(m,output_html,person_name=p["display_name"],db=db))
+
+        P.append("</section>")
     if groups["other-photos"]:
-        P.append("<h2>Other Photographs</h2>")
+        P.append("<h2>Other Photographs</h2><div class='photo-grid'>")
+        pending_landscape=[]
+        def emit_landscapes():
+            nonlocal pending_landscape
+            while pending_landscape:
+                pair=pending_landscape[:2]; pending_landscape=pending_landscape[2:]
+                P.append("<section class='photo-page landscape-pair'>")
+                for item in pair:
+                    P.append(_media_block(item,output_html,person_name=p["display_name"],db=db))
+                P.append("</section>")
         for m in groups["other-photos"]:
-            P.append(_media_block(m,output_html,person_name=p["display_name"]))
+            shape,_small=_image_presentation(m["file_path"])
+            if shape=="landscape":
+                pending_landscape.append(m)
+                if len(pending_landscape)==2: emit_landscapes()
+            else:
+                emit_landscapes()
+                P.append("<section class='photo-page single-photo'>")
+                P.append(_media_block(m,output_html,person_name=p["display_name"],db=db))
+                P.append("</section>")
+        emit_landscapes()
+        P.append("</div>")
     if groups["legacy"]:
         P.append("<h2>Legacy Media</h2>")
         for m in groups["legacy"]:
-            P.append(_media_block(m,output_html,person_name=p["display_name"]))
+            P.append(_media_block(m,output_html,person_name=p["display_name"],db=db))
             P.append("<p class='small'>Legacy media identified for later conversion; original not modified.</p>")
     return "".join(P)
 
@@ -438,11 +632,13 @@ def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_
     if o["wedding_photos"] or o["marriage_documents"] or f["marriage_date"] or f["marriage_place"]:
         P.append("<h2>Marriage</h2>")
         if f["marriage_date"] or f["marriage_place"]:
-            P.append("<p>"+" — ".join(esc(x) for x in (f["marriage_date"],f["marriage_place"]) if x)+"</p>")
+            refs=citation_suffix([source_label(x) for x in family_sources(db,family_id)])
+            text=" — ".join(esc(x) for x in (f["marriage_date"],f["marriage_place"]) if x)
+            P.append("<p><strong>Marriage:</strong> "+text+(f" <span class='citation-ref'>{esc(refs)}</span>" if refs else "")+"</p>")
         for m in o["wedding_photos"]:
-            P.append(_media_block(m,output_html,hero=True,family_names=family_names))
+            P.append(_media_block(m,output_html,hero=True,family_names=family_names,db=db))
         for m in o["marriage_documents"]:
-            P.append(_media_block(m,output_html,family_names=family_names))
+            P.append(_media_block(m,output_html,family_names=family_names,db=db))
 
     if h:P.append(_person_section(db,h["id"],output_html,person_anchors.get(h["id"])))
     if w:P.append(_person_section(db,w["id"],output_html,person_anchors.get(w["id"])))
@@ -451,17 +647,19 @@ def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_
     extra=[m for m in family_media(db,family_id) if m["id"] not in surfaced]
     if extra:
         P.append("<div class='pagebreak'></div><h2>Family Documents &amp; Media</h2>")
-        for m in extra:P.append(_media_block(m,output_html,family_names=family_names))
+        for m in extra:P.append(_media_block(m,output_html,family_names=family_names,db=db))
 
     P.append("<div class='pagebreak'></div><h2>Children</h2>")
     kids=children(db,family_id)
     if kids:
-        P.append("<ul>")
+        P.append("<ul class='children-list'>")
         for ch in kids:
-            d=life_dates(db,ch["id"]);bits=[ch["display_name"]]
-            if d["birth"]:bits.append("b. "+d["birth"])
-            if d["death"]:bits.append("d. "+d["death"])
-            P.append("<li>"+esc(" — ".join(bits))+"</li>")
+            d=life_dates(db,ch["id"])
+            dates=[]
+            if d["birth"]:dates.append("b. "+d["birth"])
+            if d["death"]:dates.append("d. "+d["death"])
+            date_html=(" <span class='person-dates'>— "+esc(" — ".join(dates))+"</span>") if dates else ""
+            P.append("<li class='person-line'><strong class='person-name'>"+esc(ch["display_name"])+"</strong>"+date_html+"</li>")
         P.append("</ul>")
     else:P.append("<p>No children are recorded for this family.</p>")
 
@@ -631,9 +829,14 @@ def export_pdf_from_html(html_path,pdf_path=None):
 def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     pdf=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.pdf")
-    html=pdf.with_suffix(".html")
-    write_book(db,start_pid,html,generations,theme)
-    return export_pdf_from_html(html,pdf)
+    pdf.parent.mkdir(parents=True,exist_ok=True)
+    # HTML and copied/rendered assets are implementation details for PDF-only publishing.
+    # Keep them outside the report directory and remove them automatically after rendering.
+    with tempfile.TemporaryDirectory(prefix="reunion-companion-pdf-") as td:
+        html=Path(td)/(pdf.stem+".html")
+        write_book(db,start_pid,html,generations,theme)
+        export_pdf_from_html(html,pdf)
+    return pdf
 
 def format_publish_capabilities():
     pdf=pdf_render_capability()

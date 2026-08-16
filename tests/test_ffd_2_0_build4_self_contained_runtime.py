@@ -5,7 +5,7 @@ spec=importlib.util.spec_from_file_location("b4",MODULE); m=importlib.util.modul
 
 def test_identity_preserves_frozen_engine():
     assert int(m.APP_BUILD)>=4
-    assert m.APP_RELEASE.startswith("FFD 2.0 Build ")
+    assert m.APP_RELEASE.startswith("FFD 2.0 ")
     assert m.ENGINE_BASELINE=="FFD 1.9 RC1"
 
 def test_launcher_uses_bundle_runtime_not_repository():

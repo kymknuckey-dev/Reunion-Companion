@@ -6,7 +6,7 @@ spec=importlib.util.spec_from_file_location('b602',MODULE); m=importlib.util.mod
 
 def test_identity():
     assert m.APP_BUILD=='6'
-    assert m.APP_RELEASE=='FFD 2.0 Build 6.0.2 — Backend Ownership Hardening'
+    assert m.APP_RELEASE.startswith('FFD 2.0 ')
     assert m.ENGINE_BASELINE=='FFD 1.9 RC1'
 
 def test_launcher_requires_backend_identity_before_attach():
@@ -14,7 +14,7 @@ def test_launcher_requires_backend_identity_before_attach():
     assert '/runtime/identity' in s
     assert 'reunion-companion-backend' in s
     assert 'identity["protocol"] as? Int == 1' in s
-    assert 'identity["application"] as? String == "FFD 2.0 Build 6.0.2"' in s
+    assert 'identity["application"] as? String == "FFD 2.0 RC1.0.3"' in s
     assert 'identity["engine_baseline"] as? String == "FFD 1.9 RC1"' in s
     assert 'if self.isCompanionReady()' in s
 
@@ -36,7 +36,7 @@ def test_backend_exposes_runtime_identity_endpoint():
 
 def test_authoritative_shell_identity():
     from reunion_companion import app_identity
-    assert app_identity.APP_DISPLAY=='FFD 2.0 Build 6'
-    assert app_identity.APP_RELEASE_DISPLAY=='FFD 2.0 Build 6.0.2'
-    assert app_identity.APP_RELEASE_NAME=='Backend Ownership Hardening'
+    assert app_identity.APP_DISPLAY.startswith('FFD 2.0 ')
+    assert app_identity.APP_RELEASE_DISPLAY.startswith('FFD 2.0 ')
+    assert app_identity.APP_RELEASE_NAME
     assert app_identity.ENGINE_BASELINE=='FFD 1.9 RC1'

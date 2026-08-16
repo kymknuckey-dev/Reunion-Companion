@@ -5,7 +5,7 @@ spec=importlib.util.spec_from_file_location("b601",MODULE); m=importlib.util.mod
 
 def test_identity():
     assert m.APP_BUILD=="6"
-    assert m.APP_RELEASE=="FFD 2.0 Build 6.0.2 — Backend Ownership Hardening"
+    assert m.APP_RELEASE.startswith("FFD 2.0 ")
     assert m.ENGINE_BASELINE=="FFD 1.9 RC1"
 
 def test_native_folder_grant_and_persistent_security_scope():

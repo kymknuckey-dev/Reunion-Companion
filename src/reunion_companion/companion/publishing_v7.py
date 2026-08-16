@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-import html,re
+import html,re,os
 from .discovery import person_evidence_summary,relationship_connections,family_snapshot
 from .intelligence import person_quality
 
@@ -30,7 +30,9 @@ def esc(x):return html.escape(str(x or ""))
 def slug(s):return re.sub(r"[^A-Za-z0-9._-]+","_",s).strip("_") or "report"
 
 def default_report_dir():
-    p=Path.home()/"Documents"/"Reunion Companion Reports";p.mkdir(parents=True,exist_ok=True);return p
+    override=os.environ.get("REUNION_COMPANION_REPORT_DIR","").strip()
+    p=Path(override).expanduser() if override else Path.home()/"Documents"/"Reunion Companion Reports"
+    p.mkdir(parents=True,exist_ok=True);return p
 
 def _image_uri(path):
     p=Path(path).expanduser()
