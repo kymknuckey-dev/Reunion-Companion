@@ -6,7 +6,7 @@ def source(name):
 
 def test_release_identity_is_navigation_qa_pass_1():
     s=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Person Presentation & Application Navigation — Person Presentation QA Pass 2"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 1"' in s
 
 def test_global_top_navigation_and_visible_build_identity_are_removed():
     s=source('beta_ui.py')
@@ -19,7 +19,7 @@ def test_mode_control_and_family_selector_share_utility_header():
     s=source('beta_ui.py')
     assert "Presentation</button>" in s
     assert "Research</button>" in s
-    assert "{mode_control_html(presentation)}{family_selector_html()}" in s
+    assert "{family_selector_html()}{mode_control_html(presentation)}" in s
     assert 'action=\'/presentation/mode\'' in s
 
 def test_sidebar_before_person_is_companion_only():

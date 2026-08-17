@@ -16,4 +16,4 @@ def test_family_portraits_support_real_media_and_three_brand_placeholders():
 
 def test_current_release_identity_is_pass2():
     text=(ROOT/'macos_app/build_app.py').read_text()
-    assert 'Person Presentation QA Pass 2' in text
+    assert 'Visual Presentation QA Pass 1' in text

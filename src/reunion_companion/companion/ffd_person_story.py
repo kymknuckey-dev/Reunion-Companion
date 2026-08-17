@@ -76,6 +76,20 @@ def person_identity_header(db,w,presentation=True):
     xref="" if presentation else f"<div class='small'>{esc(p.get('gedcom_xref'))}</div>"
     return f"<section class='rc-person-strip'>{img}<div><div class='rc-person-name'>{esc(p['display_name'])}</div><div class='rc-person-life'>{esc(_lifespan(events))}</div>{context_html}{xref}</div></section>"
 
+def _event_icon(kind):
+    k=(kind or '').casefold()
+    if 'birth' in k: path='<circle cx="12" cy="9" r="3"/><path d="M7 19c1-4 9-4 10 0M5 5h3M6.5 3.5v3"/>'
+    elif 'educ' in k: path='<path d="M3 8l9-4 9 4-9 4-9-4zM6 10v5c3 2 9 2 12 0v-5M21 8v6"/>'
+    elif 'marri' in k or 'spouse' in k: path='<circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/>'
+    elif 'resid' in k or 'address' in k: path='<path d="M4 11l8-7 8 7v9H4zM9 20v-6h6v6"/>'
+    elif 'occup' in k or 'career' in k or 'work' in k: path='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v2h4v-2"/>'
+    elif 'milit' in k or 'service' in k: path='<path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"/>'
+    elif 'relig' in k or 'bapt' in k or 'christ' in k: path='<path d="M12 3v18M7 8h10"/>'
+    elif 'death' in k: path='<path d="M12 21s-8-4.7-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 6.3-8 11-8 11z"/>'
+    elif 'burial' in k or 'cremat' in k: path='<path d="M7 21V9a5 5 0 0110 0v12M4 21h16M9 12h6"/>'
+    else: path='<circle cx="12" cy="12" r="7"/><path d="M12 8v5l3 2"/>'
+    return f'<span class="ffd-event-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{path}</svg></span>'
+
 def _event_sort_key(e):
     year=_year(e["date_text"])
     # Dated records form the chronological spine; undated facts follow in a stable, useful order.
@@ -100,7 +114,7 @@ def person_story_body(db,w,presentation=True):
         if value and value not in note: details.append(esc(value))
         detail_html=f"<div class='ffd-milestone-detail'>{' · '.join(details)}</div>" if details else ""
         note_html=f"<p>{esc(note)}</p>" if note else ""
-        mh+=f"<div class='ffd-milestone'><div class='ffd-milestone-type'>{esc(year or kind)}</div><div class='ffd-milestone-title'>{esc(kind)}</div>{detail_html}{note_html}</div>"
+        mh+=f"<div class='ffd-milestone'><div class='ffd-milestone-date'>{esc(year or '')}</div>{_event_icon(kind)}<div class='ffd-milestone-copy'><div class='ffd-milestone-title'>{esc(kind)}</div>{detail_html}{note_html}</div></div>"
     if not mh: mh="<p class='meta'>No life events are currently available.</p>"
 
     immediate=[r for r in family if r[0]==0];close=[r for r in family if r[0]==1]
@@ -122,9 +136,9 @@ def person_story_body(db,w,presentation=True):
     media_html="".join(f"<a href='/media-item/{m['id']}'><img class='ffd-media-preview' src='/media-file/{m['id']}' alt='{esc(m.get('title') or '')}'></a>" for m in images[:4])
 
     context=[]
-    if parents: context.append("Child of "+" and ".join(parents[:2]))
-    if spouse: context.append("Spouse: "+spouse)
-    context_html=f"<div class='ffd-hero-context'>{esc(' · '.join(context))}</div>" if context else ""
+    if parents: context.append(f"<div><span>Parents</span><strong>{esc(' · '.join(parents[:2]))}</strong></div>")
+    if spouse: context.append(f"<div><span>Spouse</span><strong>{esc(spouse)}</strong></div>")
+    context_html=f"<div class='ffd-hero-context'>{''.join(context)}</div>" if context else ""
 
     intro=[]
     if birth:
@@ -137,5 +151,5 @@ def person_story_body(db,w,presentation=True):
     if close: family_html+=f"<h3 class='ffd-close-family'>Close Family</h3>{rows(close)}"
     media_section=f"<h2 class='ffd-section'>Media & Documents</h2><div class='card'><div class='ffd-media-strip'>{media_html}</div><p><a class='ffd-inline-link' href='/person/{pid}?tab=media'>View all media →</a></p></div>" if media_html else ""
 
-    return f"""<section class='ffd-person-hero ffd-person-editorial'><div class='ffd-hero-copy'><div class='ffd-eyebrow'>A life in the family history</div><h1>{esc(p['display_name'])}</h1><div class='ffd-lifespan'>{esc(_lifespan(events))}</div>{context_html}{intro_html}</div>{portrait_html}</section>
+    return f"""<section class='ffd-person-hero ffd-person-editorial'><div class='ffd-eyebrow'>A life in the family history</div><div class='ffd-hero-layout'>{portrait_html}<div class='ffd-hero-copy'><h1>{esc(p['display_name'])}</h1><div class='ffd-lifespan'>{esc(_lifespan(events))}</div>{intro_html}{context_html}</div></div></section>
 <div class='ffd-story-grid'><section><h2 class='ffd-section'>Life Story</h2><div class='card ffd-life-sequence'>{mh}</div></section><aside><h2 class='ffd-section'>Family</h2><div class='card'><h3>Immediate Family</h3>{family_html}</div>{media_section}</aside></div>"""
