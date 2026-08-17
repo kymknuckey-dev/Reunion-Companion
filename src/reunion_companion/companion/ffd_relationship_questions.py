@@ -5,6 +5,7 @@ import re
 import html,re
 from urllib.parse import quote
 from collections import deque
+from .identity_discovery import resolve_identity_name, identity_groups_in_text
 def esc(v):return html.escape("" if v is None else str(v))
 def person(db,pid):
  r=db.execute("SELECT id,display_name,sex FROM people WHERE id=?",(pid,)).fetchone();return dict(r) if r else None
@@ -131,30 +132,15 @@ def _match_person_phrase(p,phrase):
 def resolve_name(db,phrase):
  phrase=(phrase or "").strip()
  if not phrase:return []
- return [p for p in people(db) if _match_person_phrase(p,phrase)]
+ return resolve_identity_name(db,phrase)
 
 def _exact_phrase_matches(matches,phrase):
  return [p for p in matches if p["display_name"].casefold()==(phrase or "").strip().casefold()]
 
 def named_people(db,q):
- tokens=_name_tokens(q);candidates=[];seen_groups=set()
- max_len=min(5,len(tokens))
- for length in range(max_len,1,-1):
-  for i in range(len(tokens)-length+1):
-   phrase=" ".join(tokens[i:i+length]);matches=resolve_name(db,phrase)
-   if not matches:continue
-   ids=tuple(sorted(p["id"] for p in matches))
-   key=(i,ids)
-   if key in seen_groups:continue
-   seen_groups.add(key);candidates.append((i,length,matches,phrase))
- candidates.sort(key=lambda x:(x[0],-x[1],len(x[2])))
- chosen=[];occupied=set()
- for pos,length,matches,phrase in candidates:
-  span=set(range(pos,pos+length))
-  if span & occupied:continue
-  occupied|=span;chosen.append({"position":pos,"phrase":phrase,"matches":matches})
- chosen.sort(key=lambda x:x["position"])
- return chosen
+ # RC1.0.6: identity discovery understands conservative given-name variants
+ # and spouse-surname associations without changing the authoritative Reunion name.
+ return identity_groups_in_text(db,q)
 
 def explicit_subject(db,q):
  groups=named_people(db,q)
@@ -237,6 +223,53 @@ def _candidate_question_relevance(db,p,q):
  }
  return found,(labels.get(intent,"") if found else "")
 
+def _identity_group_rank(p):
+ kind=p.get("_identity_match_kind","")
+ return {
+  "recorded-name":0,
+  "recorded-given":0,
+  "given-variant":1,
+  # Both are family/name associations.  Keep them in one presentation group;
+  # the detailed sort key decides their relative strength.
+  "spouse-surname":2,
+  "given-variant-spouse-surname":2,
+ }.get(kind,1)
+
+def _identity_display_quality(p):
+ """Conservative recognition-quality hint, never an identity fact.
+
+ Penalise obvious placeholder/legacy display forms (numbers, comma-separated
+ fragments, one-token names) so a well-described canonical person is not buried
+ beneath low-information association records.
+ """
+ name=(p or {}).get("display_name","") or ""
+ score=0
+ if any(ch.isdigit() for ch in name):score-=4
+ if "," in name:score-=2
+ words=[x for x in re.findall(r"[A-Za-zÀ-ÿ'’-]+",name) if x]
+ if len(words)>=3:score+=2
+ elif len(words)==2:score+=1
+ else:score-=2
+ return score
+
+def _identity_association_rank(choice):
+ kind=choice.get("identity_match_kind") or choice.get("person",{}).get("_identity_match_kind","")
+ # A combined given-name-variant + spouse-surname explanation carries two
+ # explicit pieces of evidence and should not be buried beneath weak generic
+ # association records.  Exact spouse-surname associations remain strong.
+ return {"given-variant-spouse-surname":0,"spouse-surname":1}.get(kind,2)
+
+def _identity_recognition(db,p):
+ """Short Reunion-grounded context that helps distinguish same-name people."""
+ bits=[]
+ ss=spouses(db,p["id"])
+ if ss:
+  bits.append("Spouse: "+", ".join(x["display_name"] for x in ss[:2]))
+ ps=parents(db,p["id"])
+ if ps:
+  bits.append("Parents: "+" and ".join(x["display_name"] for x in ps[:2]))
+ return " · ".join(bits)
+
 def _ambiguity_answer(group,db=None,q=""):
  matches=group.get("matches",[])
  if db is None:
@@ -249,7 +282,11 @@ def _ambiguity_answer(group,db=None,q=""):
  choices=[]
  for p,label in zip(matches,labels):
   relevant,relevance_label=_candidate_question_relevance(db,p,q)
-  choices.append({"person":p,"label":label,"question_relevant":relevant,"relevance_label":relevance_label})
+  choices.append({"person":p,"label":label,"question_relevant":relevant,"relevance_label":relevance_label,
+                  "identity_reason":p.get("_identity_match_reason",""),
+                  "identity_match_kind":p.get("_identity_match_kind",""),
+                  "identity_group_rank":_identity_group_rank(p),
+                  "recognition":_identity_recognition(db,p)})
  return {"status":"ambiguous","kind":"identity-choice",
          "answer":f'I found several people matching “{group.get("phrase","")}”. Which one do you mean? {shown}.',
          "people":matches,"choices":choices,"question":q,"question_domain":_structured_domain(q)}
@@ -272,8 +309,12 @@ def resolve_contextual_group(db,group,subject_id=None,allow_current=True):
 
  # Hard identity rule: if the literal name typed by the user belongs to
  # multiple records, never collapse those records using family proximity.
+ # At the no-focus Search entry point, however, preserve credible associated-name
+ # candidates as well so many literal duplicates cannot hide the person the user
+ # may know through marriage or another explained name association.
  if len(exact)>1:
-  return {"status":"ambiguous","matches":exact,"phrase":phrase,"reason":"explicit-duplicate-name"}
+  kept=matches if subject_id is None else exact
+  return {"status":"ambiguous","matches":kept,"phrase":phrase,"reason":"explicit-duplicate-name"}
 
  if subject_id and allow_current:
   current=person(db,subject_id)
@@ -781,8 +822,22 @@ def _answer_question_core(db,q,subject_id=None,selected_identity_id=None,prior_k
  if not q:return {"status":"empty","answer":"Ask a question about this person or family."}
  intent=interpret_question(q)
 
+ # RC1.0.6 QA Pass 4: association-aware explicit names use the same no-focus
+ # identity-discovery pipeline at Search and Ask entry points.  Existing
+ # conversational proximity remains intact for ordinary canonical/short-name
+ # follow-ups (for example, a nearby Victor Knuckey), while spouse-surname/name
+ # association candidates must never be pruned merely because Ask already has a
+ # conversation focus.
+ explicit_groups=named_people(db,q)
+ association_kinds={"spouse-surname","given-variant-spouse-surname"}
+ has_identity_association=bool(explicit_groups and any(
+  p.get("_identity_match_kind") in association_kinds
+  for p in explicit_groups[0].get("matches",[])
+ ))
+ discovery_subject_id=None if subject_id is None or has_identity_association else subject_id
+
  if intent=="relationship":
-  pair=contextual_pair(db,q,subject_id)
+  pair=contextual_pair(db,q,discovery_subject_id)
   if pair["status"]=="ambiguous":return _ambiguity_answer(pair["ambiguous"],db,q)
   if pair["status"]=="ok":
    a,b=pair["people"];rel=blood_relationship(db,a["id"],b["id"])
@@ -794,7 +849,7 @@ def _answer_question_core(db,q,subject_id=None,selected_identity_id=None,prior_k
    return {"status":"not-found","answer":"No recorded family connection was found between those two people."}
   return {"status":"needs-person","answer":"I could not identify both people in that relationship question. Try using both names."}
 
- explicit=contextual_subject(db,q,subject_id)
+ explicit=contextual_subject(db,q,discovery_subject_id)
  if explicit["status"]=="ambiguous":
   matches=explicit["people"]
   selected=None
@@ -964,6 +1019,27 @@ def _focus_from_answer(db,q,subject_id,selected_identity_id,result):
 
 def answer_question(db,q,subject_id=None,selected_identity_id=None,prior_knowledge_intent=None):
  r=_answer_question_core(db,q,subject_id,selected_identity_id,prior_knowledge_intent)
+ # Preserve an explainable discovery reason for entry-point search.  This is
+ # provenance for why Companion considered a person a match, never a claim that
+ # Reunion stores the inferred name.
+ try:
+  matched=None
+  if selected_identity_id:
+   groups=named_people(db,q)
+   for g in groups:
+    hit=next((p for p in g.get("matches",[]) if p.get("id")==int(selected_identity_id)),None)
+    if hit:
+     matched=hit;break
+  if matched is None:
+   ex=contextual_subject(db,q,subject_id)
+   if ex.get("status")=="ok" and ex.get("people"):
+    matched=ex["people"][0]
+  if matched:
+   reason=matched.get("_identity_match_reason","")
+   if reason and reason not in ("Exact recorded name","Recorded name","Recorded given name"):
+    r["identity_match_reason"]=reason
+ except Exception:
+  pass
  suggested=_suggested_focus_from_answer(db,q,subject_id,selected_identity_id,r)
  focus=_focus_from_answer(db,q,subject_id,selected_identity_id,r)
  if focus:
@@ -983,7 +1059,17 @@ def path_html(path):
 def _identity_choice_sort_key(choice):
  label=choice.get("label","")
  m=re.search(r"\b(\d{4})\b",label)
- return (0 if choice.get("question_relevant") else 1,int(m.group(1)) if m else 9999,label.casefold(),choice.get("person",{}).get("id",0))
+ # Identity strength remains primary.  Requested-fact availability helps order
+ # candidates within the same identity class but never turns a weak association
+ # into a stronger identity than an exact recorded-name match.
+ group=choice.get("identity_group_rank",_identity_group_rank(choice.get("person",{})))
+ assoc_rank=_identity_association_rank(choice) if group>=2 else 0
+ return (group,
+         0 if choice.get("question_relevant") else 1,
+         assoc_rank,
+         -_identity_display_quality(choice.get("person",{})),
+         -choice.get("person",{}).get("_identity_score",0),
+         int(m.group(1)) if m else 9999,label.casefold(),choice.get("person",{}).get("id",0))
 
 def _choice_cards(choices,question,subject_id=None,origin_id=None):
  cards=[]
@@ -995,30 +1081,45 @@ def _choice_cards(choices,question,subject_id=None,origin_id=None):
   if origin_id:bits.append(f"origin={origin_id}")
   href="/questions?"+"&".join(bits)
   badge=f"<div class='rq-relevance'>{esc(c.get('relevance_label',''))}</div>" if c.get("question_relevant") and c.get("relevance_label") else ""
+  identity_reason=f"<div class='rq-identity-reason'>{esc(c.get('identity_reason',''))}</div>" if c.get("identity_reason") and c.get("identity_reason") not in ("Exact recorded name","Recorded name") else ""
+  recognition=f"<div class='rq-identity-meta'>{esc(c.get('recognition',''))}</div>" if c.get("recognition") else ""
   cards.append(f"""<a class='rq-identity-card' href='{href}'>
    <div class='rq-identity-name'>{esc(prefix)}</div>
-   <div class='rq-identity-meta'>{esc(meta)}</div>{badge}
-   <div class='rq-identity-select'>Select</div>
+   <div class='rq-identity-meta'>{esc(meta)}</div>{recognition}{identity_reason}{badge}
+   <div class='rq-identity-select'>Answer using this person →</div>
   </a>""")
  return "".join(cards)
 
 def identity_choices_html(r,question,subject_id=None,origin_id=None):
  choices=sorted(r.get("choices",[]),key=_identity_choice_sort_key)
+ direct=[c for c in choices if c.get("identity_group_rank",_identity_group_rank(c.get("person",{})))<2]
+ associated=[c for c in choices if c not in direct]
+ best_likely=[c for c in associated
+              if (c.get("identity_match_kind") or c.get("person",{}).get("_identity_match_kind",""))
+                 in ("spouse-surname","given-variant-spouse-surname")
+              and _identity_display_quality(c.get("person",{}))>=1]
+ other_associated=[c for c in associated if c not in best_likely]
+ chunks=[]
+ if best_likely:
+  chunks.append("<div class='rq-choice-section'><div class='rq-choice-section-title'>Best likely matches</div><div class='rq-identity-grid'>"+_choice_cards(best_likely[:6],question,subject_id,origin_id)+"</div></div>")
+ if direct:
+  visible=direct[:6];extra=direct[6:]
+  chunks.append("<div class='rq-choice-section'><div class='rq-choice-section-title'>People recorded with this name</div><div class='rq-identity-grid'>"+_choice_cards(visible,question,subject_id,origin_id)+"</div></div>")
+  if extra:
+   chunks.append(f"<details class='rq-other-matches'><summary>More people recorded with this name ({len(extra)})</summary><div class='rq-identity-grid'>{_choice_cards(extra,question,subject_id,origin_id)}</div></details>")
+ if other_associated:
+  chunks.append("<div class='rq-choice-section'><div class='rq-choice-section-title'>Other family/name associations</div><div class='rq-identity-grid'>"+_choice_cards(other_associated[:8],question,subject_id,origin_id)+"</div></div>")
+  if len(other_associated)>8:
+   chunks.append(f"<details class='rq-other-matches'><summary>More family/name association matches ({len(other_associated)-8})</summary><div class='rq-identity-grid'>{_choice_cards(other_associated[8:],question,subject_id,origin_id)}</div></details>")
  relevant=[c for c in choices if c.get("question_relevant")]
- other=[c for c in choices if not c.get("question_relevant")]
- title=esc(r.get('people',[{}])[0].get('display_name','person'))
- if relevant and other:
-  domain=(r.get("question_domain") or interpret_question(question) or "requested information").replace("_"," ")
-  body=(f"<div class='rq-choice-section'><div class='rq-choice-section-title'>Matches with {esc(domain)} information</div>"
-        f"<div class='rq-identity-grid'>{_choice_cards(relevant,question,subject_id,origin_id)}</div></div>"
-        f"<details class='rq-other-matches'><summary>Other matches — requested information not currently recorded ({len(other)})</summary>"
-        f"<div class='rq-identity-grid'>{_choice_cards(other,question,subject_id,origin_id)}</div></details>")
- else:
-  body=f"<div class='rq-identity-grid'>{_choice_cards(choices,question,subject_id,origin_id)}</div>"
+ domain=(r.get("question_domain") or interpret_question(question) or "requested information").replace("_"," ")
+ relevance=f"<div class='rq-choice-section-title'>Matches with {esc(domain)} information</div>" if relevant else ""
+ nonrelevant=[c for c in choices if not c.get("question_relevant")]
+ availability_note=(f"<details class='rq-other-matches'><summary>Other matches — requested information not currently recorded ({len(nonrelevant)})</summary></details>" if relevant and nonrelevant else "")
  return f"""<div class='rq-identity-picker'>
-  <div class='rq-identity-title'>Which {title} do you mean?</div>
-  <div class='rq-identity-count'>{len(choices)} matching Reunion people</div>
-  {body}
+  <div class='rq-identity-title'>Possible people</div>
+  <div class='rq-identity-count'>{len(choices)} matching Reunion people. Companion found more than one person who could match the name in your question. The recorded Reunion name remains authoritative.</div>
+  {relevance}{''.join(chunks)}{availability_note}
  </div>"""
 
 def answer_html(r,question="",subject_id=None,origin_id=None):

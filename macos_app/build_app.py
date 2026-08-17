@@ -10,7 +10,8 @@ import os
 APP_NAME="Reunion Companion"
 APP_VERSION="2.0"
 APP_BUILD="6"
-APP_RELEASE="FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2"
+APP_RELEASE="FFD 2.0 RC1.0.6 — Search & Identity Discovery, QA Pass 4"
+# RC1.0.5 Visual QA Pass 2 icon/bundle acceptance remains part of this cumulative build.
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
 
@@ -56,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let web=WKWebView(frame:w.contentView?.bounds ?? frame,configuration:WKWebViewConfiguration()); web.autoresizingMask=[.width,.height]; web.navigationDelegate=self
         w.contentView=web; window=w; webView=web; w.makeKeyAndOrderFront(nil)
     }
-    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2\nGenealogy Engine: FFD 1.9 RC1"; a.addButton(withTitle:"OK"); a.runModal() }
+    @objc func showAbout() { let a=NSAlert(); a.messageText="Reunion Companion"; a.informativeText="__APP_RELEASE__\nGenealogy Engine: __ENGINE_BASELINE__"; a.addButton(withTitle:"OK"); a.runModal() }
     @objc func reloadCurrentPage() { webView?.reload() }
     @objc func showDiagnostics() {
         let backendState = isCompanionReady() ? "Running" : "Not responding"
@@ -68,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let modelDisplay = model.isEmpty ? "(automatic)" : model
         let reunionFilesDisplay = reunionFilesURL?.path ?? "(not granted)"
         let a=NSAlert(); a.messageText="Reunion Companion Diagnostics"
-        a.informativeText="Application: FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2\nGenealogy Engine: FFD 1.9 RC1\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
+        a.informativeText="Application: __APP_RELEASE__\nGenealogy Engine: __ENGINE_BASELINE__\nBackend: \(backendState)\nDatabase: \(dbPath)\nOllama: \(ollamaState)\nModel: \(modelDisplay)\nRuntime: \(runtimePath)\nReunion Files: \(reunionFilesDisplay)\nLog: \(logPath)"
         a.addButton(withTitle:"OK"); a.runModal()
     }
     func reunionBookmarkURL() -> URL {
@@ -232,7 +233,10 @@ def repository_root()->Path: return Path(__file__).resolve().parents[1]
 def make_plan(repo:Path|None=None,output:Path|None=None)->BuildPlan:
     repo=(repo or repository_root()).resolve(); output=(output or repo/"dist"/f"{APP_NAME}.app").resolve()
     return BuildPlan(repo,output,repo/".venv/bin/python",shutil.which("swiftc") or "")
-def swift_source(repo:Path)->str: return SWIFT_TEMPLATE
+def swift_source(repo:Path)->str:
+    return (SWIFT_TEMPLATE
+            .replace("__APP_RELEASE__",APP_RELEASE)
+            .replace("__ENGINE_BASELINE__",ENGINE_BASELINE))
 
 def info_plist()->dict:
     return {"CFBundleDevelopmentRegion":"en","CFBundleDisplayName":APP_NAME,"CFBundleExecutable":APP_NAME,"CFBundleIdentifier":BUNDLE_ID,"CFBundleInfoDictionaryVersion":"6.0","CFBundleName":APP_NAME,"CFBundlePackageType":"APPL","CFBundleShortVersionString":APP_VERSION,"CFBundleVersion":APP_BUILD,"CFBundleIconFile":"ReunionCompanion.icns","CFBundleIconName":"ReunionCompanion","LSMinimumSystemVersion":"13.0","NSHighResolutionCapable":True,"LSApplicationCategoryType":"public.app-category.reference"}

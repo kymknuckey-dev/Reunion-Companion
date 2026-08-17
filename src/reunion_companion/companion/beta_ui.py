@@ -13,7 +13,8 @@ from .ffd_home import home_body as ffd_home_body, search_body as ffd_search_body
 from .ffd_presentation import presentation_mode_enabled,toggle_presentation_mode
 from .ffd_person_story import person_story_body
 from .ffd_family_chart import family_chart_body
-from .ffd_relationship_questions import questions_body
+from .ffd_relationship_questions import questions_body,answer_question,interpret_question
+from .identity_discovery import is_natural_language_question
 from .person_navigation import nav_html
 from .beta3_data_manager import current_gedcom,import_history,seed_history_from_current,reload_current,staged_import,dataset_counts
 from .beta3_quality import quick_wins,quality_items,person_quality
@@ -246,7 +247,7 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .rq-heading{text-align:center;max-width:820px;margin:10px auto 24px}.rq-heading h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:42px;margin:6px 0}.rq-heading p{color:var(--muted);line-height:1.5}
 .rq-form{max-width:900px;margin:0 auto 22px;display:flex;gap:10px}.rq-input{flex:1;padding:14px 16px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px}.rq-answer{max-width:900px;margin:0 auto 22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:20px}.rq-answer>p{font-family:Georgia,"Times New Roman",serif;font-size:21px;line-height:1.45;margin:0 0 15px}
 .rq-path{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:520px;margin:16px auto}.rq-path-person{display:block;width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--soft);text-align:center;color:var(--text);text-decoration:none;font-family:Georgia,"Times New Roman",serif;font-size:17px}.rq-path-edge{color:var(--muted);font-size:12px;text-transform:uppercase}.rq-people{display:flex;flex-wrap:wrap;gap:8px}.rq-person-chip{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--text);text-decoration:none}.rq-help{max-width:900px;margin:0 auto}.rq-example{padding:7px 0;border-bottom:1px solid var(--line);color:var(--muted)}.rq-help p{color:var(--muted)}
-.rq-context{margin-top:12px}.rq-context-line{color:var(--muted);line-height:1.5}.rq-followup{color:var(--muted);font-size:12px;line-height:1.4;margin-top:4px}.rq-return-line{margin-top:3px}.rq-return-origin{font-size:13px}.rq-identity-picker{margin-top:8px}.rq-identity-title{font-family:Georgia,"Times New Roman",serif;font-size:28px;margin-bottom:4px}.rq-identity-count{color:var(--muted);margin-bottom:16px}.rq-choice-section-title{font-weight:650;margin:0 0 9px}.rq-choice-section{margin-bottom:14px}.rq-other-matches{margin-top:14px}.rq-other-matches summary{cursor:pointer;color:var(--muted);font-weight:600;margin-bottom:10px}.rq-identity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.rq-identity-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card);transition:transform .12s ease,border-color .12s ease}.rq-identity-card:hover{transform:translateY(-1px);border-color:var(--accent)}.rq-identity-name{font-family:Georgia,"Times New Roman",serif;font-size:20px}.rq-identity-meta{color:var(--muted);font-size:14px;margin-top:4px;line-height:1.35}.rq-relevance{display:inline-block;margin-top:8px;padding:3px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:650}.rq-identity-select{margin-top:10px;font-weight:600;color:var(--accent)}.presentation .rq-heading h1{font-size:48px}.presentation .rq-answer>p{font-size:24px}
+.search-discovery{margin-top:8px}.search-discovery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px;margin-top:12px}.search-discovery-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}.search-discovery-card:hover{border-color:var(--accent)}.search-discovery-reason{font-size:13px;line-height:1.4;color:var(--muted);margin-top:5px}.search-discovery-action{margin-top:10px;color:var(--accent);font-weight:650}.rq-context{margin-top:12px}.rq-context-line{color:var(--muted);line-height:1.5}.rq-followup{color:var(--muted);font-size:12px;line-height:1.4;margin-top:4px}.rq-return-line{margin-top:3px}.rq-return-origin{font-size:13px}.rq-identity-picker{margin-top:8px}.rq-identity-title{font-family:Georgia,"Times New Roman",serif;font-size:28px;margin-bottom:4px}.rq-identity-count{color:var(--muted);margin-bottom:16px}.rq-choice-section-title{font-weight:650;margin:0 0 9px}.rq-choice-section{margin-bottom:14px}.rq-other-matches{margin-top:14px}.rq-other-matches summary{cursor:pointer;color:var(--muted);font-weight:600;margin-bottom:10px}.rq-identity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.rq-identity-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card);transition:transform .12s ease,border-color .12s ease}.rq-identity-card:hover{transform:translateY(-1px);border-color:var(--accent)}.rq-identity-name{font-family:Georgia,"Times New Roman",serif;font-size:20px}.rq-identity-meta{color:var(--muted);font-size:14px;margin-top:4px;line-height:1.35}.rq-relevance{display:inline-block;margin-top:8px;padding:3px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:650}.rq-identity-select{margin-top:10px;font-weight:600;color:var(--accent)}.presentation .rq-heading h1{font-size:48px}.presentation .rq-answer>p{font-size:24px}
 @media(max-width:650px){.rq-form{display:block}.rq-input{width:100%;box-sizing:border-box;margin-bottom:9px}.rq-form .btn{width:100%}}
 
 """
@@ -305,11 +306,14 @@ def error_page(title,error):
 def home(db,q=""):
     # Compatibility: an old-style /?q= search still works.
     if q:
-        return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled()))
+        return search_page(db,q)
     return layout("Home",ffd_home_body(db,quick_wins(db),presentation_mode_enabled()))
 
-def search_page(db,q=""):
-    return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled()))
+def search_page(db,q="",selected_identity_id=None):
+    question_result=None
+    if q and is_natural_language_question(q) and interpret_question(q)!="unknown":
+        question_result=answer_question(db,q,None,selected_identity_id)
+    return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled(),question_result))
 
 def _delete_confirmation(db, workspace_id):
     life=deletion_lifecycle(db,workspace_id)
@@ -703,7 +707,9 @@ def render_get(db,path,query=None):
     if path=="/":
         return home(db,query.get("q",""))
     if path=="/search":
-        return search_page(db,query.get("q",""))
+        try: selected=int(query.get("selected","0") or 0) or None
+        except Exception: selected=None
+        return search_page(db,query.get("q",""),selected)
     if path=="/data":
         return data_page(db)
     if path=="/quality":

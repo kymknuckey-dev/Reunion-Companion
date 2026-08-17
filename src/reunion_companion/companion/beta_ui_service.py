@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+from .identity_discovery import resolve_identity_name
 from .discovery import relationship_connections
 from .family_publication_model import (
     life_dates,person_events,person_notes,person_sources,person_media,
@@ -12,12 +13,21 @@ def search_people(db,text,limit=40):
     q=(text or "").strip()
     if not q:
         rows=db.execute("SELECT id,display_name,sex,gedcom_xref FROM people ORDER BY display_name LIMIT ?",(limit,)).fetchall()
-    else:
-        tokens=[x for x in re.findall(r"[A-Za-z0-9'’-]+",q.casefold()) if x]
-        where=" AND ".join("lower(display_name) LIKE ?" for _ in tokens)
-        args=[f"%{x}%" for x in tokens]+[q.casefold(),limit]
-        rows=db.execute("SELECT id,display_name,sex,gedcom_xref FROM people WHERE "+where+" ORDER BY CASE WHEN lower(display_name)=? THEN 0 ELSE 1 END,display_name LIMIT ?",args).fetchall()
-    return _dicts(rows)
+        return _dicts(rows)
+    # Preserve the established substring search for partial/simple input, then
+    # add human identity associations for full-name searches.
+    tokens=[x for x in re.findall(r"[A-Za-z0-9'’-]+",q.casefold()) if x]
+    where=" AND ".join("lower(display_name) LIKE ?" for _ in tokens)
+    args=[f"%{x}%" for x in tokens]+[q.casefold(),limit]
+    rows=_dicts(db.execute("SELECT id,display_name,sex,gedcom_xref FROM people WHERE "+where+" ORDER BY CASE WHEN lower(display_name)=? THEN 0 ELSE 1 END,display_name LIMIT ?",args).fetchall())
+    if len(tokens)>=2:
+        associated=resolve_identity_name(db,q,limit)
+        seen={r["id"] for r in rows}
+        for p in associated:
+            if p["id"] not in seen:
+                rows.append(p);seen.add(p["id"])
+        rows.sort(key=lambda p:(-p.get("_identity_score",0),p["display_name"].casefold(),p["id"]))
+    return rows[:limit]
 
 def person_confidence(db,pid):
     p=db.execute("SELECT id FROM people WHERE id=?",(pid,)).fetchone()
