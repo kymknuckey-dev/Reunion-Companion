@@ -147,6 +147,16 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .presentation-banner strong{color:var(--text)}
 
 .ffd-person-editorial{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:center;gap:34px;padding:30px 34px}.ffd-person-editorial .ffd-hero-portrait{width:220px;max-height:260px;justify-self:end;object-fit:cover}.ffd-human-kpis{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:20px;text-align:left}.ffd-human-kpis strong{font-size:24px;line-height:1.15;overflow-wrap:anywhere}.ffd-human-kpis span{display:block;margin-top:6px;color:var(--muted);font-size:13px}.ffd-life-sequence{padding-left:30px}.ffd-life-sequence .ffd-milestone{position:relative;padding-left:18px}.ffd-life-sequence .ffd-milestone:before{content:"";position:absolute;left:-12px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--brand-olive)}.ffd-life-sequence .ffd-milestone:after{content:"";position:absolute;left:-9px;top:18px;bottom:-22px;width:1px;background:var(--line)}.ffd-life-sequence .ffd-milestone:last-child:after{display:none}.ffd-person-link{text-decoration:none;color:var(--text)}.ffd-person-link:hover{text-decoration:underline}.ffd-media-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.ffd-media-preview{width:100%;height:105px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}@media(max-width:760px){.ffd-person-editorial{grid-template-columns:1fr}.ffd-person-editorial .ffd-hero-portrait{justify-self:start;width:170px}.rc-person-strip .rc-person-context{display:none}}
+/* RC1.0.7 Person Presentation QA Pass 1 */
+.ffd-person-editorial{grid-template-columns:minmax(0,1fr) 260px;padding:34px 38px;min-height:250px}
+.ffd-person-editorial .ffd-hero-portrait{width:250px;max-height:300px;border-radius:12px;box-shadow:0 8px 24px rgba(38,46,45,.10)}
+.ffd-hero-copy{align-self:center}.ffd-hero-context{margin-top:10px;color:var(--text);font-size:15px;font-weight:600;line-height:1.45}
+.ffd-glance{margin:0 0 24px}.ffd-glance .ffd-section{margin-bottom:10px}.ffd-glance .ffd-human-kpis{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 22px}
+.ffd-glance-item{min-width:0;padding-right:18px;border-right:1px solid var(--line)}.ffd-glance-item:last-child{border-right:0}.ffd-glance-item strong{font-family:Georgia,"Times New Roman",serif;font-weight:500}.ffd-glance-item span{text-transform:uppercase;letter-spacing:.055em;font-size:11px}
+.ffd-milestone-detail{margin-top:3px;line-height:1.45}.ffd-story-relation{position:relative;padding-right:28px}.ffd-story-relation .ffd-relation-arrow{position:absolute;right:2px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.presentation .ffd-person-editorial{padding:42px 46px}.presentation .ffd-person-editorial .ffd-hero-portrait{width:270px;max-height:330px}.presentation .ffd-hero-context{font-size:17px}
+@media(max-width:760px){.ffd-person-editorial{grid-template-columns:1fr}.ffd-person-editorial .ffd-hero-portrait{justify-self:start;width:180px}.ffd-glance-item{border-right:0;border-bottom:1px solid var(--line);padding:10px 0}.ffd-glance-item:last-child{border-bottom:0}}
+
 
 /* FFD 1.3 Person Story */
 .ffd-person-hero{background:linear-gradient(135deg,#eeece5,#f8f7f3);border:1px solid var(--line);border-radius:16px;padding:38px;margin-bottom:24px}
@@ -252,6 +262,14 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .rq-path{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:520px;margin:16px auto}.rq-path-person{display:block;width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--soft);text-align:center;color:var(--text);text-decoration:none;font-family:Georgia,"Times New Roman",serif;font-size:17px}.rq-path-edge{color:var(--muted);font-size:12px;text-transform:uppercase}.rq-people{display:flex;flex-wrap:wrap;gap:8px}.rq-person-chip{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--text);text-decoration:none}.rq-help{max-width:900px;margin:0 auto}.rq-example{padding:7px 0;border-bottom:1px solid var(--line);color:var(--muted)}.rq-help p{color:var(--muted)}
 .search-discovery{margin-top:8px}.search-discovery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px;margin-top:12px}.search-discovery-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}.search-discovery-card:hover{border-color:var(--accent)}.search-discovery-reason{font-size:13px;line-height:1.4;color:var(--muted);margin-top:5px}.search-discovery-action{margin-top:10px;color:var(--accent);font-weight:650}.rq-context{margin-top:12px}.rq-context-line{color:var(--muted);line-height:1.5}.rq-followup{color:var(--muted);font-size:12px;line-height:1.4;margin-top:4px}.rq-return-line{margin-top:3px}.rq-return-origin{font-size:13px}.rq-identity-picker{margin-top:8px}.rq-identity-title{font-family:Georgia,"Times New Roman",serif;font-size:28px;margin-bottom:4px}.rq-identity-count{color:var(--muted);margin-bottom:16px}.rq-choice-section-title{font-weight:650;margin:0 0 9px}.rq-choice-section{margin-bottom:14px}.rq-other-matches{margin-top:14px}.rq-other-matches summary{cursor:pointer;color:var(--muted);font-weight:600;margin-bottom:10px}.rq-identity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.rq-identity-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card);transition:transform .12s ease,border-color .12s ease}.rq-identity-card:hover{transform:translateY(-1px);border-color:var(--accent)}.rq-identity-name{font-family:Georgia,"Times New Roman",serif;font-size:20px}.rq-identity-meta{color:var(--muted);font-size:14px;margin-top:4px;line-height:1.35}.rq-relevance{display:inline-block;margin-top:8px;padding:3px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:650}.rq-identity-select{margin-top:10px;font-weight:600;color:var(--accent)}.presentation .rq-heading h1{font-size:48px}.presentation .rq-answer>p{font-size:24px}
 @media(max-width:650px){.rq-form{display:block}.rq-input{width:100%;box-sizing:border-box;margin-bottom:9px}.rq-form .btn{width:100%}}
+
+/* RC1.0.7 Person Presentation QA Pass 2 */
+.ffd-story-relation{display:grid!important;grid-template-columns:54px minmax(0,1fr) 18px;align-items:center;gap:12px;padding:12px 0!important}
+.ffd-family-thumb{width:52px;height:52px;object-fit:cover;border-radius:50%;border:1px solid var(--line);background:#f5f1e8}
+.ffd-relation-copy{min-width:0}.ffd-relation-copy .meta,.ffd-relation-copy strong,.ffd-relation-life{display:block}
+.ffd-relation-life{margin-top:2px;color:var(--muted);font-size:12px}.ffd-story-relation .ffd-relation-arrow{position:static!important;transform:none!important;text-align:right}
+.ffd-story-grid{align-items:start}
+@media(max-width:760px){.ffd-story-grid{grid-template-columns:1fr}.ffd-family-thumb{width:48px;height:48px}}
 
 """
 
@@ -591,7 +609,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
     if tab=="family-chart":
         return layout("Interactive Family Chart",family_chart_body(db,pid,view),p,"family-chart")
     if tab=="overview" and presentation:
-        return layout(p["display_name"],person_identity_header(db,w,True)+person_story_body(db,w,True),p,"overview")
+        return layout(p["display_name"],person_story_body(db,w,True),p,"overview")
 
     if tab=="overview":
         bits=[]

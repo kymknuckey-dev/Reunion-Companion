@@ -2,6 +2,8 @@ from __future__ import annotations
 import html,re
 from pathlib import Path
 
+from .branding import brand_data_uri
+
 def esc(v): return html.escape("" if v is None else str(v))
 def _year(v):
     m=re.search(r"\b(1[5-9]\d{2}|20\d{2}|2100)\b",v or "")
@@ -48,6 +50,20 @@ def _portrait(w):
         if m.get("exists_on_disk") and Path(m.get("file_path") or "").suffix.lower() in {".jpg",".jpeg",".png",".gif",".webp",".heic",".tif",".tiff"}: return m
     return None
 
+def _person_portrait(db,pid):
+    return db.execute("""SELECT DISTINCT m.* FROM media m WHERE m.exists_on_disk=1 AND lower(substr(m.file_path,instr(m.file_path,'.'))) IN ('.jpg','.jpeg','.png','.gif','.webp','.heic','.tif','.tiff') AND m.id IN (SELECT media_id FROM person_media WHERE person_id=? UNION SELECT em.media_id FROM event_media em JOIN events e ON e.id=em.event_id WHERE e.person_id=?) ORDER BY m.id LIMIT 1""",(pid,pid)).fetchone()
+
+def _person_thumb(db,pid):
+    person=db.execute("SELECT sex FROM people WHERE id=?",(pid,)).fetchone()
+    portrait=_person_portrait(db,pid)
+    if portrait: return f"/media-file/{portrait['id']}"
+    sex=(person['sex'] if person else '') or ''
+    asset='PersonMale.png' if sex.upper()=='M' else ('PersonFemale.png' if sex.upper()=='F' else 'PersonNeutral.png')
+    return brand_data_uri(asset)
+
+def _person_lifespan(db,pid):
+    return _lifespan(_events(db,pid))
+
 def person_identity_header(db,w,presentation=True):
     p=w["person"];events=_events(db,p["id"]);family=_family(db,p["id"]);portrait=_portrait(w)
     img=f"<img src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
@@ -60,38 +76,66 @@ def person_identity_header(db,w,presentation=True):
     xref="" if presentation else f"<div class='small'>{esc(p.get('gedcom_xref'))}</div>"
     return f"<section class='rc-person-strip'>{img}<div><div class='rc-person-name'>{esc(p['display_name'])}</div><div class='rc-person-life'>{esc(_lifespan(events))}</div>{context_html}{xref}</div></section>"
 
+def _event_sort_key(e):
+    year=_year(e["date_text"])
+    # Dated records form the chronological spine; undated facts follow in a stable, useful order.
+    undated_order={"education":1,"occupation":2,"military":3,"residence":4,"religion":5}
+    kind=(e["event_type"] or "").casefold()
+    return (0,int(year),e["id"]) if year else (1,undated_order.get(kind,8),e["id"])
+
 def person_story_body(db,w,presentation=True):
     p=w["person"];pid=p["id"];events=_events(db,pid);family=_family(db,pid);portrait=_portrait(w)
     portrait_html=f"<img class='person-portrait ffd-hero-portrait' src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
     clean=[e for e in events if (e["event_type"] or "").casefold() not in ("changed","change") and (e["gedcom_tag"] or "").upper()!="CHAN"]
-    pref={"birth":0,"baptism":1,"christening":1,"marriage":2,"military":3,"education":4,"occupation":5,"residence":6,"immigration":6,"emigration":6,"religion":7,"death":8,"burial":9}
-    milestones=sorted(clean,key=lambda e:(pref.get((e["event_type"] or "").lower(),7),e["id"]))[:8]
+    milestones=sorted(clean,key=_event_sort_key)[:10]
     mh=""
     for e in milestones:
-        detail=" · ".join(esc(x) for x in (e["date_text"],e["place_text"]) if x);note=e["note_text"] or e["value_text"] or "";yr=_year(e["date_text"])
-        mh+=f"<div class='ffd-milestone'><div class='ffd-milestone-type'>{esc(yr or e['event_type'])}</div><div class='ffd-milestone-title'>{esc(e['event_type'])}{' — '+detail if detail else ''}</div>{f'<p>{esc(note)}</p>' if note else ''}</div>"
+        kind=e["event_type"] or e["gedcom_tag"] or "Life event"
+        year=_year(e["date_text"])
+        details=[]
+        if e["date_text"]: details.append(esc(e["date_text"]))
+        if e["place_text"]: details.append(esc(e["place_text"]))
+        value=e["value_text"] or ""
+        note=e["note_text"] or ""
+        if value and value not in note: details.append(esc(value))
+        detail_html=f"<div class='ffd-milestone-detail'>{' · '.join(details)}</div>" if details else ""
+        note_html=f"<p>{esc(note)}</p>" if note else ""
+        mh+=f"<div class='ffd-milestone'><div class='ffd-milestone-type'>{esc(year or kind)}</div><div class='ffd-milestone-title'>{esc(kind)}</div>{detail_html}{note_html}</div>"
     if not mh: mh="<p class='meta'>No life events are currently available.</p>"
+
     immediate=[r for r in family if r[0]==0];close=[r for r in family if r[0]==1]
     def rows(items):
-        return "".join(f"<div class='ffd-story-relation'><span class='meta'>{esc(label)}</span><a class='ffd-person-link' href='/person/{i}'><strong>{esc(name)}</strong></a><a class='ffd-inline-link' href='/person/{i}'>View person →</a></div>" for _,label,name,i in items)
+        out=[]
+        for _,label,name,i in items:
+            life=_person_lifespan(db,i)
+            life_html=f"<span class='ffd-relation-life'>{esc(life)}</span>" if life else ""
+            out.append(f"<a class='ffd-story-relation ffd-person-link' href='/person/{i}'><img class='ffd-family-thumb' src='{_person_thumb(db,i)}' alt=''><span class='ffd-relation-copy'><span class='meta'>{esc(label)}</span><strong>{esc(name)}</strong>{life_html}</span><span class='ffd-relation-arrow'>→</span></a>")
+        return "".join(out)
+
     birth=next((e for e in clean if (e["event_type"] or "").casefold()=="birth"),None)
     spouse=next((name for _,label,name,_ in family if label=="Spouse"),None)
-    children=sum(1 for _,label,_,_ in family if label in ("Son","Daughter","Child"))
-    occupation=next((e["value_text"] or e["note_text"] for e in clean if (e["event_type"] or "").casefold()=="occupation" and (e["value_text"] or e["note_text"])),None)
-    glance=[]
-    if birth and _year(birth["date_text"]): glance.append((_year(birth["date_text"]),"Born"))
-    if spouse: glance.append((spouse,"Spouse"))
-    if children: glance.append((str(children),"Children"))
-    if occupation: glance.append((occupation,"Occupation"))
-    while len(glance)<3: glance.append((str(len(clean)),"Recorded life events"))
-    gh="".join(f"<div><strong>{esc(v)}</strong><span>{esc(l)}</span></div>" for v,l in glance[:4])
-    media=[m for m in w.get("media",[]) if m.get("exists_on_disk")][:4]
-    media_html="".join(f"<a href='/media-item/{m['id']}'><img class='ffd-media-preview' src='/media-file/{m['id']}' alt='{esc(m.get('title') or '')}'></a>" for m in media if Path(m.get("file_path") or "").suffix.lower() in {".jpg",".jpeg",".png",".gif",".webp",".heic",".tif",".tiff"})
-    birth_context=""
-    if birth:
-        birth_context=" · ".join(esc(x) for x in (birth["date_text"],birth["place_text"]) if x)
+    parents=[name for _,label,name,_ in family if label in ("Father","Mother","Parent")]
+    occupation_event=next((e for e in clean if (e["event_type"] or "").casefold()=="occupation" and (e["value_text"] or e["note_text"])),None)
+    occupation=(occupation_event["value_text"] or occupation_event["note_text"]) if occupation_event else None
+
+    images=[m for m in w.get("media",[]) if m.get("exists_on_disk") and Path(m.get("file_path") or "").suffix.lower() in {".jpg",".jpeg",".png",".gif",".webp",".heic",".tif",".tiff"}]
+    media_html="".join(f"<a href='/media-item/{m['id']}'><img class='ffd-media-preview' src='/media-file/{m['id']}' alt='{esc(m.get('title') or '')}'></a>" for m in images[:4])
+
+    context=[]
+    if parents: context.append("Child of "+" and ".join(parents[:2]))
+    if spouse: context.append("Spouse: "+spouse)
+    context_html=f"<div class='ffd-hero-context'>{esc(' · '.join(context))}</div>" if context else ""
+
     intro=[]
-    if birth_context: intro.append("Born "+birth_context)
-    if spouse: intro.append("Married to "+esc(spouse))
-    return f"""<section class='ffd-person-hero ffd-person-editorial'><div><div class='ffd-eyebrow'>A life in the family history</div><h1>{esc(p['display_name'])}</h1><div class='ffd-lifespan'>{esc(_lifespan(events))}</div>{f"<p class='ffd-person-intro'>{' · '.join(intro)}</p>" if intro else ''}</div>{portrait_html}</section>
-<div class='ffd-story-grid'><section><h2 class='ffd-section'>Life at a Glance</h2><div class='card'><div class='ffd-story-kpis ffd-human-kpis'>{gh}</div></div><h2 class='ffd-section'>Key Life Events</h2><div class='card ffd-life-sequence'>{mh}</div></section><aside><h2 class='ffd-section'>Family</h2><div class='card'><h3>Immediate Family</h3>{rows(immediate) or "<p class='meta'>No immediate family relationships are available.</p>"}{f"<h3 class='ffd-close-family'>Close Family</h3>{rows(close)}" if close else ''}</div><h2 class='ffd-section'>Media & Documents</h2><div class='card'>{f"<div class='ffd-media-strip'>{media_html}</div>" if media_html else "<p class='meta'>No image previews are currently available.</p>"}<p><a class='ffd-inline-link' href='/person/{pid}?tab=media'>View all media →</a></p></div></aside></div>"""
+    if birth:
+        birth_bits=[x for x in (birth["date_text"],birth["place_text"]) if x]
+        if birth_bits: intro.append("Born "+" · ".join(esc(x) for x in birth_bits))
+    if occupation: intro.append(esc(occupation))
+    intro_html=f"<p class='ffd-person-intro'>{' · '.join(intro)}</p>" if intro else ""
+
+    family_html=rows(immediate) or "<p class='meta'>No immediate family relationships are available.</p>"
+    if close: family_html+=f"<h3 class='ffd-close-family'>Close Family</h3>{rows(close)}"
+    media_section=f"<h2 class='ffd-section'>Media & Documents</h2><div class='card'><div class='ffd-media-strip'>{media_html}</div><p><a class='ffd-inline-link' href='/person/{pid}?tab=media'>View all media →</a></p></div>" if media_html else ""
+
+    return f"""<section class='ffd-person-hero ffd-person-editorial'><div class='ffd-hero-copy'><div class='ffd-eyebrow'>A life in the family history</div><h1>{esc(p['display_name'])}</h1><div class='ffd-lifespan'>{esc(_lifespan(events))}</div>{context_html}{intro_html}</div>{portrait_html}</section>
+<div class='ffd-story-grid'><section><h2 class='ffd-section'>Life Story</h2><div class='card ffd-life-sequence'>{mh}</div></section><aside><h2 class='ffd-section'>Family</h2><div class='card'><h3>Immediate Family</h3>{family_html}</div>{media_section}</aside></div>"""

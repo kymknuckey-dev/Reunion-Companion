@@ -16,7 +16,7 @@ def test_rc107_person_identity_is_separate_from_person_navigation():
     story=(ROOT/'src'/'reunion_companion'/'companion'/'ffd_person_story.py').read_text()
     assert "def person_identity_header" in story
     assert "rc-person-strip" in story
-    assert "Key Life Events" in story
+    assert "Life Story" in story
 
 def test_rc107_overview_removes_duplicate_navigation_blocks():
     story=(ROOT/'src'/'reunion_companion'/'companion'/'ffd_person_story.py').read_text()
