@@ -5,15 +5,16 @@ from reunion_companion.companion.beta3_data_manager import ensure_companion_tabl
 from reunion_companion.companion.beta3_publishing import delete_publication
 
 
-def test_global_nav_is_home_search_reports(tmp_path):
+def test_global_nav_is_companion_sidebar_before_person_selection(tmp_path):
     db=connect(tmp_path/'x.sqlite3')
     html=render_get(db,'/reports',{})
-    header=html.split('</header>',1)[0]
-    assert "href='/'>Home</a>" in header
-    assert "href='/search'>Search</a>" in header
-    assert "href='/reports'>Reports</a>" in header
-    assert "href='/research'>Research</a>" not in header
-    assert "href='/publishing'>Publishing</a>" not in header
+    sidebar=html.split("<aside class='rc-sidebar'>",1)[1].split('</aside>',1)[0]
+    assert "href='/'>Home</a>" in sidebar
+    assert "href='/search'>Search</a>" in sidebar
+    assert "href='/questions'>Ask</a>" in sidebar
+    assert "href='/search'>People</a>" not in sidebar
+    assert "href='/research'>Research</a>" not in sidebar
+    assert "href='/publishing'>Publishing</a>" not in sidebar
     db.close()
 
 

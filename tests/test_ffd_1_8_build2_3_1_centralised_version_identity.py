@@ -21,9 +21,8 @@ def test_release_identity_is_centralised():
     assert APP_DISPLAY_NAME == f"Reunion Companion — {FFD_DISPLAY} {RELEASE_NAME}"
 
 
-def test_ui_header_uses_central_release_identity():
+def test_ui_header_has_no_stale_hard_coded_release_identity():
     html = layout("Version test", "<p>ok</p>")
-    assert FFD_DISPLAY in html
     assert "FFD 1.8 Build 2.1.2" not in html
 
 

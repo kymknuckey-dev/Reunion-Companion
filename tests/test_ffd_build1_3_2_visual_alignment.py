@@ -53,5 +53,5 @@ def test_section_language_aligned(tmp_path,monkeypatch):
     assert "Immediate Family" in p
     assert "Close Family" in p
     assert "Media & Documents" in p
-    assert "Explore Further" in p
+    assert "Explore Further" not in p
     db.close()

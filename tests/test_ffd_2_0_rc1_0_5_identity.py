@@ -17,12 +17,10 @@ def test_rc105_mac_builder_generates_native_icon_without_changing_install_shape(
     assert 'Runtime/ReunionCompanionBackend' in text
 
 
-def test_rc105_keeps_existing_top_navigation_and_adds_companion_brand():
+def test_rc105_companion_brand_survives_navigation_redesign():
     text=(ROOT/'src/reunion_companion/companion/beta_ui.py').read_text()
-    assert "<a href='/'>Home</a><a href='/search'>Search</a><a href='/reports'>Reports</a>" in text
     assert 'header_brand_html()' in text
     assert 'rc-header-mark' in text
-    assert 'sidebar' not in (ROOT/'docs/identity/FFD-2.0-RC1.0.5.md').read_text().lower().split('non-goals')[0]
 
 
 def test_rc105_home_and_publication_identity_are_integrated():

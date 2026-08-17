@@ -24,7 +24,7 @@ def test_mode_defaults_off(tmp_path,monkeypatch):
     monkeypatch.setenv("HOME",str(tmp_path))
     assert presentation_mode_enabled() is False
     page=layout("Test","<p>Hello</p>")
-    assert "<html class=''>" in page
+    assert "<html class='research-mode'>" in page
     assert "Presentation Mode" in page
 
 def test_toggle_persists(tmp_path,monkeypatch):
@@ -39,7 +39,7 @@ def test_home_changes_to_presentation(tmp_path,monkeypatch):
     set_presentation_mode(True)
     page=render_get(db,"/",{})
     assert "<html class='presentation'>" in page
-    assert "Presentation Mode is ON" in page
+    assert "class='rc-mode-option active' name='mode' value='presentation'" in page
     assert "Knuckey Family History" in page
     db.close()
 

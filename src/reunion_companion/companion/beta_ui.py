@@ -10,8 +10,8 @@ from .beta_ui_service import search_people,person_workspace,family_workspace,fam
 from .beta2_research import person_research_model,place_variants,source_explorer,media_explorer
 from .timeline_engine import timeline_for_person,event_detail,source_label
 from .ffd_home import home_body as ffd_home_body, search_body as ffd_search_body
-from .ffd_presentation import presentation_mode_enabled,toggle_presentation_mode
-from .ffd_person_story import person_story_body
+from .ffd_presentation import presentation_mode_enabled,set_presentation_mode,toggle_presentation_mode
+from .ffd_person_story import person_story_body, person_identity_header
 from .ffd_family_chart import family_chart_body
 from .ffd_relationship_questions import questions_body,answer_question,interpret_question
 from .identity_discovery import is_natural_language_question
@@ -31,10 +31,10 @@ CSS="""
 :root{--bg:#f4f4f1;--card:#fff;--text:#222;--muted:#6c6c68;--line:#d9d9d4;--good:#246b3a;--warn:#945d00;--accent:#294a67;--brand-navy:#102b4e;--brand-olive:#60743a;--soft:#eef0ed;--danger:#9c2f2f}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text)}
-header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:14px 22px;display:flex;gap:20px;align-items:center}
+header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;gap:20px;align-items:center}.rc-header-utilities{margin-left:auto;display:flex;align-items:center;gap:12px}.rc-header-utilities form{margin:0!important}.rc-mode-control{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#f7f7f4}.rc-mode-control form{display:flex}.rc-mode-option{border:0;border-radius:0;padding:8px 12px;background:transparent;color:var(--text);font-weight:650}.rc-mode-option+*{border-left:1px solid var(--line)}.rc-mode-option.active{background:var(--brand-navy);color:#fff}.rc-mode-control form+form{border-left:1px solid var(--line)}
 header a{color:var(--text);text-decoration:none;margin-right:13px}
 .rc-brand{display:flex;align-items:center;gap:9px;margin-right:0!important;color:var(--brand-navy)!important;font-weight:700;white-space:nowrap}.rc-header-mark{width:40px;height:40px;object-fit:contain;display:block}.rc-brand span{font-size:18px}.presentation .rc-header-mark{width:46px;height:46px}.presentation .rc-brand span{font-size:20px}
-main{max-width:1200px;margin:24px auto;padding:0 22px 60px}
+main{max-width:1200px;margin:24px auto;padding:0 22px 60px}.rc-app-shell{display:grid;grid-template-columns:190px minmax(0,1fr);max-width:1510px;margin:0 auto}.rc-sidebar{padding:26px 14px 60px 18px;border-right:1px solid var(--line);min-height:calc(100vh - 69px);background:#f7f7f4}.rc-sidebar nav{position:sticky;top:94px;display:flex;flex-direction:column;gap:3px}.rc-sidebar a{display:block;padding:9px 11px;border-radius:7px;text-decoration:none;color:#30332f;font-size:14px}.rc-sidebar a:hover{background:#e9ece5}.rc-sidebar .rc-side-section{margin:17px 11px 6px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.rc-sidebar .rc-side-section-first{margin-top:0}.rc-sidebar .rc-person-section{white-space:normal;line-height:1.35}.rc-content{min-width:0}.rc-app-shell main{margin:24px auto}.rc-person-strip{display:flex;align-items:center;gap:15px;margin:0 0 12px;padding:4px 2px 14px;border-bottom:1px solid var(--line)}.rc-person-strip img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}.rc-person-strip .rc-person-name{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:600;line-height:1.05}.rc-person-strip .rc-person-life{color:var(--muted);margin-top:4px}.rc-person-strip .rc-person-context{font-size:13px;color:var(--muted);margin-top:3px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
 .search{display:flex;gap:10px}
@@ -111,6 +111,7 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .ffd-stat .kpi{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:34px}
 .ffd-page-heading{margin:8px 0 22px}
 .ffd-page-heading h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:36px}
+@media(max-width:900px){.rc-app-shell{grid-template-columns:1fr}.rc-sidebar{display:none}}
 @media(max-width:760px){
   .ffd-hero{padding:28px 22px}.ffd-hero h1{font-size:34px}
   .ffd-search{display:block}.ffd-search input,.ffd-search button{width:100%;margin-bottom:8px}
@@ -121,7 +122,7 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .presentation body{font-size:19px;line-height:1.55}
 .presentation header{padding:17px 24px}
 .presentation header strong a{font-size:19px}
-.presentation main{max-width:1320px;padding:0 30px 75px;margin-top:30px}
+.presentation main{max-width:1320px;padding:0 30px 75px;margin-top:30px}.presentation .rc-app-shell{max-width:1630px}.presentation .rc-sidebar{font-size:16px}
 .presentation h1{font-size:38px}
 .presentation h2{font-size:23px}
 .presentation h3{font-size:18px}
@@ -144,6 +145,8 @@ pre.note{white-space:pre-wrap;font-family:inherit}
   color:var(--muted);font-size:14px;text-align:right
 }
 .presentation-banner strong{color:var(--text)}
+
+.ffd-person-editorial{display:grid;grid-template-columns:minmax(0,1fr) 230px;align-items:center;gap:34px;padding:30px 34px}.ffd-person-editorial .ffd-hero-portrait{width:220px;max-height:260px;justify-self:end;object-fit:cover}.ffd-human-kpis{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:20px;text-align:left}.ffd-human-kpis strong{font-size:24px;line-height:1.15;overflow-wrap:anywhere}.ffd-human-kpis span{display:block;margin-top:6px;color:var(--muted);font-size:13px}.ffd-life-sequence{padding-left:30px}.ffd-life-sequence .ffd-milestone{position:relative;padding-left:18px}.ffd-life-sequence .ffd-milestone:before{content:"";position:absolute;left:-12px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--brand-olive)}.ffd-life-sequence .ffd-milestone:after{content:"";position:absolute;left:-9px;top:18px;bottom:-22px;width:1px;background:var(--line)}.ffd-life-sequence .ffd-milestone:last-child:after{display:none}.ffd-person-link{text-decoration:none;color:var(--text)}.ffd-person-link:hover{text-decoration:underline}.ffd-media-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.ffd-media-preview{width:100%;height:105px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}@media(max-width:760px){.ffd-person-editorial{grid-template-columns:1fr}.ffd-person-editorial .ffd-hero-portrait{justify-self:start;width:170px}.rc-person-strip .rc-person-context{display:none}}
 
 /* FFD 1.3 Person Story */
 .ffd-person-hero{background:linear-gradient(135deg,#eeece5,#f8f7f3);border:1px solid var(--line);border-radius:16px;padding:38px;margin-bottom:24px}
@@ -268,29 +271,72 @@ def family_selector_html():
         return f"<form method='post' action='/family-file/select' style='margin-left:auto'><select name='workspace_id' onchange='this.form.submit()' aria-label='Family File'>{opts}</select></form>"
     except Exception:return ''
 
-def layout(title,body):
+def _sidebar_person_links(person_context, presentation, active=None):
+    if not person_context:
+        return ""
+    pid=int(person_context["id"])
+    name=esc(person_context.get("display_name") or "Selected person")
+    heading=name if presentation else f"Research — {name}"
+    common=[
+        ("overview","Overview",f"/person/{pid}?tab=overview"),
+        ("family-chart","Family Chart",f"/person/{pid}?tab=family-chart"),
+        ("timeline","Timeline",f"/person/{pid}?tab=timeline"),
+        ("biography","Biography",f"/person/{pid}?tab=biography"),
+        ("family","Family",f"/person/{pid}?tab=family"),
+        ("media","Media",f"/person/{pid}?tab=media"),
+    ]
+    research=[] if presentation else [
+        ("sources","Sources",f"/person/{pid}?tab=sources"),
+        ("confidence","Confidence",f"/person/{pid}?tab=confidence"),
+        ("research","Research",f"/person/{pid}?tab=research"),
+        ("data-quality","Data Quality",f"/person/{pid}?tab=data-quality"),
+    ]
+    rows=[]
+    for key,label,href in common+research:
+        cls=" class='active'" if key==active else ""
+        rows.append(f"<a{cls} href='{href}'>{esc(label)}</a>")
+    ask_cls=" class='active'" if active=="ask" else ""
+    rows.append(f"<a{ask_cls} href='/questions?person={pid}&origin={pid}'>Ask about</a>")
+    return f"<div class='rc-side-section rc-person-section'>{heading}</div>"+"".join(rows)
+
+def _sidebar_output(person_context, active=None):
+    if not person_context:
+        return ""
+    pid=int(person_context["id"])
+    pub_cls=" class='active'" if active=="publish" else ""
+    reports_cls=" class='active'" if active=="reports" else ""
+    return ("<div class='rc-side-section'>Output</div>"
+            f"<a{pub_cls} href='/person/{pid}?tab=publish'>Publish</a>"
+            f"<a{reports_cls} href='/reports?origin={pid}'>Reports</a>")
+
+def mode_control_html(presentation):
+    pcls=" active" if presentation else ""
+    rcls="" if presentation else " active"
+    return f"""<div class='rc-mode-control' role='group' aria-label='Companion mode'>
+<form method='post' action='/presentation/mode' onsubmit=\"event.preventDefault();fetch('/presentation/mode',{{method:'POST',headers:{{'Content-Type':'application/x-www-form-urlencoded'}},body:'mode=presentation'}}).then(()=>location.reload())\"><button class='rc-mode-option{pcls}' name='mode' value='presentation'>Presentation</button></form>
+<form method='post' action='/presentation/mode' onsubmit=\"event.preventDefault();fetch('/presentation/mode',{{method:'POST',headers:{{'Content-Type':'application/x-www-form-urlencoded'}},body:'mode=research'}}).then(()=>location.reload())\"><button class='rc-mode-option{rcls}' name='mode' value='research'>Research</button></form>
+</div>"""
+
+def layout(title,body,person_context=None,active=None):
     presentation=presentation_mode_enabled()
-    html_class="presentation" if presentation else ""
-    mode_label="Exit Presentation" if presentation else "Presentation Mode"
-    mode_status="Presentation Mode is ON" if presentation else "Full research interface"
+    html_class="presentation" if presentation else "research-mode"
+    contextual=_sidebar_person_links(person_context,presentation,active)
+    output=_sidebar_output(person_context,active)
 
     return f"""<!doctype html><html class='{html_class}'><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <meta name='reunion-companion-compat' content='Beta 3.1 · Beta 3.2 Timeline Intelligence · FFD 1.1 · Research · Publishing'>
 <title>{esc(title)} — Reunion Companion</title><style>{CSS}
-.ffd-person-nav a.active{{background:var(--accent);color:#fff;border-color:var(--accent)}}
+.rc-sidebar a.active{{background:var(--brand-navy);color:#fff}}
 .media-row{{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text)}}
 .media-row span span{{display:block;margin-top:4px}}.media-thumb{{width:84px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--line);flex:0 0 auto}}.media-file-icon{{display:flex;align-items:center;justify-content:center;background:var(--soft);font-size:12px;color:var(--muted)}}
 .person-heading{{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}}.person-portrait{{width:180px;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}}.publication-actions{{display:flex;gap:8px;margin-top:7px}}.inline-form{{display:inline-block}}
 </style></head><body>
-<header>{header_brand_html()}<nav>
-<a href='/'>Home</a><a href='/search'>Search</a><a href='/reports'>Reports</a>
-</nav>{family_selector_html()}
-<form method='post' action='/presentation/toggle' style='margin-left:auto'>
-<button class='secondary'>{mode_label}</button></form>
-<span class='meta'>{FFD_DISPLAY}</span></header>
-<div class='presentation-banner'><strong>{mode_status}</strong></div>
-<main>{body}</main></body></html>"""
+<header class='rc-utility-header'>{header_brand_html()}<div class='rc-header-utilities'>{mode_control_html(presentation)}{family_selector_html()}</div></header>
+<div class='rc-app-shell'><aside class='rc-sidebar'><nav>
+<div class='rc-side-section rc-side-section-first'>Companion</div><a href='/'>Home</a><a href='/search'>Search</a><a href='/questions'>Ask</a>
+{contextual}{output}
+</nav></aside><div class='rc-content'><main>{body}</main></div></div></body></html>"""
 
 def family_mismatch_body(name,score,selected_path):
     selected=str(selected_path or '')
@@ -541,12 +587,11 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         db.execute("CREATE TABLE IF NOT EXISTS companion_recent_people(person_id INTEGER PRIMARY KEY, viewed_at TEXT NOT NULL)")
         db.execute("INSERT INTO companion_recent_people(person_id,viewed_at) VALUES(?,?) ON CONFLICT(person_id) DO UPDATE SET viewed_at=excluded.viewed_at",(pid,datetime.now().isoformat(timespec="seconds")));db.commit()
     except Exception: pass
-    nav=nav_html(pid,presentation,tab if tab != "ask" else "ask")
 
     if tab=="family-chart":
-        return layout("Interactive Family Chart",nav+family_chart_body(db,pid,view))
+        return layout("Interactive Family Chart",family_chart_body(db,pid,view),p,"family-chart")
     if tab=="overview" and presentation:
-        return layout(p["display_name"],person_story_body(db,w,True))
+        return layout(p["display_name"],person_identity_header(db,w,True)+person_story_body(db,w,True),p,"overview")
 
     if tab=="overview":
         bits=[]
@@ -596,10 +641,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         if not fams:body+="<p>No spouse family recorded.</p>"
         body+="</div>"
     else: body="<div class='card'>Unknown person tab.</div>"
-    person_code="" if presentation else f"<div class='meta'>{esc(p['gedcom_xref'])}</div>"
-    portrait=_person_portrait(w) if tab=="overview" else None
-    portrait_html=f"<img class='person-portrait' src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
-    return layout(p["display_name"],f"<div class='person-heading'><div><h1>{esc(p['display_name'])}</h1>{person_code}</div>{portrait_html}</div>{nav}{body}")
+    return layout(p["display_name"],person_identity_header(db,w,presentation)+body,p,tab)
 
 def family_page(db,fid,msg=""):
     f=family_workspace(db,fid)
@@ -697,10 +739,14 @@ def publishing_page(db,msg="", origin_pid=None):
         status="" if exists else " <span class='badge warn'>Report unavailable</span>"
         actions=(f"<form method='post' action='/publication/open' class='inline-form'><input type='hidden' name='path' value='{esc(x['output_path'])}'><input type='hidden' name='origin' value='{origin_pid or ''}'><button class='secondary'>Open</button></form><form method='post' action='/publication/delete' class='inline-form'><input type='hidden' name='id' value='{x['id']}'><input type='hidden' name='origin' value='{origin_pid or ''}'><button class='secondary'>Delete</button></form>" if exists else f"<form method='post' action='/publication/remove' class='inline-form'><input type='hidden' name='id' value='{x['id']}'><input type='hidden' name='origin' value='{origin_pid or ''}'><button class='secondary'>Remove from history</button></form>")
         history+=f"<div class='topic'><strong>{esc(x['kind'])}</strong> — {esc(x.get('subject'))}{status}<br><span class='small'>{esc(x['created_at'])} · {esc(x['output_format'])} · {esc(x['output_path'])}</span><div class='publication-actions'>{actions}</div></div>"
+    context=None
+    if origin_pid:
+        row=db.execute("SELECT id,display_name FROM people WHERE id=?",(origin_pid,)).fetchone()
+        context=dict(row) if row else None
     return layout("Reports",f"""<h1>Reports</h1>{message}{back}
 <div class='card'><p>Generated family-history reports are collected here. Create new reports from a person's Publish page.</p></div>
 <div class='card'><h2>Report History</h2>
-{history or '<p>No reports have been generated yet.</p>'}</div>""")
+{history or '<p>No reports have been generated yet.</p>'}</div>""",context,"reports" if context else None)
 
 def render_get(db,path,query=None):
     query=query or {}
@@ -737,10 +783,12 @@ def render_get(db,path,query=None):
         except Exception: selected_identity_id=None
         try: origin_id=int(query.get("origin","0") or 0) or None
         except Exception: origin_id=None
-        return layout("Relationship Questions",(nav_html(subject_id,presentation_mode_enabled(),"ask") if subject_id else "")+questions_body(db,subject_id,query.get("q",""),selected_identity_id,origin_id,query.get("topic") or None))
+        person_context=db.execute("SELECT id,display_name FROM people WHERE id=?",(subject_id,)).fetchone() if subject_id else None
+        return layout("Relationship Questions",questions_body(db,subject_id,query.get("q",""),selected_identity_id,origin_id,query.get("topic") or None),dict(person_context) if person_context else None,"ask" if subject_id else None)
     if path.startswith("/family-chart/"):
         pid=int(path.rsplit("/",1)[1])
-        return layout("Interactive Family Chart",nav_html(pid,presentation_mode_enabled(),"family-chart")+family_chart_body(db,pid,query.get("offset","0")))
+        row=db.execute("SELECT id,display_name FROM people WHERE id=?",(pid,)).fetchone()
+        return layout("Interactive Family Chart",family_chart_body(db,pid,query.get("offset","0")),dict(row) if row else None,"family-chart")
     if path.startswith("/person-narrative/"):
         pid=int(path.rsplit("/",1)[1])
         from .person_narrative import person_narrative
@@ -865,6 +913,12 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     self.send_json({"status":"success","message":f"Imported {count} people. Reunion Companion is ready."})
                 except Exception as e:
                     traceback.print_exc(); self.send_json({"status":"error","message":f"{type(e).__name__}: {e}"},400)
+                return
+
+            if u.path=="/presentation/mode":
+                mode=(form.get("mode") or "presentation").casefold()
+                set_presentation_mode(mode != "research")
+                self.send_json({"status":"success","mode":mode})
                 return
 
             if u.path=="/presentation/toggle":
