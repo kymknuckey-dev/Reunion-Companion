@@ -151,5 +151,6 @@ def person_story_body(db,w,presentation=True):
     if close: family_html+=f"<h3 class='ffd-close-family'>Close Family</h3>{rows(close)}"
     media_section=f"<h2 class='ffd-section'>Media & Documents</h2><div class='card'><div class='ffd-media-strip'>{media_html}</div><p><a class='ffd-inline-link' href='/person/{pid}?tab=media'>View all media →</a></p></div>" if media_html else ""
 
-    return f"""<section class='ffd-person-hero ffd-person-editorial'><div class='ffd-eyebrow'>A life in the family history</div><div class='ffd-hero-layout'>{portrait_html}<div class='ffd-hero-copy'><h1>{esc(p['display_name'])}</h1><div class='ffd-lifespan'>{esc(_lifespan(events))}</div>{intro_html}{context_html}</div></div></section>
+    hero_state='ffd-hero-has-photo' if portrait else 'ffd-hero-no-photo'
+    return f"""<section class='ffd-person-hero ffd-person-editorial {hero_state}'><div class='ffd-eyebrow'>A life in the family history</div><div class='ffd-hero-layout'>{portrait_html}<div class='ffd-hero-copy'><h1>{esc(p['display_name'])}</h1><div class='ffd-lifespan'>{esc(_lifespan(events))}</div>{intro_html}{context_html}</div></div></section>
 <div class='ffd-story-grid'><section><h2 class='ffd-section'>Life Story</h2><div class='card ffd-life-sequence'>{mh}</div></section><aside><h2 class='ffd-section'>Family</h2><div class='card'><h3>Immediate Family</h3>{family_html}</div>{media_section}</aside></div>"""

@@ -359,6 +359,23 @@ def layout(title,body,person_context=None,active=None):
 .media-row{{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text)}}
 .media-row span span{{display:block;margin-top:4px}}.media-thumb{{width:84px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--line);flex:0 0 auto}}.media-file-icon{{display:flex;align-items:center;justify-content:center;background:var(--soft);font-size:12px;color:var(--muted)}}
 .person-heading{{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}}.person-portrait{{width:180px;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}}.publication-actions{{display:flex;gap:8px;margin-top:7px}}.inline-form{{display:inline-block}}
+
+/* FFD 2.0 RC1.0.7 Visual Presentation QA Pass 2: explicit hero states and chronology dots */
+.ffd-person-editorial .ffd-hero-layout{{grid-template-columns:210px minmax(0,1fr);gap:30px;align-items:start}}
+.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-portrait{{width:210px;height:262px;aspect-ratio:4/5;max-height:none;object-fit:cover;object-position:center;border-radius:11px}}
+.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-copy{{min-width:0;padding-top:2px}}
+.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-copy h1{{overflow-wrap:normal;word-break:normal}}
+.ffd-person-editorial.ffd-hero-no-photo .ffd-hero-layout{{display:block}}
+.ffd-person-editorial.ffd-hero-no-photo .ffd-hero-copy{{width:100%;max-width:none}}
+.ffd-person-editorial.ffd-hero-no-photo .ffd-hero-copy h1{{max-width:100%;overflow-wrap:normal;word-break:normal}}
+.ffd-person-editorial.ffd-hero-no-photo .ffd-person-intro{{max-width:900px}}
+.ffd-person-editorial.ffd-hero-no-photo .ffd-hero-context{{max-width:900px}}
+.ffd-life-sequence .ffd-milestone:before{{content:""!important;position:absolute!important;left:95px!important;top:0!important;bottom:0!important;width:1px!important;height:auto!important;border-radius:0!important;background:var(--line)!important}}
+.ffd-life-sequence .ffd-milestone:after{{content:""!important;display:block!important;position:absolute!important;left:91px!important;top:29px!important;width:9px!important;height:9px!important;border-radius:50%!important;background:var(--brand-navy)!important;border:2px solid #fff!important;box-sizing:border-box!important;z-index:2!important}}
+.ffd-life-sequence .ffd-event-icon{{z-index:3}}
+@media(max-width:900px){{.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-layout{{grid-template-columns:170px minmax(0,1fr)}}.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-portrait{{width:170px;height:212px}}}}
+@media(max-width:620px){{.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-layout{{grid-template-columns:1fr}}.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-portrait{{width:150px;height:188px}}.ffd-life-sequence .ffd-milestone:before{{left:71px!important}}.ffd-life-sequence .ffd-milestone:after{{left:67px!important}}}}
+
 </style></head><body>
 <header class='rc-utility-header'>{header_brand_html()}<div class='rc-header-utilities'>{family_selector_html()}{mode_control_html(presentation)}</div></header>
 <div class='rc-app-shell'><aside class='rc-sidebar'><nav>
