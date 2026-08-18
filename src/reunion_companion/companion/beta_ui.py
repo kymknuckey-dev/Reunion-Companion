@@ -376,6 +376,20 @@ def layout(title,body,person_context=None,active=None):
 @media(max-width:900px){{.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-layout{{grid-template-columns:170px minmax(0,1fr)}}.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-portrait{{width:170px;height:212px}}}}
 @media(max-width:620px){{.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-layout{{grid-template-columns:1fr}}.ffd-person-editorial.ffd-hero-has-photo .ffd-hero-portrait{{width:150px;height:188px}}.ffd-life-sequence .ffd-milestone:before{{left:71px!important}}.ffd-life-sequence .ffd-milestone:after{{left:67px!important}}}}
 
+/* FFD 2.0 RC1.0.7 Visual Presentation QA Pass 4: one adaptive Life Story timeline */
+.ffd-life-sequence .ffd-milestone{{grid-template-columns:66px 20px 40px minmax(0,1fr)!important;gap:8px!important}}
+.ffd-life-sequence .ffd-milestone:before,.ffd-life-sequence .ffd-milestone:after{{display:none!important}}
+.ffd-chronology{{position:relative;align-self:stretch;min-height:52px}}
+.ffd-life-timeline .ffd-chronology:before{{content:"";position:absolute;left:9px;top:-14px;bottom:-14px;width:1px;background:#b8bec4}}
+.ffd-life-timeline .ffd-milestone:first-child .ffd-chronology:before{{top:19px}}
+.ffd-life-timeline .ffd-milestone:last-child .ffd-chronology:before{{bottom:calc(100% - 20px)}}
+.ffd-chronology-dot{{position:absolute;left:5px;top:15px;width:9px;height:9px;border-radius:50%;background:var(--brand-navy);border:2px solid #fff;box-sizing:border-box;z-index:2}}
+.ffd-event-icon{{grid-column:3;z-index:1!important}}
+.ffd-milestone-copy{{grid-column:4}}
+.ffd-milestone-date{{grid-column:1}}
+.ffd-milestone-undated .ffd-milestone-date{{color:transparent}}
+@media(max-width:620px){{.ffd-life-sequence .ffd-milestone{{grid-template-columns:48px 18px 36px minmax(0,1fr)!important;gap:7px!important}}.ffd-chronology-dot{{left:4px}}.ffd-life-timeline .ffd-chronology:before{{left:8px}}}}
+
 </style></head><body>
 <header class='rc-utility-header'>{header_brand_html()}<div class='rc-header-utilities'>{family_selector_html()}{mode_control_html(presentation)}</div></header>
 <div class='rc-app-shell'><aside class='rc-sidebar'><nav>

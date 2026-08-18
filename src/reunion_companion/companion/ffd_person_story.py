@@ -90,20 +90,36 @@ def _event_icon(kind):
     else: path='<circle cx="12" cy="12" r="7"/><path d="M12 8v5l3 2"/>'
     return f'<span class="ffd-event-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{path}</svg></span>'
 
+def _event_kind(e):
+    return ((e["event_type"] or e["gedcom_tag"] or "").casefold()).strip()
+
+def _is_death_event(e):
+    return "death" in _event_kind(e)
+
+def _is_disposition_event(e):
+    kind=_event_kind(e)
+    return any(token in kind for token in ("burial","cremat","interment","ashes","cemetery"))
+
 def _event_sort_key(e):
     year=_year(e["date_text"])
-    # Dated records form the chronological spine; undated facts follow in a stable, useful order.
-    undated_order={"education":1,"occupation":2,"military":3,"residence":4,"religion":5}
-    kind=(e["event_type"] or "").casefold()
-    return (0,int(year),e["id"]) if year else (1,undated_order.get(kind,8),e["id"])
+    # One adaptive Life Story: ordinary dated events first in chronology, then
+    # useful undated life facts, with death and final disposition terminal.
+    # No date is invented for an undated fact.
+    if _is_disposition_event(e): return (3, int(year) if year else 9999, e["id"])
+    if _is_death_event(e): return (2, int(year) if year else 9999, e["id"])
+    if year: return (0, int(year), e["id"])
+    undated_order={"christening":1,"baptism":1,"education":2,"marriage":3,"occupation":4,"military":5,"service":5,"residence":6,"religion":7}
+    kind=_event_kind(e)
+    rank=next((rank for token,rank in undated_order.items() if token in kind),8)
+    return (1,rank,e["id"])
 
 def person_story_body(db,w,presentation=True):
     p=w["person"];pid=p["id"];events=_events(db,pid);family=_family(db,pid);portrait=_portrait(w)
     portrait_html=f"<img class='person-portrait ffd-hero-portrait' src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
     clean=[e for e in events if (e["event_type"] or "").casefold() not in ("changed","change") and (e["gedcom_tag"] or "").upper()!="CHAN"]
-    milestones=sorted(clean,key=_event_sort_key)[:10]
-    mh=""
-    for e in milestones:
+    ordered=sorted(clean,key=_event_sort_key)[:10]
+
+    def milestone_html(e):
         kind=e["event_type"] or e["gedcom_tag"] or "Life event"
         year=_year(e["date_text"])
         details=[]
@@ -114,8 +130,11 @@ def person_story_body(db,w,presentation=True):
         if value and value not in note: details.append(esc(value))
         detail_html=f"<div class='ffd-milestone-detail'>{' · '.join(details)}</div>" if details else ""
         note_html=f"<p>{esc(note)}</p>" if note else ""
-        mh+=f"<div class='ffd-milestone'><div class='ffd-milestone-date'>{esc(year or '')}</div>{_event_icon(kind)}<div class='ffd-milestone-copy'><div class='ffd-milestone-title'>{esc(kind)}</div>{detail_html}{note_html}</div></div>"
-    if not mh: mh="<p class='meta'>No life events are currently available.</p>"
+        chronology=f"<div class='ffd-chronology'><span class='ffd-chronology-dot' aria-hidden='true'></span></div>"
+        dated_class=" ffd-milestone-dated" if year else " ffd-milestone-undated"
+        return f"<div class='ffd-milestone{dated_class}'><div class='ffd-milestone-date'>{esc(year)}</div>{chronology}{_event_icon(kind)}<div class='ffd-milestone-copy'><div class='ffd-milestone-title'>{esc(kind)}</div>{detail_html}{note_html}</div></div>"
+
+    mh="<div class='ffd-life-timeline'>"+"".join(milestone_html(e) for e in ordered)+"</div>" if ordered else "<p class='meta'>No life events are currently available.</p>"
 
     immediate=[r for r in family if r[0]==0];close=[r for r in family if r[0]==1]
     def rows(items):

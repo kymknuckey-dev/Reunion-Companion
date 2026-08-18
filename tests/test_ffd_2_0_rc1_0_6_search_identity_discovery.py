@@ -227,7 +227,7 @@ def test_qa_pass3_launcher_about_uses_authoritative_release_identity():
     from pathlib import Path
     path=Path(__file__).resolve().parents[1]/"macos_app"/"build_app.py"
     source=path.read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 2"' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 4"' in source
     assert '.replace("__APP_RELEASE__",APP_RELEASE)' in source
     assert 'a.informativeText="__APP_RELEASE__\\nGenealogy Engine: __ENGINE_BASELINE__"' in source
     assert 'RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2' not in source
@@ -289,5 +289,5 @@ def test_qa_pass4_launcher_about_uses_current_release_identity():
     from pathlib import Path
     path=Path(__file__).resolve().parents[1]/'macos_app'/'build_app.py'
     source=path.read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 2"' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 4"' in source
     assert '.replace("__APP_RELEASE__",APP_RELEASE)' in source
