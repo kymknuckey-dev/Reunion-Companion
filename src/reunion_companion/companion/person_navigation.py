@@ -19,9 +19,6 @@ RESEARCH_ITEMS = [
     ("family", "Family"),
     ("media", "Media"),
     ("sources", "Sources"),
-    ("confidence", "Confidence"),
-    ("research", "Research"),
-    ("data-quality", "Data Quality"),
     ("ask", "Ask about the Family"),
     ("publish", "Publish"),
 ]

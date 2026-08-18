@@ -21,7 +21,7 @@ def test_global_nav_is_companion_sidebar_before_person_selection(tmp_path):
 def test_research_home_exposes_dataset_explore_boxes(tmp_path):
     db=connect(tmp_path/'x.sqlite3')
     html=render_get(db,'/',{})
-    for label in ('Knuckey Family History','Explore','Find a Person','Reports','Family to Explore','A Living Family History','Family History at a Glance'):
+    for label in ('Knuckey Family History','Research','Research Priorities','Improve the Data','Data Manager','Family to Explore','A Living Family History','Family History at a Glance'):
         assert label in html
     db.close()
 

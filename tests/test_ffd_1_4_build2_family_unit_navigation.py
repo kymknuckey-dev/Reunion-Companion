@@ -25,4 +25,4 @@ def test_navigation(tmp_path,monkeypatch):
  monkeypatch.setenv("HOME",str(tmp_path));db=connect(tmp_path/"x.sqlite3");seed(db);set_presentation_mode(True);p=render_get(db,"/person/1",{"tab":"family-chart","offset":"0"})
  assert "Previous Generations" in p and "Later Generations" in p and "Selected family" in p
 def test_research_unchanged(tmp_path,monkeypatch):
- monkeypatch.setenv("HOME",str(tmp_path));db=connect(tmp_path/"x.sqlite3");seed(db);set_presentation_mode(False);p=render_get(db,"/person/1",{});main=p.split("<main>",1)[1].split("</main>",1)[0];assert "Interactive Family Chart" in main
+ monkeypatch.setenv("HOME",str(tmp_path));db=connect(tmp_path/"x.sqlite3");seed(db);set_presentation_mode(False);p=render_get(db,"/person/1",{});main=p.split("<main>",1)[1].split("</main>",1)[0];assert "Person Overview" in main;assert "Interactive Family Chart" not in main

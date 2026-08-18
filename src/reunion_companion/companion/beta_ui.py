@@ -33,7 +33,7 @@ CSS="""
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text)}
 header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;gap:20px;align-items:center}.rc-header-utilities{margin-left:auto;display:flex;align-items:center;gap:12px}.rc-header-utilities form{margin:0!important}.rc-mode-control{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#f7f7f4}.rc-mode-control form{display:flex}.rc-mode-option{border:0;border-radius:0;padding:8px 12px;background:transparent;color:var(--text);font-weight:650}.rc-mode-option+*{border-left:1px solid var(--line)}.rc-mode-option.active{background:var(--brand-navy);color:#fff}.rc-mode-control form+form{border-left:1px solid var(--line)}
 header a{color:var(--text);text-decoration:none;margin-right:13px}
-.rc-brand{display:flex;align-items:center;gap:9px;margin-right:0!important;color:var(--brand-navy)!important;font-weight:700;white-space:nowrap}.rc-header-mark{width:40px;height:40px;object-fit:contain;display:block}.rc-brand span{font-size:18px}.presentation .rc-header-mark{width:46px;height:46px}.presentation .rc-brand span{font-size:20px}
+.rc-brand{display:flex;align-items:center;gap:9px;margin-right:0!important;color:var(--brand-navy)!important;font-weight:700;white-space:nowrap}.rc-header-mark{width:46px;height:46px;object-fit:contain;display:block}.rc-brand span{font-size:20px}
 main{max-width:1200px;margin:24px auto;padding:0 22px 60px}.rc-app-shell{display:grid;grid-template-columns:190px minmax(0,1fr);max-width:1510px;margin:0 auto}.rc-sidebar{padding:26px 14px 60px 18px;border-right:1px solid var(--line);min-height:calc(100vh - 69px);background:#f7f7f4}.rc-sidebar nav{position:sticky;top:94px;display:flex;flex-direction:column;gap:3px}.rc-sidebar a{display:block;padding:9px 11px;border-radius:7px;text-decoration:none;color:#30332f;font-size:14px}.rc-sidebar a:hover{background:#e9ece5}.rc-sidebar .rc-side-section{margin:17px 11px 6px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.rc-sidebar .rc-side-section-first{margin-top:0}.rc-sidebar .rc-person-section{white-space:normal;line-height:1.35}.rc-content{min-width:0}.rc-app-shell main{margin:24px auto}.rc-person-strip{display:flex;align-items:center;gap:15px;margin:0 0 12px;padding:4px 2px 14px;border-bottom:1px solid var(--line)}.rc-person-strip img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}.rc-person-strip .rc-person-name{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:600;line-height:1.05}.rc-person-strip .rc-person-life{color:var(--muted);margin-top:4px}.rc-person-strip .rc-person-context{font-size:13px;color:var(--muted);margin-top:3px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
@@ -120,8 +120,6 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 
 /* FFD Build 1.2 — Presentation Mode */
 .presentation body{font-size:19px;line-height:1.55}
-.presentation header{padding:17px 24px}
-.presentation header strong a{font-size:19px}
 .presentation main{max-width:1320px;padding:0 30px 75px;margin-top:30px}.presentation .rc-app-shell{max-width:1630px}.presentation .rc-sidebar{font-size:16px}
 .presentation h1{font-size:38px}
 .presentation h2{font-size:23px}
@@ -137,6 +135,9 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .presentation .ffd-section{font-size:29px}
 .presentation .ffd-search input{font-size:20px;padding:15px}
 .presentation button,.presentation .button{font-size:18px;padding:12px 16px}
+/* Research Mode Consolidation QA Pass 2: utility header is mode-invariant. */
+.rc-utility-header .rc-mode-option{font-size:14px!important;padding:8px 12px!important;line-height:normal!important}
+.rc-utility-header select{font-size:14px!important;padding:8px 10px!important;line-height:normal!important;min-width:190px}
 .presentation .timeline-story{font-size:19px}
 .presentation .event-card{padding:22px}
 .presentation .technical-nav{display:none}
@@ -315,9 +316,6 @@ def _sidebar_person_links(person_context, presentation, active=None):
     ]
     research=[] if presentation else [
         ("sources","Sources",f"/person/{pid}?tab=sources"),
-        ("confidence","Confidence",f"/person/{pid}?tab=confidence"),
-        ("research","Research",f"/person/{pid}?tab=research"),
-        ("data-quality","Data Quality",f"/person/{pid}?tab=data-quality"),
     ]
     rows=[]
     for key,label,href in common+research:
@@ -359,6 +357,10 @@ def layout(title,body,person_context=None,active=None):
 .media-row{{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text)}}
 .media-row span span{{display:block;margin-top:4px}}.media-thumb{{width:84px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--line);flex:0 0 auto}}.media-file-icon{{display:flex;align-items:center;justify-content:center;background:var(--soft);font-size:12px;color:var(--muted)}}
 .person-heading{{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}}.person-portrait{{width:180px;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}}.publication-actions{{display:flex;gap:8px;margin-top:7px}}.inline-form{{display:inline-block}}
+
+.rc-evidence-event-head{{display:flex;align-items:center;justify-content:space-between;gap:14px}}.rc-evidence-event-head h3{{margin-right:auto}}.rc-evidence-meta{{margin-top:7px}}.rc-evidence-link{{font-weight:650;text-decoration:none}}.rc-evidence-media,.rc-no-evidence{{color:var(--muted)}}
+.rc-research-entry-grid{{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){{.rc-research-entry-grid{{grid-template-columns:1fr}}}}
 
 /* FFD 2.0 RC1.0.7 Visual Presentation QA Pass 2: explicit hero states and chronology dots */
 .ffd-person-editorial .ffd-hero-layout{{grid-template-columns:210px minmax(0,1fr);gap:30px;align-items:start}}
@@ -480,9 +482,7 @@ def quality_page(db):
     q=quick_wins(db)
     cards=[
         ("Place variants","place_variant_groups","/places"),
-        ("Unsourced events","unsourced_events","/quality/items?kind=unsourced-events"),
-        ("Missing birth places","missing_birth_place","/quality/items?kind=missing-birth-place"),
-        ("Missing death places","missing_death_place","/quality/items?kind=missing-death-place"),
+        ("Unsourced events / facts","unsourced_events","/quality/items?kind=unsourced-events"),
         ("Missing media","missing_media","/quality/items?kind=missing-media"),
         ("Legacy PICT","legacy_pict","/quality/items?kind=legacy-pict"),
         ("Untitled sources","untitled_sources","/quality/items?kind=untitled-sources"),
@@ -498,7 +498,7 @@ def quality_items_page(db,kind):
     body=f"<h1>{esc(kind.replace('-',' ').title())}</h1><div class='card'><p>{len(items):,} item(s)</p>"
     for x in items:
         if x.get("person_id"):
-            body+=f"""<a class='result' href='/person/{x['person_id']}?tab=data-quality'>
+            body+=f"""<a class='result' href='/person/{x['person_id']}?tab=overview'>
 <strong>{esc(x.get('display_name'))}</strong> — {esc(x.get('event_type') or '')} {esc(x.get('date_text') or '')}</a>"""
         else:
             title=x.get("title") or x.get("display_text") or x.get("file_path") or x.get("ids") or "Item"
@@ -653,13 +653,20 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         return layout(p["display_name"],person_story_body(db,w,True),p,"overview")
 
     if tab=="overview":
+        confidence_by_id={x.get("id"):x for x in (w.get("confidence") or {}).get("events",[])}
         bits=[]
         for e in _displayable_events(w["events"]):
             typ=e.get("event_type") or e.get("gedcom_tag") or "Fact"
             detail=" · ".join(str(x) for x in (e.get("date_text"),e.get("place_text"),e.get("value_text")) if x)
-            if detail: bits.append(f"<div class='topic'><h3>{esc(typ)}</h3><div>{esc(detail)}</div></div>")
-        from .person_navigation import action_cards
-        body="<div class='ffd-story-actions'>"+action_cards(pid,False)+"</div><div class='card'><h2>Person Overview</h2>"+("".join(bits) or "<p>No summary facts.</p>")+"</div>"
+            ev=confidence_by_id.get(e.get("id"),{})
+            source_refs=[r[0] for r in db.execute("SELECT source_id FROM event_sources WHERE event_id=? ORDER BY source_id",(e.get("id"),)).fetchall()]
+            media_count=int(ev.get("media_count") or 0)
+            supported=ev.get("status")=="supported"
+            evidence=(" · ".join(f"<a class='rc-evidence-link' href='/person/{pid}?tab=sources'>Source {int(sid)}</a>" for sid in source_refs) if source_refs else "<span class='rc-no-evidence'>No sources</span>")
+            if media_count: evidence+=f"<span class='rc-evidence-media'> · Media {media_count}</span>"
+            confidence=("<span class='badge good'>Supported</span>" if supported else "<span class='badge warn'>Needs evidence</span>")
+            bits.append(f"<div class='topic rc-evidence-event'><div class='rc-evidence-event-head'><h3>{esc(typ)}</h3>{confidence}</div>"+(f"<div>{esc(detail)}</div>" if detail else "")+f"<div class='small rc-evidence-meta'>{evidence}</div></div>")
+        body="<div class='card rc-research-overview'><h2>Person Overview</h2><p class='meta'>Recorded events and facts with the evidence currently visible in the imported Reunion data.</p>"+("".join(bits) or "<p>No recorded events or facts.</p>")+"</div>"
     elif tab=="timeline": body=timeline_tab(db,pid,view,presentation)
     elif tab=="biography":
         body=_presentation_biography_body(pid) if presentation else _research_biography_body(w)
@@ -730,9 +737,9 @@ def research_page(db):
       FROM people p LEFT JOIN events e ON e.person_id=p.id AND e.event_type<>'Changed'
       GROUP BY p.id,p.display_name HAVING unsourced>0
       ORDER BY unsourced DESC,p.display_name LIMIT 100""").fetchall()
-    body="<h1>Research Dashboard</h1><div class='card'>"
+    body="<h1>Research Priorities</h1><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p><div class='card'>"
     for r in rows:
-        body+=f"<a class='result' href='/person/{r['id']}?tab=research'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
+        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
     return layout("Research",body+"</div>")
 
 def places_page(db):

@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_release_identity_is_search_ask_navigation_consolidation():
     source=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1"' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Research Mode Consolidation QA Pass 2"' in source
 
 def test_companion_sidebar_has_one_no_context_discovery_entry():
     source=(ROOT/'src/reunion_companion/companion/beta_ui.py').read_text()

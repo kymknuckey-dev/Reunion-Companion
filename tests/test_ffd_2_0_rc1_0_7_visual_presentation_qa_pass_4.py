@@ -10,7 +10,7 @@ def event(i,kind,date=''):
     return E(id=i,event_type=kind,date_text=date,gedcom_tag='')
 
 def test_visual_pass4_release_identity():
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1"' in (ROOT/'macos_app/build_app.py').read_text()
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Research Mode Consolidation QA Pass 2"' in (ROOT/'macos_app/build_app.py').read_text()
 
 def test_visual_pass4_is_one_continuous_life_story_without_recorded_facts_section():
     s=(ROOT/'src/reunion_companion/companion/ffd_person_story.py').read_text()

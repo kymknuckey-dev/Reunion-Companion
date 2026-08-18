@@ -9,7 +9,8 @@ def test_presentation_navigation_order_and_publish_last():
 
 def test_research_navigation_order_and_publish_last():
     labels=[x[1] for x in RESEARCH_ITEMS]
-    assert labels[-5:]==["Confidence","Research","Data Quality","Ask about the Family","Publish"]
+    assert labels[-3:]==["Sources","Ask about the Family","Publish"]
+    assert "Confidence" not in labels and "Research" not in labels and "Data Quality" not in labels
 
 def test_navigation_uses_questions_route():
     h=nav_html(7,True,"ask");assert "/questions?person=7" in h and "class='active'" in h

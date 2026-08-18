@@ -65,7 +65,8 @@ def test_person_tabs_are_simpler(tmp_path,monkeypatch):
     assert "Data Quality" not in page
     set_presentation_mode(False)
     page=render_get(db,"/person/1",{})
-    assert "Data Quality" in page and "Confidence" in page and "Research" in page
+    assert "Sources" in page
+    assert "Data Quality" not in page and "Confidence" not in page
     db.close()
 
 def test_timeline_intelligence_retained(tmp_path,monkeypatch):

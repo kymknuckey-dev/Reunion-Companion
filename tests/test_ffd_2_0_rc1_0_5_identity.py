@@ -51,7 +51,7 @@ def test_visual_qa_pass1_display_sizes_and_bundle_build():
     pub=(ROOT/'src/reunion_companion/companion/publishing_v11.py').read_text()
     build=(ROOT/'macos_app/build_app.py').read_text()
     package=(ROOT/'macos_app/package_dmg.py').read_text()
-    assert '.rc-header-mark{width:40px;height:40px;' in ui
+    assert '.rc-header-mark{width:46px;height:46px;' in ui
     assert '.publishing-mark { width:38mm; height:38mm;' in pub
     assert 'APP_BUILD="6"' in build
     assert 'APP_BUILD="6"' in package

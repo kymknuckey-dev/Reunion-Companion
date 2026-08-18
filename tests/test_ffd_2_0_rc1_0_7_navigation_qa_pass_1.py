@@ -6,7 +6,7 @@ def source(name):
 
 def test_release_identity_is_navigation_qa_pass_1():
     s=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Research Mode Consolidation QA Pass 2"' in s
 
 def test_global_top_navigation_and_visible_build_identity_are_removed():
     s=source('beta_ui.py')
@@ -41,9 +41,9 @@ def test_presentation_context_navigation_and_output_are_person_specific():
 def test_research_context_adds_research_only_destinations():
     s=source('beta_ui.py')
     assert '("sources","Sources"' in s
-    assert '("confidence","Confidence"' in s
-    assert '("research","Research"' in s
-    assert '("data-quality","Data Quality"' in s
+    assert '("confidence","Confidence"' not in s[s.index('research=[] if presentation else'):s.index('rows=[]',s.index('research=[] if presentation else'))]
+    assert '("research","Research"' not in s[s.index('research=[] if presentation else'):s.index('rows=[]',s.index('research=[] if presentation else'))]
+    assert '("data-quality","Data Quality"' not in s[s.index('research=[] if presentation else'):s.index('rows=[]',s.index('research=[] if presentation else'))]
     assert 'heading=name if presentation else f"Research — {name}"' in s
 
 def test_person_pages_no_longer_render_horizontal_person_nav():

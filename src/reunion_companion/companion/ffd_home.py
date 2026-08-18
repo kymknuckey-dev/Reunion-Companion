@@ -92,16 +92,11 @@ def home_body(db,quality_counts,presentation=False):
   <a class='card quick ffd-explore' href='/search'><h2>Find a Person</h2><p>Search the family and open a person’s history.</p></a>
   <a class='card quick ffd-explore' href='/reports'><h2>Reports</h2><p>Open and manage generated family-history reports.</p></a>
 </div>"""
-    research_explore=f"""<h2 class='ffd-section'>Explore</h2>
-<div class='grid'>
-  <a class='card quick ffd-explore' href='/search'><h2>Find a Person</h2><p>Search the family and open a person’s history.</p></a>
-  <a class='card quick ffd-explore' href='/research'><h2>Explore Research</h2><p>Review research observations across the family history.</p></a>
-  <a class='card quick ffd-explore' href='/quality'><h2>Improve the Data</h2><p>{quality_total:,} current review opportunities.</p></a>
-  <a class='card quick ffd-explore' href='/places'><h2>Places</h2><p>Explore recorded places and possible variants.</p></a>
-  <a class='card quick ffd-explore' href='/sources'><h2>Sources</h2><p>Explore sources and their use across the dataset.</p></a>
-  <a class='card quick ffd-explore' href='/media'><h2>Media</h2><p>Explore photos, documents and other media.</p></a>
-  <a class='card quick ffd-explore' href='/data'><h2>Data Import</h2><p>Review and safely refresh the Reunion GEDCOM data.</p></a>
-  <a class='card quick ffd-explore' href='/reports'><h2>Reports</h2><p>Open and manage generated family-history reports.</p></a>
+    research_explore=f"""<h2 class='ffd-section'>Research</h2>
+<div class='grid rc-research-entry-grid'>
+  <a class='card quick ffd-explore' href='/research'><h2>Research Priorities</h2><p>Find people and evidence most worth investigating.</p></a>
+  <a class='card quick ffd-explore' href='/quality'><h2>Improve the Data</h2><p>{quality_total:,} current review opportunities across the family history.</p></a>
+  <a class='card quick ffd-explore' href='/data'><h2>Data Manager</h2><p>Safely refresh and manage Companion’s Reunion data.</p></a>
 </div>"""
 
     return f"""
