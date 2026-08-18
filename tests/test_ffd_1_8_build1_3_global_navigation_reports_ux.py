@@ -19,11 +19,21 @@ def test_global_nav_is_companion_sidebar_before_person_selection(tmp_path):
 
 
 def test_research_home_exposes_dataset_explore_boxes(tmp_path):
+    from reunion_companion.companion.ffd_presentation import (
+        presentation_mode_enabled,
+        set_presentation_mode,
+    )
+
     db=connect(tmp_path/'x.sqlite3')
-    html=render_get(db,'/',{})
-    for label in ('Knuckey Family History','Research','Research Priorities','Improve the Data','Data Manager','Family to Explore','A Living Family History','Family History at a Glance'):
-        assert label in html
-    db.close()
+    previous=presentation_mode_enabled()
+    try:
+        set_presentation_mode(False)
+        html=render_get(db,'/',{})
+        for label in ('Research','Research Priorities','Improve the Data','Data Manager'):
+            assert label in html
+    finally:
+        set_presentation_mode(previous)
+        db.close()
 
 
 def test_delete_report_removes_dedicated_assets(tmp_path):

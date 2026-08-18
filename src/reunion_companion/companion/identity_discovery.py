@@ -15,6 +15,7 @@ import re
 # visible to the user.
 _GIVEN_VARIANT_GROUPS = (
     ("susan", "sue", "susie", "suzy"),
+    ("mervyn", "merv"),
     ("william", "bill", "billy", "will"),
     ("elizabeth", "liz", "lizzie", "beth", "betty"),
     ("james", "jim", "jimmy"),

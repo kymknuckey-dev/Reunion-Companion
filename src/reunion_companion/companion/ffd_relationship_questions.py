@@ -850,9 +850,20 @@ def _answer_question_core(db,q,subject_id=None,selected_identity_id=None,prior_k
   return {"status":"needs-person","answer":"I could not identify both people in that relationship question. Try using both names."}
 
  explicit=contextual_subject(db,q,discovery_subject_id)
- if explicit["status"]=="ambiguous":
+ # A candidate explicitly chosen on the Search ambiguity screen is authoritative
+ # for this turn, provided it belongs to the identity candidates extracted from
+ # the original question. This preserves the question while switching to the
+ # selected canonical Reunion person.
+ selected=None
+ if selected_identity_id and subject_id is None:
+  try:
+   candidate_ids={p["id"] for g in named_people(db,q) for p in g.get("matches",[])}
+   if int(selected_identity_id) in candidate_ids:selected=person(db,int(selected_identity_id))
+  except Exception:selected=None
+ if selected:
+  subject=selected
+ elif explicit["status"]=="ambiguous":
   matches=explicit["people"]
-  selected=None
   if selected_identity_id:
    try:selected=next((p for p in matches if p["id"]==int(selected_identity_id)),None)
    except Exception:selected=None
@@ -1017,7 +1028,16 @@ def _focus_from_answer(db,q,subject_id,selected_identity_id,result):
  if result.get("kind") in ("person","list") and len(result.get("people",[]))==1:return result["people"][0]
  return None
 
-def answer_question(db,q,subject_id=None,selected_identity_id=None,prior_knowledge_intent=None):
+def answer_question(db,q,subject_id=None,selected_identity_id=None,prior_knowledge_intent=None,global_identity_discovery=False):
+ # Global Search must not let a literal two-token record suppress other
+ # credible identities. Direct name Search already exposes those candidates;
+ # natural-language Search now uses the same discovery contract.
+ if global_identity_discovery and subject_id is None and not selected_identity_id:
+  groups=named_people(db,q)
+  if groups:
+   g=groups[0]; matches=g.get("matches",[])
+   if len(matches)>1 and len(_name_tokens(g.get("phrase","")))<=2:
+    return _ambiguity_answer({"phrase":g.get("phrase",""),"matches":matches},db,q)
  r=_answer_question_core(db,q,subject_id,selected_identity_id,prior_knowledge_intent)
  # Preserve an explainable discovery reason for entry-point search.  This is
  # provenance for why Companion considered a person a match, never a claim that

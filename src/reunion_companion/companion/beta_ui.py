@@ -419,7 +419,8 @@ def home(db,q=""):
 def search_page(db,q="",selected_identity_id=None):
     question_result=None
     if q and is_natural_language_question(q) and interpret_question(q)!="unknown":
-        question_result=answer_question(db,q,None,selected_identity_id)
+        # Legacy pipeline shape: answer_question(db,q,None,selected_identity_id)
+        question_result=answer_question(db,q,None,selected_identity_id,global_identity_discovery=True)
     return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled(),question_result))
 
 def _delete_confirmation(db, workspace_id):
