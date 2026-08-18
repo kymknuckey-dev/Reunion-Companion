@@ -393,7 +393,7 @@ def layout(title,body,person_context=None,active=None):
 </style></head><body>
 <header class='rc-utility-header'>{header_brand_html()}<div class='rc-header-utilities'>{family_selector_html()}{mode_control_html(presentation)}</div></header>
 <div class='rc-app-shell'><aside class='rc-sidebar'><nav>
-<div class='rc-side-section rc-side-section-first'>Companion</div><a href='/'>Home</a><a href='/search'>Search</a><a href='/questions'>Ask</a>
+<div class='rc-side-section rc-side-section-first'>Companion</div><a href='/'>Home</a><a href='/search'>Search</a>
 {contextual}{output}
 </nav></aside><div class='rc-content'><main>{body}</main></div></div></body></html>"""
 

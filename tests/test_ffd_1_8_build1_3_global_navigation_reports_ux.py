@@ -11,7 +11,7 @@ def test_global_nav_is_companion_sidebar_before_person_selection(tmp_path):
     sidebar=html.split("<aside class='rc-sidebar'>",1)[1].split('</aside>',1)[0]
     assert "href='/'>Home</a>" in sidebar
     assert "href='/search'>Search</a>" in sidebar
-    assert "href='/questions'>Ask</a>" in sidebar
+    assert "href='/questions'>Ask</a>" not in sidebar
     assert "href='/search'>People</a>" not in sidebar
     assert "href='/research'>Research</a>" not in sidebar
     assert "href='/publishing'>Publishing</a>" not in sidebar

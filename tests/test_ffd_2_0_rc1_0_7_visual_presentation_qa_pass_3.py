@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
 def test_visual_pass3_release_identity():
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 4"' in (ROOT/'macos_app/build_app.py').read_text()
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1"' in (ROOT/'macos_app/build_app.py').read_text()
 
 def test_visual_pass3_separates_chronology_dot_from_event_icon():
     s=(ROOT/'src/reunion_companion/companion/ffd_person_story.py').read_text()

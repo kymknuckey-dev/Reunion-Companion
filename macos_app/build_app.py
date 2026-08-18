@@ -10,7 +10,7 @@ import os
 APP_NAME="Reunion Companion"
 APP_VERSION="2.0"
 APP_BUILD="6"
-APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 4"
+APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1"
 # RC1.0.5 Visual QA Pass 2 icon/bundle acceptance remains part of this cumulative build.
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"

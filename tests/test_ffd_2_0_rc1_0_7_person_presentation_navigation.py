@@ -4,12 +4,13 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_rc107_release_identity():
     source=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 4' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1' in source
 
 def test_rc107_application_sidebar_is_part_of_global_layout():
     source=(ROOT/'src'/'reunion_companion'/'companion'/'beta_ui.py').read_text()
     assert "class='rc-sidebar'" in source
-    assert "href='/questions'>Ask" in source
+    assert "href='/questions'>Ask" not in source
+    assert "Ask about</a>" in source
     assert "href='/reports?origin={pid}'>Reports" in source
 
 def test_rc107_person_identity_is_separate_from_person_navigation():

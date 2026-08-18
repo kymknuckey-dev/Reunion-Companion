@@ -6,7 +6,7 @@ def source(name):
 
 def test_release_identity_is_navigation_qa_pass_1():
     s=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Visual Presentation QA Pass 4"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Search & Ask Navigation Consolidation QA Pass 1"' in s
 
 def test_global_top_navigation_and_visible_build_identity_are_removed():
     s=source('beta_ui.py')
@@ -25,7 +25,7 @@ def test_mode_control_and_family_selector_share_utility_header():
 def test_sidebar_before_person_is_companion_only():
     s=source('beta_ui.py')
     layout=s[s.index('def layout(title,body,person_context=None,active=None):'):s.index('def family_mismatch_body')]
-    assert ">Companion</div><a href='/'>Home</a><a href='/search'>Search</a><a href='/questions'>Ask</a>" in layout
+    assert ">Companion</div><a href='/'>Home</a><a href='/search'>Search</a>" in layout
     assert "href='/search'>People" not in layout
     assert ">Explore</div>" not in layout
     assert "href='/places'>Places" not in layout
