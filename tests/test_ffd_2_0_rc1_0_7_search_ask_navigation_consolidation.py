@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_current_release_identity():
     s=(ROOT/"macos_app/build_app.py").read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Final Search Identity QA Pass 1"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.8 — Publishing Runtime Hardening QA Pass 1"' in s
 
 def test_companion_sidebar_has_home_and_search_but_no_global_ask():
     s=(ROOT/"src/reunion_companion/companion/beta_ui.py").read_text()

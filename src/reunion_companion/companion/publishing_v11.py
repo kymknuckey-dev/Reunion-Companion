@@ -823,6 +823,10 @@ def export_pdf_from_html(html_path,pdf_path=None):
     try:
         from weasyprint import HTML
     except Exception as e:
+        # Keep the user-facing error concise, but preserve the complete import
+        # traceback in the frozen backend log for diagnosis.
+        import traceback
+        traceback.print_exc()
         raise RuntimeError(
             f"PDF publishing runtime could not be loaded: {type(e).__name__}: {e}"
         ) from e

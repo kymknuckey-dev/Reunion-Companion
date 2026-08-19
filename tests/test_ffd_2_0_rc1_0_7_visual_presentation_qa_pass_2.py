@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
 def test_visual_pass2_release_identity():
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.7 — Final Search Identity QA Pass 1"' in (ROOT/'macos_app/build_app.py').read_text()
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.8 — Publishing Runtime Hardening QA Pass 1"' in (ROOT/'macos_app/build_app.py').read_text()
 
 def test_visual_pass2_has_explicit_photo_and_no_photo_hero_states():
     s=(ROOT/'src/reunion_companion/companion/ffd_person_story.py').read_text()
