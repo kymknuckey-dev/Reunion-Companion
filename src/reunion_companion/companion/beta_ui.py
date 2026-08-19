@@ -601,7 +601,7 @@ def _media_is_image(m):
     return Path(m.get("file_path") or "").suffix.lower() in {".jpg",".jpeg",".png",".gif",".webp",".heic",".tif",".tiff"}
 
 def _person_portrait(w):
-    for m in w.get("media",[]):
+    for m in sorted(w.get("media",[]),key=lambda x:(-int(x.get("is_preferred") or 0),int(x.get("id") or 0))):
         if m.get("exists_on_disk") and _media_is_image(m): return m
     return None
 

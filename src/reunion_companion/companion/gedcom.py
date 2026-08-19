@@ -69,8 +69,9 @@ def is_nxref(v): return bool(re.fullmatch(r"@N\d+@",(v or "").strip()))
 def media_payload(n):
     f=child(n,"FILE")
     if not f:return None
-    title=child(n,"TITL");typ=child(n,"_TYPE") or child(n,"FORM")
-    return f.value.strip(),(title.value.strip() if title else Path(f.value.strip()).name),(typ.value.strip() if typ else None)
+    title=child(n,"TITL");typ=child(n,"_TYPE") or child(n,"FORM");prim=child(n,"_PRIM")
+    preferred=1 if prim and (prim.value or "").strip().upper()=="Y" else 0
+    return f.value.strip(),(title.value.strip() if title else Path(f.value.strip()).name),(typ.value.strip() if typ else None),preferred
 
 def import_gedcom(db,path):
     p=Path(path).expanduser();roots=parse_gedcom(p);reset_imported_data(db)
@@ -133,10 +134,10 @@ def import_gedcom(db,path):
                 for ob in children(c,"OBJE"):
                     mp=media_payload(ob)
                     if mp:
-                        fp,title,typ=mp;resolved=str(Path(fp).expanduser());key=("event",fp,title)
+                        fp,title,typ,preferred=mp;resolved=str(Path(fp).expanduser());key=("event",fp,title)
                         mid=media_keys.get(key)
                         if not mid:
-                            mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label) VALUES(?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"event",EVENT_TAGS[c.tag])).lastrowid;media_keys[key]=mid
+                            mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label,is_preferred) VALUES(?,?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"event",EVENT_TAGS[c.tag],preferred)).lastrowid;media_keys[key]=mid
                         db.execute("INSERT OR IGNORE INTO event_media VALUES(?,?,?)",(eid,mid,"GEDCOM"))
 
             if is_nxref(c.value):
@@ -153,10 +154,10 @@ def import_gedcom(db,path):
             if c.tag=="OBJE":
                 mp=media_payload(c)
                 if mp:
-                    fp,title,typ=mp;resolved=str(Path(fp).expanduser());key=("person",fp,title)
+                    fp,title,typ,preferred=mp;resolved=str(Path(fp).expanduser());key=("person",fp,title)
                     mid=media_keys.get(key)
                     if not mid:
-                        mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label) VALUES(?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"person",None)).lastrowid;media_keys[key]=mid
+                        mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label,is_preferred) VALUES(?,?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"person",None,preferred)).lastrowid;media_keys[key]=mid
                     db.execute("INSERT OR IGNORE INTO person_media VALUES(?,?,?)",(pid,mid,"GEDCOM"))
 
         # Catch citations under non-event person fields (for example NAME, custom fields, etc.).
@@ -174,11 +175,25 @@ def import_gedcom(db,path):
         for ob in children(f,"OBJE"):
             mp=media_payload(ob)
             if mp:
-                fp,title,typ=mp;resolved=str(Path(fp).expanduser());key=("family",fp,title)
+                fp,title,typ,preferred=mp;resolved=str(Path(fp).expanduser());key=("family",fp,title)
                 mid=media_keys.get(key)
                 if not mid:
-                    mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label) VALUES(?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"family","Marriage")).lastrowid;media_keys[key]=mid
+                    mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label,is_preferred) VALUES(?,?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"family","Marriage",preferred)).lastrowid;media_keys[key]=mid
                 db.execute("INSERT OR IGNORE INTO family_media VALUES(?,?,?)",(fid,mid,"GEDCOM"))
+
+        # Reunion may attach media specifically beneath the family MARR event
+        # (FAM -> MARR -> OBJE -> FILE). Preserve that semantic context while
+        # still linking the media to the family so publishing can surface it.
+        marr=child(f,"MARR")
+        if marr:
+            for ob in children(marr,"OBJE"):
+                mp=media_payload(ob)
+                if mp:
+                    fp,title,typ,preferred=mp;resolved=str(Path(fp).expanduser());key=("family-marriage",fp,title)
+                    mid=media_keys.get(key)
+                    if not mid:
+                        mid=db.execute("INSERT INTO media(file_path,title,media_type,exists_on_disk,attachment_scope,attachment_label,is_preferred) VALUES(?,?,?,?,?,?,?)",(resolved,title,typ,int(Path(resolved).exists()),"family-event","Marriage",preferred)).lastrowid;media_keys[key]=mid
+                    db.execute("INSERT OR IGNORE INTO family_media VALUES(?,?,?)",(fid,mid,"GEDCOM"))
 
     db.execute("INSERT INTO imports(source_path,source_type) VALUES(?,?)",(str(p),"GEDCOM"));db.commit()
     from .discovery import rebuild_discovery_index

@@ -32,8 +32,12 @@ def _evidence(db,pid):
     if not p:return None,[],[],[]
     notes=[r[0] for r in db.execute("SELECT text FROM notes WHERE person_id=? ORDER BY id",(pid,)) if (r[0] or '').strip()]
     facts=[]
-    for r in db.execute("SELECT event_type,date_text,place_text,value_text,note_text FROM events WHERE person_id=? ORDER BY id",(pid,)):
-        vals=[r[0] or 'Fact']+[x for x in r[1:] if x]
+    for r in db.execute("SELECT event_type,date_text,place_text,value_text,note_text,gedcom_tag FROM events WHERE person_id=? ORDER BY id",(pid,)):
+        typ=(r[0] or 'Fact').strip()
+        # Reunion/GEDCOM CHAN/Changed metadata describes database editing, not a life event.
+        if typ.casefold() in ('changed','change') or (r[5] or '').upper()=='CHAN':
+            continue
+        vals=[typ]+[x for x in r[1:5] if x]
         facts.append(" — ".join(str(x) for x in vals))
     return dict(p),notes,facts,_family_units(db,pid)
 
@@ -121,6 +125,20 @@ def _ensure_family_grounding(narrative,person,families):
 
     return "\n\n".join(paragraphs)
 
+def _deterministic_fact_narrative(person,facts,families):
+    """Safe publication prose for people whose biography is facts-only.
+
+    Facts are rendered without verbs that imply a change, cause or chronology not
+    present in Reunion. This deliberately prefers plain evidence over fluent invention.
+    """
+    paras=[]
+    if facts:
+        paras.append(person["display_name"]+" has the following recorded life facts: " + "; ".join(facts)+".")
+    for fam in families:
+        sentence=_deterministic_family_sentence(person,fam,True,True)
+        if sentence: paras.append(sentence)
+    return "\n\n".join(paras)
+
 def person_narrative(db,pid,client=None,force=False):
     p,notes,facts,families=_evidence(db,pid)
     if not p:return {"status":"missing","narrative":"","cached":False}
@@ -134,6 +152,12 @@ def person_narrative(db,pid,client=None,force=False):
     family_text=_family_text(families)
     if not evidence and not fact_text:
         return {"status":"empty","narrative":"No biographical material is recorded for this person.","cached":False}
+    # Facts-only biographies are deterministic.  Without authored Reunion notes,
+    # an LLM has no narrative context from which to infer verbs such as 'changed'.
+    if not evidence and fact_text:
+        narrative=_deterministic_fact_narrative(p,facts,families)
+        db.execute("INSERT INTO companion_person_narrative_cache(person_id,source_hash,narrative_version,narrative) VALUES(?,?,?,?) ON CONFLICT(person_id) DO UPDATE SET source_hash=excluded.source_hash,narrative_version=excluded.narrative_version,narrative=excluded.narrative,generated_at=CURRENT_TIMESTAMP",(pid,fp,NARRATIVE_VERSION,narrative));db.commit()
+        return {"status":"ok","narrative":narrative,"cached":False}
     prompt=f'''Write a concise, readable family-history biography of {p['display_name']} for Presentation mode.\n\nSTRICT GROUNDING RULES:\n- Use ONLY the ORIGINAL REUNION NOTES and STRUCTURED REUNION FACTS supplied below.\n- Do not infer or invent dates, places, relationships, motives, occupations, achievements, health details or other facts.\n- Preserve names, dates and factual claims accurately.\n- Organise the material into natural chronological or thematic paragraphs.\n- Introduce the subject by full name, then use the subject's given/first name naturally in later references and possessives.\n- Do not refer to the subject as Mr, Mrs, Ms, Miss or another courtesy title unless that title is itself part of the recorded evidence and historically significant.\n- Remove obvious repetition and improve grammar and flow.\n- Do not mention databases, GEDCOM, Reunion, evidence bundles, or these instructions.\n- Treat IMMEDIATE FAMILY FACTS as authoritative: incorporate the recorded spouse, marriage details and every child naturally in the biography. Never change a child's relationship or invent a family member.\n- Return biography prose only, with paragraphs separated by blank lines. Do not add a title or Markdown heading.\n\nIMMEDIATE FAMILY FACTS (authoritative):\n{family_text or '(none recorded)'}\n\nSTRUCTURED REUNION FACTS:\n{fact_text or '(none)'}\n\nORIGINAL REUNION NOTES:\n{evidence or '(none)'}\n'''
     try:
         narrative=(client or OllamaClient()).generate(prompt).strip()

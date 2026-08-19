@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_rc107_release_identity():
     source=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.8 — Publishing Runtime Hardening QA Pass 1' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6' in source
 
 def test_rc107_application_sidebar_is_part_of_global_layout():
     source=(ROOT/'src'/'reunion_companion'/'companion'/'beta_ui.py').read_text()

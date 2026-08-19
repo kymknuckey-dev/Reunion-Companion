@@ -18,7 +18,7 @@ def test_first_birth_page_owns_heading_and_preview():
     block=PUB[PUB.index("def _birth_document_block"):PUB.index("def _publication_fact_sections")]
     assert "<h2 class='birth-document-heading'>Birth Documents</h2>" in block
     assert "pages[1:]" in block
-    assert "birth-document-original" in block
+    assert "birth-document-original" not in block
 
 def test_dedicated_birth_page_is_printed_and_page_fitted():
     assert ".birth-document-page {" in PUB

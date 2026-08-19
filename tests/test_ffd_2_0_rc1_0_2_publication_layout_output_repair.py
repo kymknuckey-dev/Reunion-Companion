@@ -6,13 +6,14 @@ PUB=(ROOT/"src/reunion_companion/companion/publishing_v11.py").read_text()
 IDENT=(ROOT/"src/reunion_companion/app_identity.py").read_text()
 
 def test_landscape_pair_is_vertical_not_side_by_side():
-    assert "flex-direction:column" in PUB
+    assert "grid-template-rows:113mm 113mm" in PUB
     assert "grid-template-columns:repeat(2" not in PUB
-    assert "max-height:92mm" in PUB
+    assert "max-height:91mm" in PUB
 
 def test_portrait_atomic_page_reserves_caption_space():
-    assert "max-height:202mm" in PUB
-    assert ".photo-page .media-card figcaption { break-inside:avoid; page-break-inside:avoid; }" in PUB
+    assert "height:113mm" in PUB
+    assert ".photo-page .media-card figcaption { margin:0;" in PUB
+    assert "grid-template-rows:minmax(0,106mm) 7mm" in PUB
 
 def test_children_use_shared_name_date_hierarchy():
     assert "class='person-name'" in PUB

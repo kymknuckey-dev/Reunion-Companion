@@ -68,25 +68,18 @@ def test_publication_reuses_same_stored_biography_and_removes_duplicate_summary(
         def generate(self,prompt):return "Kym Wayne Knuckey was born in Adelaide.\n\nKym enjoyed sport."
     person_narrative(db,1,Fake())
     html=_person_section(db,1,None)
-    assert "<h3>Biography</h3>" in html
-    assert "Kym enjoyed sport." in html
-    assert "Publication Narrative" not in html
-    heading=html.index("<h2>Kym Wayne Knuckey</h2>")
-    portrait=html.index("Kym portrait")
-    life=html.index("<h2>Life &amp; Notes</h2>")
-    assert heading < portrait < life
-    # vital facts are no longer duplicated immediately beneath the name
-    assert "<div class='person-topic'><h3>Birth</h3>" not in html
+    assert "<h3>Biography</h3>" in html and "Kym enjoyed sport." in html
+    assert "Life &amp; Biography" in html and "Life &amp; Notes" not in html
+    assert html.index("<h2>Kym Wayne Knuckey</h2>") < html.index("<h3>Biography</h3>")
 
 def test_life_notes_are_deterministic_topic_lines(tmp_path):
     db=connect(tmp_path/"x.sqlite3");seed(db,tmp_path)
     html=_person_section(db,1,None)
-    assert "<h3>Life Events</h3>" in html
-    assert "<strong>Birth:</strong>" in html
-    assert "<strong>Christening:</strong>" in html
-    assert "<strong>Religion:</strong>" in html
-    assert "<h3>Education</h3>" in html and "<strong>Education:</strong>" in html
-    assert "<h3>Work Life</h3>" in html and "<strong>Occupation:</strong>" in html
+    assert "Birth Date" in html and "Birth Place" in html
+    assert html.index("Occupation") < html.index("Education") < html.index("Religion")
+    assert "Father" not in html  # seed has no parents
+    assert "Spouse" in html and "Marriage Date" in html and "Marriage Place" in html
+    assert "Children" in html
 
 def test_media_and_fact_sources_use_numbered_reader_facing_citations(tmp_path):
     db=connect(tmp_path/"x.sqlite3");_,cert=seed(db,tmp_path)
@@ -95,7 +88,7 @@ def test_media_and_fact_sources_use_numbered_reader_facing_citations(tmp_path):
     media_html=_media_block(row,None,family_names="Kym Wayne Knuckey and Sue Anne Example",db=db)
     assert "Marriage Certificate" in media_html and "[12]" in media_html
     html=_person_section(db,1,None)
-    assert "<strong>Birth:</strong>" in html and "[12]" in html
+    assert "<h3>Sources</h3>" in html and "[12]" in html
 
 def test_family_and_descendants_attaches_dates_to_each_spouse(tmp_path):
     db=connect(tmp_path/"x.sqlite3");seed(db,tmp_path)
@@ -107,7 +100,7 @@ def test_family_and_descendants_attaches_dates_to_each_spouse(tmp_path):
 def test_other_photo_layout_is_publication_page_driven():
     from reunion_companion.companion import publishing_v11 as pub
     assert ".photo-grid { display:block; }" in pub.PRO_CSS
-    assert ".photo-page.landscape-pair" in pub.PRO_CSS
+    assert ".photo-page.photo-pair" in pub.PRO_CSS
 
 def test_rc1_identity_preserves_engine_and_backend_protocol():
     from reunion_companion import app_identity

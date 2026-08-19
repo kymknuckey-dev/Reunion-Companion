@@ -7,7 +7,7 @@ def source():
 
 def test_release_identity_is_application_shell_research_overview_pass():
     s=(ROOT/'macos_app/build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.8 — Publishing Runtime Hardening QA Pass 1"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6"' in s
 
 def test_header_brand_geometry_is_mode_independent():
     s=source()

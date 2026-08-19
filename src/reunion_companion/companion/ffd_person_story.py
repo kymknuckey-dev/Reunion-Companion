@@ -46,12 +46,18 @@ def _family(db,pid):
     return relationships
 
 def _portrait(w):
-    for m in w.get("media",[]):
+    for m in sorted(w.get("media",[]),key=lambda x:(-int(x.get("is_preferred") or 0),int(x.get("id") or 0))):
         if m.get("exists_on_disk") and Path(m.get("file_path") or "").suffix.lower() in {".jpg",".jpeg",".png",".gif",".webp",".heic",".tif",".tiff"}: return m
     return None
 
 def _person_portrait(db,pid):
-    return db.execute("""SELECT DISTINCT m.* FROM media m WHERE m.exists_on_disk=1 AND lower(substr(m.file_path,instr(m.file_path,'.'))) IN ('.jpg','.jpeg','.png','.gif','.webp','.heic','.tif','.tiff') AND m.id IN (SELECT media_id FROM person_media WHERE person_id=? UNION SELECT em.media_id FROM event_media em JOIN events e ON e.id=em.event_id WHERE e.person_id=?) ORDER BY m.id LIMIT 1""",(pid,pid)).fetchone()
+    return db.execute("""SELECT DISTINCT m.* FROM media m JOIN person_media pm ON pm.media_id=m.id
+      WHERE pm.person_id=? AND m.exists_on_disk=1 AND (
+        lower(m.file_path) LIKE '%.jpg' OR lower(m.file_path) LIKE '%.jpeg' OR
+        lower(m.file_path) LIKE '%.png' OR lower(m.file_path) LIKE '%.gif' OR
+        lower(m.file_path) LIKE '%.webp' OR lower(m.file_path) LIKE '%.heic' OR
+        lower(m.file_path) LIKE '%.tif' OR lower(m.file_path) LIKE '%.tiff'
+      ) ORDER BY COALESCE(m.is_preferred,0) DESC,m.id LIMIT 1""",(pid,)).fetchone()
 
 def _person_thumb(db,pid):
     person=db.execute("SELECT sex FROM people WHERE id=?",(pid,)).fetchone()

@@ -1,4 +1,16 @@
-Build 17 delta release
-Standalone tests: 3 passed
-Syntax checks: passed
-Writes to Reunion packages: no
+FFD 2.0 RC1.0.8 — Media Semantics & Book Presentation QA Pass 4
+
+Regression result: 750 passed
+
+Pass 3 acceptance locks:
+- Reunion preferred person photo (_PRIM Y / is_preferred=1) drives hero selection.
+- Two non-hero photographs share each book photo page, stacked vertically.
+- Photographs preserve full aspect ratio with contain/no crop behaviour.
+- FAM -> MARR -> OBJE certificate media remains family-event / Marriage media.
+- Marriage certificates are surfaced by family publication semantics.
+- Image figures contain no open-original link.
+- Pass 2 GEDCOM import / Safe Refresh semantics remain unchanged.
+
+FFD 2.0 RC1.0.8 Media Semantics & Book Presentation QA Pass 6 corrected packaging
+Full regression: 759 passed
+Pass 5 compatibility tests updated to reflect Pass 6 superseding geometry.

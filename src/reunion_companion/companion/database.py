@@ -1,6 +1,6 @@
 from pathlib import Path
 import sqlite3
-SCHEMA_VERSION=6
+SCHEMA_VERSION=7
 SCHEMA="""
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,person_id INTEGER NOT N
 CREATE TABLE IF NOT EXISTS notes(id INTEGER PRIMARY KEY,person_id INTEGER REFERENCES people(id) ON DELETE CASCADE,note_type TEXT NOT NULL DEFAULT 'Note',gedcom_tag TEXT,gedcom_note_xref TEXT,text TEXT NOT NULL,is_referenced INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS families(id INTEGER PRIMARY KEY,gedcom_xref TEXT UNIQUE,marriage_date TEXT,marriage_place TEXT);
 CREATE TABLE IF NOT EXISTS family_members(family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,role TEXT NOT NULL,PRIMARY KEY(family_id,person_id,role));
-CREATE TABLE IF NOT EXISTS media(id INTEGER PRIMARY KEY,gedcom_xref TEXT,file_path TEXT NOT NULL,title TEXT,media_type TEXT,exists_on_disk INTEGER NOT NULL DEFAULT 0,attachment_scope TEXT,attachment_label TEXT);
+CREATE TABLE IF NOT EXISTS media(id INTEGER PRIMARY KEY,gedcom_xref TEXT,file_path TEXT NOT NULL,title TEXT,media_type TEXT,exists_on_disk INTEGER NOT NULL DEFAULT 0,attachment_scope TEXT,attachment_label TEXT,is_preferred INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS person_media(person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,relation TEXT NOT NULL DEFAULT 'GEDCOM',PRIMARY KEY(person_id,media_id,relation));
 CREATE TABLE IF NOT EXISTS event_media(event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,relation TEXT NOT NULL DEFAULT 'GEDCOM',PRIMARY KEY(event_id,media_id,relation));
 CREATE TABLE IF NOT EXISTS family_media(family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,relation TEXT NOT NULL DEFAULT 'GEDCOM',PRIMARY KEY(family_id,media_id,relation));
@@ -38,7 +38,7 @@ def migrate(db):
     if "gedcom_tag" not in _cols(db,"events"): db.execute("ALTER TABLE events ADD COLUMN gedcom_tag TEXT")
     for col,decl in (("marriage_date","TEXT"),("marriage_place","TEXT")):
         if col not in _cols(db,"families"): db.execute(f"ALTER TABLE families ADD COLUMN {col} {decl}")
-    for col,decl in (("attachment_scope","TEXT"),("attachment_label","TEXT")):
+    for col,decl in (("attachment_scope","TEXT"),("attachment_label","TEXT"),("is_preferred","INTEGER NOT NULL DEFAULT 0")):
         if col not in _cols(db,"media"): db.execute(f"ALTER TABLE media ADD COLUMN {col} {decl}")
     nc=_cols(db,"notes")
     for col,decl in (("gedcom_tag","TEXT"),("gedcom_note_xref","TEXT"),("is_referenced","INTEGER NOT NULL DEFAULT 0")):

@@ -77,7 +77,7 @@ def _media_union(db,pid):
     return db.execute("""SELECT DISTINCT m.* FROM media m WHERE m.id IN (
         SELECT media_id FROM person_media WHERE person_id=?
         UNION SELECT em.media_id FROM event_media em JOIN events e ON e.id=em.event_id WHERE e.person_id=?
-    ) ORDER BY m.id""",(pid,pid)).fetchall()
+    ) ORDER BY COALESCE(m.is_preferred,0) DESC,m.id""",(pid,pid)).fetchall()
 
 def person_media(db,pid):
     return _media_union(db,pid)
@@ -89,9 +89,16 @@ def family_media(db,family_id):
 def _title(m):
     return (m["title"] or Path(m["file_path"]).name or "").strip()
 
+def _media_field(m,key):
+    try:return m[key]
+    except (KeyError,IndexError):return None
+
 def media_kind(m):
     ext=Path(m["file_path"]).suffix.lower()
-    t=_title(m).lower()
+    # Classification uses both Reunion's media title and the original filename.
+    # A generic title such as "Certificate" must not hide a filename that says
+    # "Marriage Certificate" or "Wedding Certificate".
+    t=(" ".join(x for x in ((m["title"] or ""),(_media_field(m,"attachment_label") or ""),Path(m["file_path"]).name) if x)).lower()
     if ext in IMAGE_EXT:
         if any(x in t for x in ("birth certificate","death certificate","marriage certificate","wedding certificate","burial","certificate","extract")):
             return "document-image"
@@ -108,7 +115,13 @@ def media_kind(m):
     return "other"
 
 def family_publication_media(db,family_id,husband_id=None,wife_id=None):
+    # Reunion attaches media to the marriage/family record when the media belongs
+    # to that marriage.  Preserve that attachment context: a generic image/PDF
+    # called merely "Certificate" is still a marriage document when it arrived
+    # through family_media.  Person media must still identify itself as marriage
+    # material so unrelated personal documents are not pulled into the marriage.
     family=list(family_media(db,family_id))
+    family_ids={m["id"] for m in family}
     related=list(family)
     for pid in (husband_id,wife_id):
         if pid:
@@ -119,11 +132,19 @@ def family_publication_media(db,family_id,husband_id=None,wife_id=None):
         if m["id"] in seen:continue
         seen.add(m["id"]);items.append(m)
     wedding_photos=[m for m in items if media_kind(m)=="wedding-photo"]
-    marriage_docs=[m for m in items if media_kind(m)=="marriage-document"]
+    marriage_docs=[]
+    for m in items:
+        kind=media_kind(m)
+        text=((m["title"] or "")+" "+(_media_field(m,"attachment_label") or "")+" "+Path(m["file_path"]).name).lower()
+        explicitly_marriage=(kind=="marriage-document" or (kind=="document-image" and any(x in text for x in ("marriage","wedding"))))
+        family_attached_document=(m["id"] in family_ids and kind in ("document","document-image","marriage-document"))
+        if explicitly_marriage or family_attached_document:
+            marriage_docs.append(m)
     return family,wedding_photos,marriage_docs
 
 def person_document_groups(db,pid):
     groups={"portrait":[],"birth":[],"death":[],"military":[],"other-documents":[],"other-photos":[],"legacy":[]}
+    photos=[]
     for m in person_media(db,pid):
         k=media_kind(m)
         title=_title(m).lower()
@@ -132,12 +153,15 @@ def person_document_groups(db,pid):
         elif k=="death-document" or (k=="document-image" and ("death" in title or "burial" in title)):groups["death"].append(m)
         elif k=="military-document":groups["military"].append(m)
         elif k in ("document","document-image","marriage-document"):groups["other-documents"].append(m)
-        elif k=="photo":
-            groups["portrait"].append(m) if not groups["portrait"] else groups["other-photos"].append(m)
+        elif k=="photo":photos.append(m)
         elif k=="wedding-photo":
-            # Family wedding photographs are placed in the marriage section, not duplicated on person pages.
             pass
         else:groups["other-documents"].append(m)
+    if photos:
+        preferred=next((m for m in photos if int(_media_field(m,"is_preferred") or 0)==1),None)
+        portrait=preferred or photos[0]
+        groups["portrait"].append(portrait)
+        groups["other-photos"].extend(m for m in photos if m["id"]!=portrait["id"])
     return groups
 
 def parent_couple(db,pid):

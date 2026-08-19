@@ -12,14 +12,14 @@ def test_portrait_media_is_atomic_and_reserves_related_text_room():
     css=pub.PRO_CSS
     assert "figure.media-card.media-portrait" in css
     assert "max-height:198mm !important" in css
-    assert ".media-card .open-original" in css
+    assert ".media-card .open-original" not in css
     assert "page-break-inside:avoid" in css
 
-def test_accepted_landscape_pair_layout_is_unchanged():
+def test_accepted_two_slot_vertical_photo_layout_is_preserved():
     css=pub.PRO_CSS
-    assert ".photo-page.landscape-pair" in css
-    assert "max-height:92mm" in css
-    assert "flex-direction:column" in css
+    assert ".photo-page.photo-pair" in css
+    assert "max-height:91mm" in css
+    assert "grid-template-rows:113mm 113mm" in css
 
 def test_descendant_typography_is_semantic_not_regex_rewritten():
     root=Path(__file__).resolve().parents[1]
