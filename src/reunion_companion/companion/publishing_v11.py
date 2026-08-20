@@ -84,14 +84,14 @@ a { color:inherit; }
 
 .photo-grid { display:block; }
 .photo-page { break-inside:avoid; page-break-inside:avoid; margin:0 0 6mm; }
-.photo-page.photo-pair { break-after:page; page-break-after:always; height:231mm; display:grid; grid-template-rows:113mm 113mm; gap:5mm; }
+.photo-page.photo-pair { break-after:page; page-break-after:always; height:231mm; display:grid; grid-template-rows:113mm 113mm; gap:5mm; transform:translateY(8mm); }
 .photo-page.photo-pair.single-tail { grid-template-rows:113mm; height:113mm; }
 /* Each half-page is a real image+caption slot.  The caption owns its row, so
    enlarging a photograph can never clip or cover its description. */
-.photo-page .media-card { margin:0; width:100%; box-sizing:border-box; justify-self:stretch; height:113mm; break-inside:avoid; page-break-inside:avoid; display:grid; grid-template-rows:minmax(0,106mm) 7mm; align-items:center; justify-items:center; min-height:0; overflow:visible; }
-.photo-page .media-card img { display:block; width:auto; height:auto; max-width:100%; max-height:106mm; object-fit:contain; margin:0 auto; align-self:center; }
+.photo-page .media-card { margin:0; width:100%; box-sizing:border-box; height:113mm; break-inside:avoid; page-break-inside:avoid; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:0; overflow:visible; }
+.photo-page .media-card img { display:block; width:auto; height:auto; max-width:100%; max-height:106mm; object-fit:contain; margin:0 auto 1mm; flex:0 1 auto; }
 .photo-page .media-card.media-landscape img { max-height:91mm; }
-.photo-page .media-card figcaption { margin:0; align-self:center; break-inside:avoid; page-break-inside:avoid; text-align:center; line-height:1.2; max-width:100%; overflow:visible; }
+.photo-page .media-card figcaption { margin:0; flex:0 0 auto; break-inside:avoid; page-break-inside:avoid; text-align:center; line-height:1.2; width:100%; max-width:100%; overflow:visible; }
 @media screen {
   .photo-page.photo-pair { break-after:auto; page-break-after:auto; min-height:0; }
 }

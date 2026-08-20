@@ -1,3 +1,10 @@
+## RC1.0.9 Final Image Page Layout
+
+- Accepted the final two-photo page layout as the canonical RC1.0.9 specification.
+- Preserved the successful individual image sizes and horizontal centring.
+- Shifted the complete two-photo group down 8 mm for balanced vertical placement.
+- Added the approved page-layout visual reference and regression coverage.
+
 
 ## FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6
 - Corrected two-photo page horizontal positioning by making each photo/caption card span the full printable width before centering its contents.

@@ -24,6 +24,8 @@ def test_pass3_preferred_photo_and_two_vertical_slots_are_frozen(tmp_path):
     css=(ROOT/'src/reunion_companion/companion/publishing_v11.py').read_text()
     assert ".photo-page .media-card { margin:0;" in css
     assert "height:113mm;" in css
-    assert "justify-self:stretch;" in css
+    assert "width:100%;" in css
+    assert "display:flex;" in css
+    assert "align-items:center;" in css
     assert "max-height:106mm; object-fit:contain" in css
     db.close()

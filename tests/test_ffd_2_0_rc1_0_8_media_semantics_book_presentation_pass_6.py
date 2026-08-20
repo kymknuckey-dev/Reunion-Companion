@@ -5,7 +5,9 @@ CSS=pub.PRO_CSS
 def test_photo_pair_uses_explicit_image_and_caption_rows():
     assert "height:231mm" in CSS
     assert "grid-template-rows:113mm 113mm" in CSS
-    assert "grid-template-rows:minmax(0,106mm) 7mm" in CSS
+    assert "display:flex" in CSS
+    assert "align-items:center" in CSS
+    assert ".photo-page .media-card figcaption" in CSS
     assert "overflow:visible" in CSS
 
 

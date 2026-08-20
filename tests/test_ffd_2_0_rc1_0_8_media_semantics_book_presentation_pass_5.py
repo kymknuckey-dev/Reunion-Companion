@@ -28,4 +28,5 @@ def test_two_photo_page_geometry_is_unchanged():
     # Pass 6 replaces the rejected 108mm Pass 5 rows with two 113mm slots,
     # each reserving 7mm for an unclipped caption.
     assert "grid-template-rows:113mm 113mm" in CSS
-    assert "grid-template-rows:minmax(0,106mm) 7mm" in CSS
+    assert "display:flex" in CSS
+    assert "align-items:center" in CSS

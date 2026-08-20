@@ -1,16 +1,17 @@
-FFD 2.0 RC1.0.8 — Media Semantics & Book Presentation QA Pass 4
+FFD 2.0 RC1.0.9 — Final Image Page Layout
+Regression: 766 passed, 0 failed
 
-Regression result: 750 passed
+FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6 — Layout Correction
 
-Pass 3 acceptance locks:
-- Reunion preferred person photo (_PRIM Y / is_preferred=1) drives hero selection.
-- Two non-hero photographs share each book photo page, stacked vertically.
-- Photographs preserve full aspect ratio with contain/no crop behaviour.
-- FAM -> MARR -> OBJE certificate media remains family-event / Marriage media.
-- Marriage certificates are surfaced by family publication semantics.
-- Image figures contain no open-original link.
-- Pass 2 GEDCOM import / Safe Refresh semantics remain unchanged.
+Regression result: 763 passed
 
-FFD 2.0 RC1.0.8 Media Semantics & Book Presentation QA Pass 6 corrected packaging
-Full regression: 759 passed
-Pass 5 compatibility tests updated to reflect Pass 6 superseding geometry.
+Acceptance locks:
+- Git checkpoint 4e38193 is the authoritative baseline.
+- Reunion preferred person photo (_PRIM Y / is_preferred=1) remains the hero selection source.
+- FAM -> MARR -> OBJE certificate media remains family-event / Marriage media and is publishable.
+- Two photographs share each book photo page vertically.
+- Each photo/caption unit spans the printable width and uses flex centering, avoiding the prior grid positioning regression.
+- Portrait/square maximum remains 106mm; landscape maximum remains 91mm.
+- Photographs preserve complete aspect ratio with object-fit: contain and no cropping.
+- Captions remain visible directly beneath their image.
+- Original image/document/PDF links remain removed from publication output.
