@@ -44,6 +44,7 @@ def _cache_prefix(path,media_id=None):
 def _render_with_pymupdf(pdf,assets,prefix,dpi=150):
     import pymupdf as fitz
     doc=fitz.open(pdf)
+    expected_pages=doc.page_count
     pages=[]
     scale=dpi/72.0
     matrix=fitz.Matrix(scale,scale)
@@ -62,6 +63,8 @@ def _render_with_pymupdf(pdf,assets,prefix,dpi=150):
             "preview":target,
         })
     doc.close()
+    if len(pages) != expected_pages:
+        raise RuntimeError(f"Incomplete PDF render: expected {expected_pages} pages, rendered {len(pages)}")
     return pages
 
 def _render_first_page_macos(pdf,assets,prefix):
@@ -93,7 +96,7 @@ def _render_first_page_macos(pdf,assets,prefix):
 def render_pdf(path,output_html,media_id=None,dpi=150):
     p=Path(path).expanduser()
     if not p.is_file() or p.suffix.lower()!=".pdf" or output_html is None:
-        return {"original":None,"pages":[],"renderer":"none","warning":None}
+        return {"original":None,"pages":[],"page_count":0,"all_pages_rendered":False,"renderer":"none","warning":None}
 
     original=copy_original(p,output_html,media_id)
     assets=_asset_dir(output_html)
@@ -115,7 +118,14 @@ def render_pdf(path,output_html,media_id=None,dpi=150):
 
     for x in pages:
         x["preview_rel"]=f"{assets.name}/{x['preview'].name}"
-    return {"original":original,"pages":pages,"renderer":renderer,"warning":warning}
+    return {
+        "original":original,
+        "pages":pages,
+        "page_count":len(pages),
+        "all_pages_rendered":bool(pages) and renderer=="PyMuPDF",
+        "renderer":renderer,
+        "warning":warning,
+    }
 
 def pdf_render_capability():
     try:

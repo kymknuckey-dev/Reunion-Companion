@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_pass3_release_identity():
     s=(ROOT/'macos_app/build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in s
 
 def test_pass3_preferred_photo_and_two_vertical_slots_are_frozen(tmp_path):
     db=connect(tmp_path/'x.sqlite3')

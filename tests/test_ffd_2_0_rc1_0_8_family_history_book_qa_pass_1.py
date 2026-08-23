@@ -8,7 +8,7 @@ BUILD=(ROOT/'macos_app/build_app.py').read_text()
 
 
 def test_release_identity():
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6"' in BUILD
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in BUILD
 
 
 def test_death_other_and_marriage_pdf_sections_use_birth_model_fitted_page():

@@ -1,3 +1,10 @@
+# FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction
+
+- All PDF source pages are required to render in order through PyMuPDF.
+- Renderer exposes page-count/completeness metadata and rejects incomplete all-page rendering.
+- Multi-page fitted-document publishing is regression tested.
+- RC1.0.9 photograph geometry is frozen unchanged.
+
 ## RC1.0.9 Final Image Page Layout
 
 - Accepted the final two-photo page layout as the canonical RC1.0.9 specification.

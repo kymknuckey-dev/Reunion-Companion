@@ -1,3 +1,9 @@
+## FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction
+
+- Hardened PDF page reproduction so the rendered page set must match the source PDF page count.
+- Added explicit `page_count` and `all_pages_rendered` renderer metadata.
+- Added multi-page person-document publishing regression coverage while preserving single-page certificate and image-page behaviour.
+
 ## RC1.0.9 Final Image Page Layout
 
 - Accepted the final two-photo page layout as the canonical RC1.0.9 specification.

@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_pass2_release_identity():
     s=(ROOT/'macos_app/build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in s
 
 def test_utility_header_neutralises_presentation_button_enlargement():
     s=(ROOT/'src/reunion_companion/companion/beta_ui.py').read_text()

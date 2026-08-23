@@ -16,4 +16,4 @@ def test_family_portraits_support_real_media_and_three_brand_placeholders():
 
 def test_current_release_identity_is_pass2():
     text=(ROOT/'macos_app/build_app.py').read_text()
-    assert 'FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6' in text
+    assert 'FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction' in text

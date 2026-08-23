@@ -1,17 +1,4 @@
-FFD 2.0 RC1.0.9 — Final Image Page Layout
-Regression: 766 passed, 0 failed
+FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction
+Full regression: 771 passed, 0 failed.
 
-FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6 — Layout Correction
-
-Regression result: 763 passed
-
-Acceptance locks:
-- Git checkpoint 4e38193 is the authoritative baseline.
-- Reunion preferred person photo (_PRIM Y / is_preferred=1) remains the hero selection source.
-- FAM -> MARR -> OBJE certificate media remains family-event / Marriage media and is publishable.
-- Two photographs share each book photo page vertically.
-- Each photo/caption unit spans the printable width and uses flex centering, avoiding the prior grid positioning regression.
-- Portrait/square maximum remains 106mm; landscape maximum remains 91mm.
-- Photographs preserve complete aspect ratio with object-fit: contain and no cropping.
-- Captions remain visible directly beneath their image.
-- Original image/document/PDF links remain removed from publication output.
+Acceptance coverage includes complete two-page PDF rendering, fitted page-one + sequential page-two publication, unchanged single-page Birth certificate behaviour, and frozen RC1.0.9 photograph layout.

@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_release_identity():
     s=(ROOT/'macos_app/build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.9 — Media Semantics & Book Presentation Pass 6"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in s
 
 def test_research_home_is_three_purpose_consolidation():
     s=(ROOT/'src/reunion_companion/companion/ffd_home.py').read_text()
