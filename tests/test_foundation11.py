@@ -33,9 +33,9 @@ def test_web_preview_and_print_archive_rules(tmp_path):
     html=_pdf_block(m,tmp_path/"book.html",family_names="Example Couple")
     assert "Open original PDF" not in html
     assert "web-only" in html
-    assert "archive-page portrait" in html
-    assert "archive-page landscape" in html
-    assert "pdf-extra-page" in html
+    assert "document-source-page portrait" in html
+    assert "document-source-page landscape" in html
+    assert "document-source-preview" in html
     assert "rotate(90deg)" in PRO_CSS
 
 def test_publication_source_label_removes_gedcom_at_signs():

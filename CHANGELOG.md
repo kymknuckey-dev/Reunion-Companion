@@ -25,3 +25,7 @@
 - Added model exceptions
 - Added initial model test
 - Commit 1 object model complete
+
+## FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1
+- Multi-page PDF source pages now use one consistent maximum-fit print geometry.
+- Equal A4 pages render at identical size and position; single-page certificate and photo layouts are preserved.

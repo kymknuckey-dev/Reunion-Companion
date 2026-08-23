@@ -173,6 +173,44 @@ a { color:inherit; }
 .document-fitted-page.landscape .document-fitted-preview { top:50%; width:210mm; max-height:150mm; transform:translate(-50%,-47%) rotate(90deg); }
 .document-fitted-page .document-fitted-caption { position:absolute; bottom:7mm; left:0; right:0; font-size:8pt; color:#555; }
 
+/* RC1.0.10 QA Pass 1: all pages of a multi-page PDF use one identical
+   maximum-fit print geometry. A4 is the normal source size, but actual page
+   aspect ratio is preserved by object-fit:contain for every source page. */
+.document-source-page {
+  display:none;
+  break-before:page;
+  page-break-before:always;
+  height:258mm;
+  position:relative;
+  text-align:center;
+  overflow:hidden;
+}
+.document-source-page .document-source-title {
+  position:absolute; top:0; left:0; right:0;
+  height:6mm; line-height:6mm;
+  font-size:8pt; font-weight:bold;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.document-source-page .document-source-preview {
+  position:absolute;
+  left:50%; top:7mm;
+  width:auto; height:auto;
+  max-width:180mm; max-height:244mm;
+  transform:translateX(-50%);
+  object-fit:contain;
+}
+.document-source-page.landscape .document-source-preview {
+  left:50%; top:50%;
+  max-width:244mm; max-height:180mm;
+  transform:translate(-50%,-50%) rotate(90deg);
+}
+.document-source-page .document-source-caption {
+  position:absolute; bottom:0; left:0; right:0;
+  height:5mm; line-height:5mm;
+  font-size:7.5pt; color:#555;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
 .archive-page {
   display:none;
   break-before:page;
@@ -313,6 +351,7 @@ a { color:inherit; }
   .archive-page { display:block !important; }
   .birth-document-page { display:block !important; }
   .document-fitted-page { display:block !important; }
+  .document-source-page { display:block !important; }
   .pdf-extra-page { display:block !important; }
   .toc a::after {
     content: leader(".") target-counter(attr(href), page);
@@ -434,12 +473,38 @@ def _pdf_block(m,output_html,person_name=None,family_names=None,citation=""):
       f"<p class='small'>{len(pages)} PDF page{'s' if len(pages)!=1 else ''}</p>" if len(pages)>1 else "",link]
     if r["warning"]:screen.append(f"<p class='small'>{esc(r['warning'])}</p>")
     screen.append("</section>")
-    printed=[]
-    for i,page in enumerate(pages):
-        extra=" pdf-extra-page" if i else ""
-        cap=_caption(m,person_name,family_names,page["page"])+cite
-        printed.append(f"<section class='archive-page {esc(page['orientation'])}{extra}'><div class='archive-title'>{esc(_clean_document_title(title,person_name,family_names))}{esc(cite)}</div><img class='doc-preview' src='{esc(page['preview_rel'])}' alt='{esc(cap)}'><div class='archive-caption'>{esc(cap)}</div></section>")
+    if len(pages)>1:
+        printed=_multi_page_document_print_blocks(
+            m,pages,_clean_document_title(title,person_name,family_names),cite,
+            person_name=person_name,family_names=family_names,
+        )
+    else:
+        printed=[]
+        for i,page in enumerate(pages):
+            extra=" pdf-extra-page" if i else ""
+            cap=_caption(m,person_name,family_names,page["page"])+cite
+            printed.append(f"<section class='archive-page {esc(page['orientation'])}{extra}'><div class='archive-title'>{esc(_clean_document_title(title,person_name,family_names))}{esc(cite)}</div><img class='doc-preview' src='{esc(page['preview_rel'])}' alt='{esc(cap)}'><div class='archive-caption'>{esc(cap)}</div></section>")
     return "".join(screen+printed)
+
+def _multi_page_document_print_blocks(m,pages,label,cite,person_name=None,family_names=None):
+    """Render every source page with one maximum-fit geometry.
+
+    The source page itself owns the visual area.  Page number/caption and a
+    compact document label use fixed, identical furniture on every page, so
+    equal-sized PDF pages can never be scaled differently because of their
+    position within the document.
+    """
+    printed=[]
+    for page in pages:
+        cap=_caption(m,person_name,family_names,page["page"])+cite
+        printed.append(
+          f"<section class='document-source-page {esc(page['orientation'])}'>"
+          f"<div class='document-source-title'>{esc(label)}{esc(cite)}</div>"
+          f"<img class='document-source-preview' src='{esc(page['preview_rel'])}' alt='{esc(cap)}'>"
+          f"<div class='document-source-caption'>{esc(cap)}</div>"
+          f"</section>"
+        )
+    return printed
 
 def _media_block(m,output_html,hero=False,person_name=None,family_names=None,db=None):
     citation=citation_suffix(media_source_labels(db,m["id"])) if db is not None else ""
@@ -463,10 +528,12 @@ def _fitted_document_block(m,output_html,heading,person_name=None,family_names=N
     cap=_caption(m,person_name,family_names,first["page"])+cite
     link=""
     web=[f"<div class='web-only'><h2>{esc(heading)}</h2></div>","<section class='pdf-web-plate web-only'>",f"<h3>{esc(label)}</h3>",f"<div class='preview'><img src='{esc(first['preview_rel'])}' alt='{esc(cap)} preview'></div>",f"<p class='pdf-caption'>{esc(cap)}</p>",link,"</section>"]
-    printed=[f"<section class='document-fitted-page {esc(first['orientation'])}'><h2 class='document-fitted-heading'>{esc(heading)}</h2><div class='document-fitted-title'>{esc(label)}{esc(cite)}</div><img class='document-fitted-preview' src='{esc(first['preview_rel'])}' alt='{esc(cap)}'><div class='document-fitted-caption'>{esc(cap)}</div></section>"]
-    for page in r["pages"][1:]:
-        page_cap=_caption(m,person_name,family_names,page["page"])+cite
-        printed.append(f"<section class='archive-page {esc(page['orientation'])} pdf-extra-page'><div class='archive-title'>{esc(label)}{esc(cite)}</div><img class='doc-preview' src='{esc(page['preview_rel'])}' alt='{esc(page_cap)}'><div class='archive-caption'>{esc(page_cap)}</div></section>")
+    if len(r["pages"])>1:
+        printed=_multi_page_document_print_blocks(
+            m,r["pages"],label,cite,person_name=person_name,family_names=family_names,
+        )
+    else:
+        printed=[f"<section class='document-fitted-page {esc(first['orientation'])}'><h2 class='document-fitted-heading'>{esc(heading)}</h2><div class='document-fitted-title'>{esc(label)}{esc(cite)}</div><img class='document-fitted-preview' src='{esc(first['preview_rel'])}' alt='{esc(cap)}'><div class='document-fitted-caption'>{esc(cap)}</div></section>"]
     return "".join(web+printed)
 
 def _birth_document_block(m,output_html,person_name=None,db=None):
@@ -509,26 +576,20 @@ def _birth_document_block(m,output_html,person_name=None,db=None):
     ]
 
     original_print=""
-    printed=[
-      f"<section class='birth-document-page {esc(first['orientation'])}'>"
-      f"<h2 class='birth-document-heading'>Birth Documents</h2>"
-      f"<div class='birth-document-title'>{esc(label)}{esc(cite)}</div>"
-      f"<img class='birth-document-preview' src='{esc(first['preview_rel'])}' alt='{esc(cap)}'>"
-      f"<div class='birth-document-caption'>{esc(cap)}</div>"
-      f"{original_print}"
-      f"</section>"
-    ]
-
-    # Pages 2+ use the ordinary archive layout and therefore begin on their own pages.
-    for i,page in enumerate(pages[1:],start=1):
-        page_cap=_caption(m,person_name,None,page["page"])+cite
-        printed.append(
-          f"<section class='archive-page {esc(page['orientation'])} pdf-extra-page'>"
-          f"<div class='archive-title'>{esc(label)}{esc(cite)}</div>"
-          f"<img class='doc-preview' src='{esc(page['preview_rel'])}' alt='{esc(page_cap)}'>"
-          f"<div class='archive-caption'>{esc(page_cap)}</div>"
-          f"</section>"
+    if len(pages)>1:
+        printed=_multi_page_document_print_blocks(
+            m,pages,label,cite,person_name=person_name,family_names=None,
         )
+    else:
+        printed=[
+          f"<section class='birth-document-page {esc(first['orientation'])}'>"
+          f"<h2 class='birth-document-heading'>Birth Documents</h2>"
+          f"<div class='birth-document-title'>{esc(label)}{esc(cite)}</div>"
+          f"<img class='birth-document-preview' src='{esc(first['preview_rel'])}' alt='{esc(cap)}'>"
+          f"<div class='birth-document-caption'>{esc(cap)}</div>"
+          f"{original_print}"
+          f"</section>"
+        ]
     if r["warning"]:
         screen.insert(-1,f"<p class='small'>{esc(r['warning'])}</p>")
     return "".join(screen+printed)

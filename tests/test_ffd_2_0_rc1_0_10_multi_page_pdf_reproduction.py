@@ -36,7 +36,7 @@ def _media(pdf,mid=6,title="The memories of Mervyn Neil Knuckey"):
 
 def test_release_identity_is_rc1_0_10():
     source=Path("macos_app/build_app.py").read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1"' in source
 
 
 def test_renderer_requires_and_reports_complete_two_page_render(tmp_path):
@@ -55,8 +55,9 @@ def test_person_other_document_prints_page_one_then_page_two(tmp_path):
         _media(pdf),tmp_path/"book.html","Other Documents",
         person_name="Mervyn Neil Knuckey",db=None,
     )
-    assert html.count("document-fitted-page portrait")==1
-    assert html.count("archive-page portrait pdf-extra-page")==1
+    assert html.count("document-source-page portrait")==2
+    assert html.count("document-source-preview")==2
+    assert "archive-page portrait pdf-extra-page" not in html
     assert "_page_001.png" in html
     assert "_page_002.png" in html
     assert html.index("_page_001.png") < html.index("_page_002.png")

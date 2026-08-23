@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_rc108_release_identity():
     source=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in source
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1"' in source
 
 
 def test_frozen_backend_eagerly_initialises_utf16le_and_weasyprint():

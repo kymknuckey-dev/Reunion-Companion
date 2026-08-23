@@ -2,3 +2,9 @@ FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction
 Full regression: 771 passed, 0 failed.
 
 Acceptance coverage includes complete two-page PDF rendering, fitted page-one + sequential page-two publication, unchanged single-page Birth certificate behaviour, and frozen RC1.0.9 photograph layout.
+
+RC1.0.10 QA Pass 1: added regression coverage for identical maximum-fit geometry across equal-sized multi-page PDF source pages.
+FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1
+Full regression: 776 passed, 0 failed.
+
+Acceptance coverage includes identical maximum-fit geometry for equal-sized multi-page PDF pages, A4-optimised portrait fitting, rotated maximum-fit landscape fitting, unchanged single-page Birth certificate presentation, and frozen RC1.0.9 photograph layout.

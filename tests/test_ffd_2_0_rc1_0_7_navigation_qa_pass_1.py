@@ -6,7 +6,7 @@ def source(name):
 
 def test_release_identity_is_navigation_qa_pass_1():
     s=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1"' in s
 
 def test_global_top_navigation_and_visible_build_identity_are_removed():
     s=source('beta_ui.py')

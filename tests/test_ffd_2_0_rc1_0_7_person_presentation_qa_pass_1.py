@@ -4,7 +4,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_person_presentation_qa1_release_identity():
     s=(ROOT/'macos_app'/'build_app.py').read_text()
-    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction"' in s
+    assert 'APP_RELEASE="FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1"' in s
 
 def test_presentation_overview_uses_single_editorial_identity_hero():
     s=(ROOT/'src/reunion_companion/companion/beta_ui.py').read_text()

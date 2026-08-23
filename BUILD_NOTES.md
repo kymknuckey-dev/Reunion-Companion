@@ -35,3 +35,6 @@ Build 17 is a true delta over Build 16. The local project tree is now the source
 
 Standalone regression: 3 passed.
 Python syntax checks: passed.
+
+## RC1.0.10 Multi-page PDF Reproduction QA Pass 1
+Consistent maximum-fit document pages for multi-page PDFs; A4-optimised, aspect-ratio preserving, no crop.
