@@ -1,6 +1,6 @@
 from pathlib import Path
 import sqlite3
-SCHEMA_VERSION=7
+SCHEMA_VERSION=8
 SCHEMA="""
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -53,6 +53,8 @@ def migrate(db):
     
     from .family_files import ensure_family_files
     ensure_family_files(db)
+    from .external_evidence import ensure_external_evidence
+    ensure_external_evidence(db)
     db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('schema_version',?)",(str(SCHEMA_VERSION),));db.commit()
 def connect(path):
     p=Path(path).expanduser();p.parent.mkdir(parents=True,exist_ok=True)
