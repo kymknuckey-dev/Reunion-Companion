@@ -737,10 +737,40 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
             body+=f"<div class='topic'><strong>{esc(e['type'])}</strong> {badge}<div class='small'>{esc(e['date'])} {esc(e['place'] or e['value'])}</div></div>"
         body+="</div>"
     elif tab=="research":
+        from .discovery import research_gaps
+        from .external_evidence import external_evidence_for_person
         r=person_research_model(db,pid);body="<div class='card'><h2>Research</h2>"
         for a in r["anomalies"]:body+=f"<div class='topic'><span class='badge {'warn' if a['severity']=='warning' else 'info'}'>{esc(a['kind'])}</span> {esc(a['message'])}</div>"
         if not r["anomalies"]:body+="<p>No deterministic review flags.</p>"
         body+="</div>"
+        death_missing=any(g[0]=="Death" for g in research_gaps(db,pid))
+        xref=w["person"].get("gedcom_xref")
+        findings=external_evidence_for_person(db,xref) if xref else []
+        if death_missing or findings:
+            body+="<div class='card'><h2>External Evidence</h2><p class='meta'>Research findings held by Companion only. Confirmed changes are entered manually in Reunion.</p>"
+            if death_missing:
+                body+="<div class='topic'><strong>Missing death information</strong><div class='small'>No Death event is recorded in the current Reunion snapshot.</div></div>"
+            else:
+                body+="<div class='topic'><span class='badge good'>Resolved in Reunion</span> A Death event is now present in the current Reunion snapshot.</div>"
+            if findings:
+                for f in findings:
+                    status=f["review_status"] or "new"
+                    badge_class="good" if status=="accepted" else "warn" if status in ("new","reviewed") else "info"
+                    score=f["match_confidence"]
+                    confidence=f" · Match {score}%" if score is not None else ""
+                    heading=f["source_record_name"] or f["event_type"] or f["evidence_type"]
+                    meta=[]
+                    if f["event_type"] or f["event_date"]: meta.append(" ".join(x for x in (f["event_type"],f["event_date"]) if x))
+                    if f["publication"]: meta.append(f["publication"])
+                    if f["publication_date"]: meta.append("published "+f["publication_date"])
+                    body+=f"<div class='topic'><strong>{esc(heading)}</strong> <span class='badge {badge_class}'>{esc(status.replace('_',' ').title())}</span><div class='small'>{esc(f['source_name'])}{esc(confidence)}</div>"
+                    if meta: body+=f"<div>{esc(' · '.join(meta))}</div>"
+                    if f["details"]: body+=f"<div>{esc(f['details'])}</div>"
+                    if f["match_reason"]: body+=f"<div class='small'>Match basis: {esc(f['match_reason'])}</div>"
+                    body+="</div>"
+            else:
+                body+="<p>No external evidence findings recorded yet.</p>"
+            body+="</div>"
     elif tab=="data-quality":
         flags=person_quality(db,pid);body="<div class='card'><h2>Data Quality</h2><p class='meta'>Suggested changes are made in Reunion, then the GEDCOM is reloaded.</p>"
         for f in flags:body+=f"<div class='topic'><strong>{esc(f['kind'])}</strong><div>{esc(f['detail'])}</div></div>"
@@ -891,17 +921,35 @@ def book_scope_page(db,start_pid,query=None,msg=""):
 
 
 def research_page(db):
-    rows=db.execute("""SELECT p.id,p.display_name,
-      SUM(CASE WHEN e.id IS NOT NULL
-        AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id)
-        AND NOT EXISTS(SELECT 1 FROM event_media em WHERE em.event_id=e.id)
-        THEN 1 ELSE 0 END) unsourced
-      FROM people p LEFT JOIN events e ON e.person_id=p.id AND e.event_type<>'Changed'
-      GROUP BY p.id,p.display_name HAVING unsourced>0
-      ORDER BY unsourced DESC,p.display_name LIMIT 100""").fetchall()
-    body="<h1>Research Priorities</h1><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p><div class='card'>"
-    for r in rows:
-        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
+    from .external_evidence_matcher import missing_death_candidates
+    from .external_evidence import external_evidence_for_person
+    death_rows=missing_death_candidates(db)
+    sql=("SELECT p.id,p.display_name, "
+         "SUM(CASE WHEN e.id IS NOT NULL "
+         "AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id) "
+         "AND NOT EXISTS(SELECT 1 FROM event_media em WHERE em.event_id=e.id) "
+         "THEN 1 ELSE 0 END) unsourced "
+         "FROM people p LEFT JOIN events e ON e.person_id=p.id AND e.event_type<>'Changed' "
+         "GROUP BY p.id,p.display_name HAVING unsourced>0 "
+         "ORDER BY unsourced DESC,p.display_name LIMIT 100")
+    rows=db.execute(sql).fetchall()
+    body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
+    body+="<div class='card'><h2>Missing Death Information</h2><p class='meta'>A missing Death event is a research prompt, not evidence that the person has died.</p>"
+    if death_rows:
+        for r in death_rows[:100]:
+            findings=external_evidence_for_person(db,r["gedcom_xref"]) if r["gedcom_xref"] else []
+            accepted=sum(1 for f in findings if f["review_status"]=="accepted")
+            if accepted: badge=f"<span class='badge good' style='float:right'>{accepted} accepted finding{'s' if accepted!=1 else ''}</span>"
+            elif findings: badge=f"<span class='badge warn' style='float:right'>{len(findings)} finding{'s' if len(findings)!=1 else ''}</span>"
+            else: badge="<span class='badge warn' style='float:right'>Death missing</span>"
+            birth=" · ".join(x for x in (r["birth_date"],r["birth_place"]) if x)
+            body+=f"<a class='result' href='/person/{r['person_id']}?tab=research'><strong>{esc(r['display_name'])}</strong>{badge}"
+            if birth: body+=f"<span class='meta' style='display:block'>{esc(birth)}</span>"
+            body+="</a>"
+    else: body+="<p>No people currently have a missing Death event.</p>"
+    body+="</div><div class='card'><h2>Unsourced Events</h2><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p>"
+    for r in rows: body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
+    if not rows: body+="<p>No unsourced event priorities detected.</p>"
     return layout("Research",body+"</div>",active="priorities")
 
 def places_page(db):
