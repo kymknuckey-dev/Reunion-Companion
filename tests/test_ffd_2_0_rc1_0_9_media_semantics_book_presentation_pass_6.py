@@ -29,7 +29,7 @@ def test_pass6_preserves_successful_orientation_sizes_and_no_crop():
     assert "object-fit:contain !important" in css
 
 
-def test_original_file_links_are_removed_from_publication_renderer():
+def test_rc1_0_11_1_restores_explicit_original_file_links():
     source=__import__("inspect").getsource(pub)
-    assert "Open original PDF" not in source
-    assert "Open original document" not in source
+    assert "Open original PDF" in source
+    assert "Open original image" in source

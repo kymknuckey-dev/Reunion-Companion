@@ -38,3 +38,33 @@ Python syntax checks: passed.
 
 ## RC1.0.10 Multi-page PDF Reproduction QA Pass 1
 Consistent maximum-fit document pages for multi-page PDFs; A4-optimised, aspect-ratio preserving, no crop.
+## FFD 2.0 RC1.0.11 — Family-based Book Scope & Lineage Selection
+Book publishing now supports an explicit family-scope workflow. The recorded paternal path supplies the default Book Sections; immediate sibling families remain contextual unless explicitly promoted. Incoming spouse ancestry/collateral information is chart-only and bounded. RC1.0.10 PDF geometry and the existing descendant tree are unchanged.
+
+Regression validation: 783 tests passed across four bounded suite runs; critical RC1.0.10 PDF + Foundation archive + RC1.0.11 scope set: 24 passed.
+
+
+## FFD 2.0 RC1.0.11.1 — Family Scope & Book Presentation QA Pass 1
+Built from the validated RC1.0.11 family-scope baseline. RC1.0.10 PDF print geometry remains unchanged. QA adds progress feedback, bounded paternal-sibling child context, original-media links in HTML, and paired family/spouse chart presentation.
+
+## FFD 2.0 RC1.0.11.2 — Unified Family Charts & HTML Book QA Pass 2
+
+- Family & Descendants is now the master chart renderer for both the main family and incoming spouse family.
+- Direct paternal ancestor couples are shown above Husband's Parents using the same couple/tree visual language.
+- Spouse Family & Descendants is rooted at the spouse's birth family and uses the same natural family grouping.
+- Spouse siblings may show partners/marriages and children; traversal stops at those children.
+- Scoped History Book HTML selection now preserves the clicked HTML format before publish buttons are disabled.
+- RC1.0.10 multi-page PDF reproduction code remains unchanged.
+- Validation: 794 tests passed in four bounded full-suite chunks; focused publishing/PDF regression set 30 passed.
+\n## RC1.0.11.3 Dual-Line Family Charts & HTML Parity QA Pass 3\n- Unified dual-line family presentation for main and spouse charts.\n- HTML History Books now assert both chart sections and both lineage sides.\n- Standalone deep Family & Descendants report remains future work.\n
+## RC1.0.11.3.1 Spouse Family Chart Root Correction
+- Corrected spouse-chart family semantics without changing the dual-line design or traversal boundary.
+
+## RC1.0.11.3.2 Spouse Family-of-Origin Chart Correction
+- Corrected spouse-context genealogy and aligned HTML/PDF presentation with the agreed book template.
+
+## RC1.0.11.3.3 Unified Family Chart Presentation
+- Visual unification only. No genealogy, scope, traversal, or spouse-chart changes.
+
+## RC1.0.11.3.3.1 Spouse Lineage Stacking Correction
+- Stacked the two spouse family-of-origin lineage sections vertically to match Family & Descendants.

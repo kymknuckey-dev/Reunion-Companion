@@ -53,6 +53,13 @@ def person_output(db,pid,subject,kind):
     f,label=funcs[kind];p=f(db,pid);fmt="PDF" if str(p).lower().endswith(".pdf") else "HTML"
     return _record(db,label,subject,p,fmt)
 
+def scoped_book_output(db,start_pid,end_pid,selected_family_ids,subject,fmt='PDF',generations=4):
+    if fmt.upper()=='HTML':
+        p=write_book(db,start_pid,None,generations,DEFAULT_THEME,end_pid,selected_family_ids)
+        return _record(db,'Family-history Book',subject,p,'HTML')
+    p=write_book_pdf(db,start_pid,None,generations,DEFAULT_THEME,end_pid,selected_family_ids)
+    return _record(db,'Family-history Book',subject,p,'PDF')
+
 def open_output(path):
     p=Path(path).expanduser()
     if not p.exists():raise FileNotFoundError(str(p))

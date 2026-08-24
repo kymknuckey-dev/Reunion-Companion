@@ -15,10 +15,40 @@ from .story_engine import story_sections
 from .publication_narrative import preserve_note_layout
 from .person_narrative import cached_person_narrative,person_narrative,source_fingerprint,NARRATIVE_VERSION
 from .descendant_chart import chart_html
+from .spouse_context_chart import spouse_context_chart_html
 from .document_renderer import render_pdf,copy_original,pdf_render_capability
 from .branding import publishing_mark_uri
 
 PRO_CSS=r"""
+
+
+/* RC1.0.11.3.3 — presentation-only unification.
+   Family & Descendants adopts the established Spouse Family & Descendants
+   section rhythm. Genealogy/data selection is intentionally untouched. */
+.family-descendant-chart .unified-lineage{display:block;margin:4mm 0 6mm}
+.family-descendant-chart .lineage-side,.family-descendant-chart .unified-parent-context,.family-descendant-chart .family-central-family,.family-descendant-chart .family-descendants{margin:0 0 6mm}
+.family-descendant-chart .lineage-side{padding:0;border-left:0;background:none}
+.family-descendant-chart .lineage-side.wife-descendants{border-left:0;background:none}
+.family-descendant-chart .unified-parent-context{display:block}
+.family-descendant-chart .unified-parent-context>div{margin:0 0 6mm}
+.family-descendant-chart h3{border-bottom:2px solid currentColor;padding-bottom:2mm;margin-bottom:3mm}
+.family-descendant-chart .tree-row{border-bottom:0}
+.family-descendant-chart .family-central-family{border-top:2px solid currentColor;border-bottom:2px solid currentColor;padding:3mm 0}
+.family-descendant-chart .family-central-family h3{border-bottom:0;margin:0 0 2mm;padding:0}
+
+.spouse-origin-chart .spouse-origin-lines{display:block;margin:4mm 0 6mm}
+.spouse-origin-chart .origin-line,.spouse-origin-chart .wife-parents,.spouse-origin-chart .spouse-central-family,.spouse-origin-chart .origin-descendants{margin:0 0 6mm}
+.spouse-origin-chart h3{border-bottom:2px solid currentColor;padding-bottom:2mm;margin-bottom:3mm}
+.spouse-origin-chart .tree-row{border-bottom:0}
+.spouse-origin-chart .spouse-central-family{border-top:2px solid currentColor;border-bottom:2px solid currentColor;padding:3mm 0}
+.spouse-origin-chart .spouse-central-family h3{border-bottom:0;margin:0 0 2mm;padding:0}
+
+.family-chart-pair{break-before:page;margin-top:8mm}.family-chart-pair .descendant-chart,.family-chart-pair .spouse-context-chart{margin-top:0}
+.spouse-context-chart{margin-top:7mm}.spouse-context-chart .small{color:#666}
+.spouse-generation{margin:3mm 0}.spouse-generation-people{display:block}.spouse-person{padding:1mm 0;border:0}
+.spouse-join{margin:5mm 0;padding:3mm 0;border-top:1px solid #bbb;border-bottom:1px solid #bbb}.marriage-join{font-style:italic;color:#666;margin:1mm 0}
+.spouse-siblings{display:block}.spouse-sibling{border:0;padding:2mm 0;break-inside:avoid;border-bottom:1px dotted #ddd}.spouse-sibling-children{margin:1mm 0 0 5mm;padding-left:4mm}
+.original-media-link{display:inline-block;margin-top:1.5mm;font-size:9pt}
 @page {
   size:A4 portrait;
   margin:16mm 15mm 18mm 15mm;
@@ -450,7 +480,9 @@ def _image_block(m,hero=False,output_html=None,citation=""):
     if hero: classes.append("hero")
     if small: classes.append("media-small")
     caption=esc(title)+(f" <span class='citation-ref'>{esc(citation)}</span>" if citation else "")
-    return f"<figure class='{' '.join(classes)}'>{image}<figcaption class='caption'>{caption}</figcaption></figure>"
+    original=copy_original(m["file_path"],output_html,m["id"]) if output_html else None
+    link=f"<a class='original-media-link web-only' href='{esc(original)}'>Open original image</a>" if original else ""
+    return f"<figure class='{' '.join(classes)}'>{image}<figcaption class='caption'>{caption}</figcaption>{link}</figure>"
 
 def _pdf_block(m,output_html,person_name=None,family_names=None,citation=""):
     """Screen: first page preview + link. Print: every PDF page, one archive page each."""
@@ -459,10 +491,10 @@ def _pdf_block(m,output_html,person_name=None,family_names=None,citation=""):
     original=r["original"]; pages=r["pages"]
     cite=f" {citation}" if citation else ""
     if not pages:
-        link=""
+        link=f"<a class='original-media-link web-only' href='{esc(original)}'>Open original PDF</a>" if original else ""
         warning=f"<p class='small'>{esc(r['warning'])}</p>" if r["warning"] else ""
         return f"<div class='document-card'><strong>{esc(_clean_document_title(title,person_name,family_names))}{esc(cite)}</strong><p>PDF · {'Available' if m['exists_on_disk'] else 'Missing'}</p>{link}{warning}</div>"
-    first=pages[0]; link=""
+    first=pages[0]; link=f"<a class='original-media-link web-only' href='{esc(original)}'>Open original PDF</a>" if original else ""
     caption=_caption(m,person_name,family_names,None)+cite
     screen=["<section class='pdf-web-plate web-only'>",
       f"<h3>{esc(_clean_document_title(title,person_name,family_names))}{f' <span class=\"citation-ref\">{esc(citation)}</span>' if citation else ''}</h3>",
@@ -526,7 +558,7 @@ def _fitted_document_block(m,output_html,heading,person_name=None,family_names=N
     first=r["pages"][0]; original=r["original"]; cite=f" {citation}" if citation else ""
     label=_clean_document_title(media_title(m),person_name,family_names)
     cap=_caption(m,person_name,family_names,first["page"])+cite
-    link=""
+    link=f"<a class='original-media-link web-only' href='{esc(original)}'>Open original PDF</a>" if original else ""
     web=[f"<div class='web-only'><h2>{esc(heading)}</h2></div>","<section class='pdf-web-plate web-only'>",f"<h3>{esc(label)}</h3>",f"<div class='preview'><img src='{esc(first['preview_rel'])}' alt='{esc(cap)} preview'></div>",f"<p class='pdf-caption'>{esc(cap)}</p>",link,"</section>"]
     if len(r["pages"])>1:
         printed=_multi_page_document_print_blocks(
@@ -560,7 +592,7 @@ def _birth_document_block(m,output_html,person_name=None,db=None):
     cap=_caption(m,person_name,None,first["page"])+cite
 
     # Web/HTML retains the familiar section heading and natural first-page preview.
-    link=""
+    link=f"<a class='original-media-link web-only' href='{esc(original)}'>Open original PDF</a>" if original else ""
     web_caption=_caption(m,person_name,None,None)+cite
     screen=[
       "<div class='web-only'><h2>Birth Documents</h2></div>",
@@ -795,7 +827,7 @@ def _chapter_sources(db,family_id,h,w):
     return sorted(src.values(),key=lambda s:int(source_number(s)) if source_number(s).isdigit() else 10**9)
 
 def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_generations=4,
-                        chapter_anchor=None,person_anchors=None):
+                        chapter_anchor=None,person_anchors=None,main_line_pid=None):
     o=family_overview(db,family_id);h=o["husband"];w=o["wife"];f=o["family"]
     family_names=_family_title(db,family_id)
     person_anchors=person_anchors or {}
@@ -839,7 +871,15 @@ def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_
         P.append("</ul>")
     else:P.append("<p>No children are recorded for this family.</p>")
 
-    P.append(chart_html(db,h["id"] if h else None,w["id"] if w else None,descendant_generations))
+    # RC1.0.11.1: scoped books show the current family's children and one
+    # collateral generation (children of the paternal siblings), then stop.
+    # The paternal continuation itself is expanded by the next selected chapter.
+    chart_depth=2 if main_line_pid else descendant_generations
+    P.append("<div class='family-chart-pair'>")
+    P.append(chart_html(db,h["id"] if h else None,w["id"] if w else None,chart_depth,show_terminal_spouses=not bool(main_line_pid)))
+    if main_line_pid:
+        P.append(spouse_context_chart_html(db,family_id,main_line_pid))
+    P.append("</div>")
 
     sources=_chapter_sources(db,family_id,h,w)
     if sources:
@@ -879,7 +919,13 @@ def write_family_chapter(db,family_id,path=None,theme=DEFAULT_THEME,descendant_g
     p.write_text(html,encoding="utf-8")
     return p
 
-def book_family_ids(db,start_pid,generations=4):
+def book_family_ids(db,start_pid,generations=4,end_pid=None,selected_family_ids=None):
+    # RC1.0.11: explicit book scope constrains recursive family expansion.
+    # Calls without scope retain legacy behaviour for compatibility.
+    if end_pid is not None or selected_family_ids is not None:
+        from .family_book_scope import build_scope
+        endpoint=start_pid if end_pid is None else end_pid
+        return build_scope(db,start_pid,endpoint,generations,selected_family_ids)['selected_family_ids']
     out=[];seen_people=set();seen_fam=set()
     def walk(pid,level):
         if level>generations or pid in seen_people:return
@@ -947,9 +993,15 @@ def _source_index(sources):
     P.append("</ol></section>")
     return "".join(P)
 
-def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME):
+def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None):
     start=db.execute("SELECT * FROM people WHERE id=?",(start_pid,)).fetchone()
-    fam_ids=book_family_ids(db,start_pid,generations)
+    scope=None
+    if end_pid is not None or selected_family_ids is not None:
+        from .family_book_scope import build_scope
+        scope=build_scope(db,start_pid,start_pid if end_pid is None else end_pid,generations,selected_family_ids)
+        fam_ids=scope['selected_family_ids']
+    else:
+        fam_ids=book_family_ids(db,start_pid,generations)
     chapter_anchor,person_anchor,person_chapter,sources,places=_book_maps(db,fam_ids)
 
     P=["<!doctype html><html><head><meta charset='utf-8'>",
@@ -972,7 +1024,8 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME):
                 local[p["id"]]=person_anchor[p["id"]]
                 anchored.add(p["id"])
         P.append(f"<section class='chapter'><div class='chapter-kicker'>Chapter {i}</div>")
-        P.append(family_chapter_body(db,fid,output_html,theme,generations,chapter_anchor[fid],local))
+        main_line_pid=scope['main_line_by_family'].get(fid) if scope else None
+        P.append(family_chapter_body(db,fid,output_html,theme,generations,chapter_anchor[fid],local,main_line_pid))
         P.append("</section>")
 
     P.append(_person_index(db,person_anchor,person_chapter))
@@ -981,11 +1034,11 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME):
     P.append("</body></html>")
     return "".join(P)
 
-def write_book(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME):
+def write_book(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     p=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.html")
     p.parent.mkdir(parents=True,exist_ok=True)
-    p.write_text(book_html(db,start_pid,p,generations,theme),encoding="utf-8")
+    p.write_text(book_html(db,start_pid,p,generations,theme,end_pid,selected_family_ids),encoding="utf-8")
     return p
 
 def export_pdf_from_html(html_path,pdf_path=None):
@@ -1006,7 +1059,7 @@ def export_pdf_from_html(html_path,pdf_path=None):
     HTML(filename=str(html_path),base_url=str(html_path.parent)).write_pdf(str(pdf_path))
     return pdf_path
 
-def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME):
+def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     pdf=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.pdf")
     pdf.parent.mkdir(parents=True,exist_ok=True)
@@ -1014,7 +1067,7 @@ def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME):
     # Keep them outside the report directory and remove them automatically after rendering.
     with tempfile.TemporaryDirectory(prefix="reunion-companion-pdf-") as td:
         html=Path(td)/(pdf.stem+".html")
-        write_book(db,start_pid,html,generations,theme)
+        write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids)
         export_pdf_from_html(html,pdf)
     return pdf
 

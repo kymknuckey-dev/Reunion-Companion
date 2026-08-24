@@ -42,7 +42,7 @@ def test_preferred_person_photo_is_semantic_not_first(tmp_path):
     assert [Path(x['file_path']).name for x in groups['other-photos']]==[first.name]
     db.close()
 
-def test_two_portrait_gallery_photos_share_one_book_page_without_original_links(tmp_path):
+def test_two_portrait_gallery_photos_share_one_book_page_with_original_links(tmp_path):
     db=connect(tmp_path/'x.sqlite3'); db.execute("INSERT INTO people(id,display_name) VALUES(1,'Photo Example')")
     for i in range(3):
         f=tmp_path/f'p{i}.jpg'; Image.new('RGB',(500,900)).save(f)
@@ -51,5 +51,5 @@ def test_two_portrait_gallery_photos_share_one_book_page_without_original_links(
     html=_person_section(db,1,tmp_path/'book.html')
     assert html.count('photo-page photo-pair')==1
     assert 'single-tail' not in html
-    assert 'Open original image' not in html
+    assert html.count('Open original image')==2
     db.close()

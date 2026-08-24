@@ -8,3 +8,13 @@ FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction QA Pass 1
 Full regression: 776 passed, 0 failed.
 
 Acceptance coverage includes identical maximum-fit geometry for equal-sized multi-page PDF pages, A4-optimised portrait fitting, rotated maximum-fit landscape fitting, unchanged single-page Birth certificate presentation, and frozen RC1.0.9 photograph layout.
+FFD 2.0 RC1.0.11 — Family-based Book Scope & Lineage Selection
+783 tests passed across four bounded suite runs.
+Critical targeted set: 24 passed.
+RC1.0.10 multi-page PDF QA Pass 1 and Foundation archive-page regressions preserved.
+
+
+FFD 2.0 RC1.0.11.1 — Family Scope & Book Presentation QA Pass 1
+Validation: 789 tests passed in two bounded runs (436 + 353).
+Targeted publishing/scope/PDF regression set: 25 passed.
+RC1.0.10 multi-page PDF reproduction renderer preserved; HTML original-media links intentionally restore access to copied source PDFs/images.

@@ -31,7 +31,7 @@ def test_web_preview_and_print_archive_rules(tmp_path):
     p=_pdf(tmp_path)
     m={"id":77,"file_path":str(p),"title":"Marriage Certificate","exists_on_disk":1}
     html=_pdf_block(m,tmp_path/"book.html",family_names="Example Couple")
-    assert "Open original PDF" not in html
+    assert "Open original PDF" in html
     assert "web-only" in html
     assert "document-source-page portrait" in html
     assert "document-source-page landscape" in html

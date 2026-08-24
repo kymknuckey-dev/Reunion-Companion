@@ -22,10 +22,12 @@ from .family_files import (active_family_file,default_family_file,list_family_fi
     rename_family_file,set_default_family,delete_family_file,family_report_count,preflight_family_refresh,FamilyFileMismatch,deletion_lifecycle)
 from .beta3_publishing import (
     publication_history,family_chapter_html,family_chapter_pdf,
-    descendant_chart,person_output,open_output,remove_history,delete_publication
+    descendant_chart,person_output,scoped_book_output,open_output,remove_history,delete_publication
 )
 from .version_identity import APP_DISPLAY_NAME, FFD_DISPLAY
 from .branding import header_brand_html
+from .family_book_scope import build_scope,endpoint_candidates
+from .family_publication_model import family_partners, children
 
 CSS="""
 :root{--bg:#f4f4f1;--card:#fff;--text:#222;--muted:#6c6c68;--line:#d9d9d4;--good:#246b3a;--warn:#945d00;--accent:#294a67;--brand-navy:#102b4e;--brand-olive:#60743a;--soft:#eef0ed;--danger:#9c2f2f}
@@ -702,7 +704,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         body+="</div>"
     elif tab=="publish":
         fams=family_choices_for_person(db,pid);body=f"""<div class='card'><h2>Person Publishing</h2><div class='stack'>
-<form class='publish-form' method='post' action='/publish/person/{pid}/profile'><button>Research Profile (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/biography'><button>Biography (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/person'><button>Person Report (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/family'><button>Family Report (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/book'><button>Family-history Book (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/book-pdf'><button>Family-history Book (Print-ready PDF)</button></form><div id='publish-progress' class='card publishing-activity' style='display:none'><style>@keyframes rc-spin{{to{{transform:rotate(360deg)}}}}@keyframes rc-pulse{{0%,100%{{opacity:.45}}50%{{opacity:1}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.publishing-activity .rc-working{{animation:rc-pulse 1.4s ease-in-out infinite}}.publishing-activity ul{{margin:.5em 0 0 1.4em}}</style><strong><span class='rc-spinner' aria-hidden='true'></span><span class='rc-working'>Creating family history report…</span></strong><p class='meta'>Companion is working. Publication can take longer while the local narrative model reads the family material and the document is rendered.</p><ul class='meta'><li>Preparing family information</li><li>Writing publication narrative</li><li>Rendering the document and media</li></ul></div><script>document.querySelectorAll('.publish-form').forEach(function(f){{f.addEventListener('submit',function(){{document.getElementById('publish-progress').style.display='block';document.querySelectorAll('.publish-form button').forEach(function(b){{b.disabled=true;}});}});}});</script></div></div><div class='card'><h2>Families</h2>"""
+<form class='publish-form' method='post' action='/publish/person/{pid}/profile'><button>Research Profile (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/biography'><button>Biography (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/person'><button>Person Report (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/family'><button>Family Report (HTML)</button></form><a class='button' href='/book-scope/{pid}'>Configure Family-history Book…</a><div id='publish-progress' class='card publishing-activity' style='display:none'><style>@keyframes rc-spin{{to{{transform:rotate(360deg)}}}}@keyframes rc-pulse{{0%,100%{{opacity:.45}}50%{{opacity:1}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.publishing-activity .rc-working{{animation:rc-pulse 1.4s ease-in-out infinite}}.publishing-activity ul{{margin:.5em 0 0 1.4em}}</style><strong><span class='rc-spinner' aria-hidden='true'></span><span class='rc-working'>Creating family history report…</span></strong><p class='meta'>Companion is working. Publication can take longer while the local narrative model reads the family material and the document is rendered.</p><ul class='meta'><li>Preparing family information</li><li>Writing publication narrative</li><li>Rendering the document and media</li></ul></div><script>document.querySelectorAll('.publish-form').forEach(function(f){{f.addEventListener('submit',function(){{document.getElementById('publish-progress').style.display='block';document.querySelectorAll('.publish-form button').forEach(function(b){{b.disabled=true;}});}});}});</script></div></div><div class='card'><h2>Families</h2>"""
         for f in fams:
             title=" and ".join(x for x in (f["husband"],f["wife"]) if x);body+=f"<a class='result' href='/family/{f['id']}'>{esc(title)}</a>"
         if not fams:body+="<p>No spouse family recorded.</p>"
@@ -728,6 +730,43 @@ def family_page(db,fid,msg=""):
 <form method='post' action='/publish/family/{fid}/chapter-pdf'><button>Professional Chapter (Print-ready PDF)</button></form>
 <form method='post' action='/publish/family/{fid}/descendants'><button>Descendant Chart (HTML)</button></form>
 </div><p class='meta'>Nothing is generated by merely opening this page. Publication occurs only after pressing a publish button.</p></div>""")
+
+def book_scope_page(db,start_pid,query=None,msg=""):
+    query=query or {}
+    start=db.execute("SELECT * FROM people WHERE id=?",(start_pid,)).fetchone()
+    if not start:return layout("Not found","<div class='card'>Starting person not found.</div>")
+    endpoints=endpoint_candidates(db,start_pid)
+    try:end_pid=int(query.get('endpoint','0') or 0) or None
+    except Exception:end_pid=None
+    options=[]
+    for p,depth in endpoints:
+        selected=' selected' if end_pid==p['id'] else ''
+        indent='— '*depth
+        options.append(f"<option value='{p['id']}'{selected}>{esc(indent+p['display_name'])}</option>")
+    message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ''
+    body=f"<h1>Family-history Book Scope</h1>{message}<div class='card'><h2>1. Choose the paternal-line endpoint</h2><p class='meta'>The starting person is {esc(start['display_name'])}. Companion uses recorded father relationships to build the default book path.</p><form method='get' action='/book-scope/{start_pid}'><select name='endpoint' required><option value=''>Choose endpoint…</option>{''.join(options)}</select> <button type='submit'>Build default path</button></form></div>"
+    if end_pid:
+        try:scope=build_scope(db,start_pid,end_pid,4,None)
+        except ValueError as e:
+            return layout("Family-history Book Scope",body+f"<div class='card error'>{esc(str(e))}</div>",dict(start),"publish")
+        selected=set(scope['primary_family_ids'])
+        rows=[]
+        for entry in scope['entries']:
+            h,w=family_partners(db,entry.family_id)
+            title=' and '.join(x['display_name'] for x in (h,w) if x) or f"Family {entry.family_id}"
+            checked=' checked' if entry.family_id in selected else ''
+            badge=" <span class='badge good'>Paternal path</span>" if entry.on_primary_path else " <span class='badge info'>Chart only</span>"
+            child_context=''
+            if not entry.on_primary_path:
+                child_rows=children(db,entry.family_id)
+                if child_rows:
+                    child_context="<span class='meta' style='display:block;margin-left:24px'>Children shown in chart: "+esc(', '.join(ch['display_name'] for ch in child_rows))+"</span>"
+            rows.append(f"<label class='result' style='padding-left:{entry.depth*18}px'><input type='checkbox' name='family_{entry.family_id}' value='1'{checked}> <strong>{esc(title)}</strong>{badge}{child_context}</label>")
+        endpoint=db.execute("SELECT display_name FROM people WHERE id=?",(end_pid,)).fetchone()
+        body+=f"<div class='card'><h2>2. Choose families to expand</h2><p class='meta'>The paternal path to {esc(endpoint['display_name'] if endpoint else str(end_pid))} is selected automatically. Other families stay visible in family context but do not become chapters unless you tick them. In the book charts, children of paternal siblings are shown for context, then those side branches stop.</p><form class='scope-publish-form' method='post' action='/publish/person/{start_pid}/scoped-book'><input type='hidden' name='endpoint' value='{end_pid}'>{''.join(rows)}<div style='margin-top:16px'><button name='format' value='PDF'>Create Print-ready PDF</button> <button class='secondary' name='format' value='HTML'>Create HTML</button></div></form><div id='scope-publish-progress' class='publishing-activity' style='display:none;margin-top:16px'><style>@keyframes rc-scope-spin{{to{{transform:rotate(360deg)}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-scope-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}</style><strong><span class='rc-spinner' aria-hidden='true'></span>Creating family history report…</strong><p class='meta'>Companion is assembling the selected families, narrative, charts and media. This can take a little while.</p></div><script>document.querySelectorAll('.scope-publish-form').forEach(function(f){{f.addEventListener('submit',function(e){{var s=e.submitter;if(s&&s.name&&s.value){{var h=document.createElement('input');h.type='hidden';h.name=s.name;h.value=s.value;h.className='submitted-format';f.appendChild(h);}}document.getElementById('scope-publish-progress').style.display='block';f.querySelectorAll('button').forEach(function(b){{b.disabled=true;}});}});}});</script></div>"
+        body+="<div class='card'><h2>Spouse context rule</h2><p class='meta'>For families on the primary path, the incoming spouse receives a chart-only family context. Direct ancestors may be shown; siblings may show partner/marriage and children; those branches stop at the children and never become chapters automatically.</p></div>"
+    return layout("Family-history Book Scope",body,dict(start),"publish")
+
 
 def research_page(db):
     rows=db.execute("""SELECT p.id,p.display_name,
@@ -862,6 +901,8 @@ def render_get(db,path,query=None):
         force=str(query.get("force","")).casefold() in {"1","true","yes"}
         result=person_narrative(db,pid,force=force)
         return "<div class='biography-prose'>"+esc(result.get("narrative") or "No biographical material is recorded.")+"</div>"
+    if path.startswith("/book-scope/"):
+        return book_scope_page(db,int(path.rsplit("/",1)[1]),query)
     if path.startswith("/person/"):
         tab=query.get("tab","overview")
         state=query.get("offset","0") if tab=="family-chart" else query.get("view","story")
@@ -1110,6 +1151,17 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                         else:
                             p=descendant_chart(db,fid,subject)
                         self.send_html(family_page(db,fid,f"Published: {p}"))
+                        return
+
+                    m=re.match(r"^/publish/person/(\d+)/scoped-book$",u.path)
+                    if m:
+                        pid=int(m.group(1));end_pid=int(form.get('endpoint','0') or 0)
+                        chosen={int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('family_') and v=='1'}
+                        scope=build_scope(db,pid,end_pid,4,chosen)
+                        row=db.execute("SELECT display_name FROM people WHERE id=?",(pid,)).fetchone()
+                        fmt=(form.get('format') or 'PDF').upper()
+                        p=scoped_book_output(db,pid,end_pid,scope['selected_family_ids'],row['display_name'],fmt,4)
+                        self.send_html(book_scope_page(db,pid,{'endpoint':str(end_pid)},f"Published: {p}"))
                         return
 
                     m=re.match(r"^/publish/person/(\d+)/(profile|biography|person|family|book|book-pdf)$",u.path)
