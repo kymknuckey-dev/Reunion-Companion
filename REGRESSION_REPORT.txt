@@ -98,3 +98,36 @@ Final full-suite batch exceeded the execution window; no failure was reported be
 Scope: remove redundant Families section from Person > Publish.
 Descendant Report remains the single descendant-report entry point.
 Research Profile, Biography and Person Report presentation harmonisation is deferred.
+
+FFD 2.0 RC1.0.13 — Navigation, Person Focus & Conversation UX Consolidation
+============================================================================
+Validation: PASS
+Focused navigation/person-focus/conversation regression: 45 passed.
+Full suite in four bounded batches: 255 + 201 + 194 + 234 = 884 passed.
+
+Scope: UI/interaction consolidation only.
+Relationship resolution, ambiguity handling, genealogy, publishing and report generation remain unchanged.
+
+FFD 2.0 RC1.0.13.0.1 — Person Context Mode-aware QA Correction
+===============================================================
+Validation: PASS
+Full suite: 884 passed.
+
+QA-only correction. No application behaviour changed.
+
+FFD 2.0 RC1.0.13.1 — Persistent Global Navigation, Person Header Parity & Home Explore Removal
+==============================================================================================
+Validation: PASS
+Focused RC1.0.13.1/navigation/context regression: 31 passed.
+Full suite: 892 passed.
+
+Scope: persistent global navigation, Home duplication removal, and person-header parity.
+Context-search semantics, relationship resolution, genealogy, publishing and reports remain unchanged.
+
+FFD 2.0 RC1.0.13.1.1 — Reports Person Header Parity
+====================================================
+Validation: PASS
+Full suite: 896 passed.
+
+Final RC1.0.13 navigation/person-context parity correction.
+No report generation, context-search, relationship, genealogy or publishing behaviour changed.

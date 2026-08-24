@@ -116,7 +116,7 @@ def home_body(db,quality_counts,presentation=False):
   </form>
 </section>
 
-{presentation_explore if presentation else research_explore}
+<!-- RC1.0.13.1: Explore/Research launch cards moved to persistent sidebar navigation. -->
 <div class='ffd-two'>
   <div>
     <h2 class='ffd-section'>Family to Explore</h2>

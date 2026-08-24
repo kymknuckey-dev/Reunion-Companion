@@ -92,3 +92,15 @@ Built from the validated RC1.0.11 family-scope baseline. RC1.0.10 PDF print geom
 
 ## RC1.0.12.4.3 Publish Families Duplication Removal
 - Final RC1.0.12 cleanup: removed duplicate family-specific descendant-report launch UI.
+
+## RC1.0.13 Navigation, Person Focus & Conversation UX Consolidation
+- UI/interaction pass only; no relationship-resolution, genealogy or publishing changes.
+
+## RC1.0.13.0.1 Person Context Mode-aware QA Correction
+- QA-only correction for Presentation-mode independence.
+
+## RC1.0.13.1 Persistent Global Navigation, Person Header Parity & Home Explore Removal
+- UI navigation/parity pass only; no context-search, genealogy or publishing changes.
+
+## RC1.0.13.1.1 Reports Person Header Parity
+- Final UI parity correction for the RC1.0.13 navigation/person-context phase.

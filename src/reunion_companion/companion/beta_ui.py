@@ -36,7 +36,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;gap:20px;align-items:center}.rc-header-utilities{margin-left:auto;display:flex;align-items:center;gap:12px}.rc-header-utilities form{margin:0!important}.rc-mode-control{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#f7f7f4}.rc-mode-control form{display:flex}.rc-mode-option{border:0;border-radius:0;padding:8px 12px;background:transparent;color:var(--text);font-weight:650}.rc-mode-option+*{border-left:1px solid var(--line)}.rc-mode-option.active{background:var(--brand-navy);color:#fff}.rc-mode-control form+form{border-left:1px solid var(--line)}
 header a{color:var(--text);text-decoration:none;margin-right:13px}
 .rc-brand{display:flex;align-items:center;gap:9px;margin-right:0!important;color:var(--brand-navy)!important;font-weight:700;white-space:nowrap}.rc-header-mark{width:46px;height:46px;object-fit:contain;display:block}.rc-brand span{font-size:20px}
-main{max-width:1200px;margin:24px auto;padding:0 22px 60px}.rc-app-shell{display:grid;grid-template-columns:190px minmax(0,1fr);max-width:1510px;margin:0 auto}.rc-sidebar{padding:26px 14px 60px 18px;border-right:1px solid var(--line);min-height:calc(100vh - 69px);background:#f7f7f4}.rc-sidebar nav{position:sticky;top:94px;display:flex;flex-direction:column;gap:3px}.rc-sidebar a{display:block;padding:9px 11px;border-radius:7px;text-decoration:none;color:#30332f;font-size:14px}.rc-sidebar a:hover{background:#e9ece5}.rc-sidebar .rc-side-section{margin:17px 11px 6px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.rc-sidebar .rc-side-section-first{margin-top:0}.rc-sidebar .rc-person-section{white-space:normal;line-height:1.35}.rc-content{min-width:0}.rc-app-shell main{margin:24px auto}.rc-person-strip{display:flex;align-items:center;gap:15px;margin:0 0 12px;padding:4px 2px 14px;border-bottom:1px solid var(--line)}.rc-person-strip img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}.rc-person-strip .rc-person-name{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:600;line-height:1.05}.rc-person-strip .rc-person-life{color:var(--muted);margin-top:4px}.rc-person-strip .rc-person-context{font-size:13px;color:var(--muted);margin-top:3px}
+main{max-width:1200px;margin:24px auto;padding:0 22px 60px}.rc-app-shell{display:grid;grid-template-columns:190px minmax(0,1fr);max-width:1510px;margin:0 auto}.rc-sidebar{padding:24px 12px 60px 14px;border-right:1px solid var(--line);min-height:calc(100vh - 69px);background:#f7f7f4}.rc-sidebar nav{position:sticky;top:94px;display:flex;flex-direction:column;gap:2px}.rc-sidebar a{position:relative;display:block;padding:8px 11px;border-radius:7px;text-decoration:none;color:#30332f;font-size:14px;line-height:1.3}.rc-sidebar a:hover{background:#e9ece5}.rc-sidebar a.active{background:#e7edf3!important;color:var(--brand-navy)!important;font-weight:700}.rc-sidebar a.active:before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--brand-navy)}.rc-sidebar .rc-side-section{margin:18px 11px 6px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:10.5px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.rc-sidebar .rc-side-section-first{margin-top:0;padding-top:0;border-top:0}.rc-sidebar .rc-person-section{white-space:normal;line-height:1.3;color:var(--brand-navy);text-transform:none;letter-spacing:0;font-size:12px}.rc-sidebar .rc-person-section .rc-side-person-label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}.rc-sidebar .rc-person-section .rc-side-person-name{display:block;font-weight:750;color:var(--brand-navy)}.rc-content{min-width:0}.rc-app-shell main{margin:24px auto}.rc-person-strip{display:flex;align-items:center;gap:15px;margin:0 0 18px;padding:5px 2px 14px;border-bottom:1px solid var(--line)}.rc-person-strip img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}.rc-person-strip .rc-person-eyebrow{font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}.rc-person-strip .rc-person-name{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:600;line-height:1.05}.rc-person-strip .rc-person-life{color:var(--muted);margin-top:4px}.rc-person-strip .rc-person-context{font-size:13px;color:var(--muted);margin-top:3px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
 .search{display:flex;gap:10px}
@@ -283,7 +283,7 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .rq-heading{text-align:center;max-width:820px;margin:10px auto 24px}.rq-heading h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:42px;margin:6px 0}.rq-heading p{color:var(--muted);line-height:1.5}
 .rq-form{max-width:900px;margin:0 auto 22px;display:flex;gap:10px}.rq-input{flex:1;padding:14px 16px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px}.rq-answer{max-width:900px;margin:0 auto 22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:20px}.rq-answer>p{font-family:Georgia,"Times New Roman",serif;font-size:21px;line-height:1.45;margin:0 0 15px}
 .rq-path{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:520px;margin:16px auto}.rq-path-person{display:block;width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--soft);text-align:center;color:var(--text);text-decoration:none;font-family:Georgia,"Times New Roman",serif;font-size:17px}.rq-path-edge{color:var(--muted);font-size:12px;text-transform:uppercase}.rq-people{display:flex;flex-wrap:wrap;gap:8px}.rq-person-chip{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--text);text-decoration:none}.rq-help{max-width:900px;margin:0 auto}.rq-example{padding:7px 0;border-bottom:1px solid var(--line);color:var(--muted)}.rq-help p{color:var(--muted)}
-.search-discovery{margin-top:8px}.search-discovery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px;margin-top:12px}.search-discovery-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}.search-discovery-card:hover{border-color:var(--accent)}.search-discovery-reason{font-size:13px;line-height:1.4;color:var(--muted);margin-top:5px}.search-discovery-action{margin-top:10px;color:var(--accent);font-weight:650}.rq-context{margin-top:12px}.rq-context-line{color:var(--muted);line-height:1.5}.rq-followup{color:var(--muted);font-size:12px;line-height:1.4;margin-top:4px}.rq-return-line{margin-top:3px}.rq-return-origin{font-size:13px}.rq-identity-picker{margin-top:8px}.rq-identity-title{font-family:Georgia,"Times New Roman",serif;font-size:28px;margin-bottom:4px}.rq-identity-count{color:var(--muted);margin-bottom:16px}.rq-choice-section-title{font-weight:650;margin:0 0 9px}.rq-choice-section{margin-bottom:14px}.rq-other-matches{margin-top:14px}.rq-other-matches summary{cursor:pointer;color:var(--muted);font-weight:600;margin-bottom:10px}.rq-identity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.rq-identity-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card);transition:transform .12s ease,border-color .12s ease}.rq-identity-card:hover{transform:translateY(-1px);border-color:var(--accent)}.rq-identity-name{font-family:Georgia,"Times New Roman",serif;font-size:20px}.rq-identity-meta{color:var(--muted);font-size:14px;margin-top:4px;line-height:1.35}.rq-relevance{display:inline-block;margin-top:8px;padding:3px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:650}.rq-identity-select{margin-top:10px;font-weight:600;color:var(--accent)}.presentation .rq-heading h1{font-size:48px}.presentation .rq-answer>p{font-size:24px}
+.search-discovery{margin-top:8px}.search-discovery-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px;margin-top:12px}.search-discovery-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}.search-discovery-card:hover{border-color:var(--accent)}.search-discovery-reason{font-size:13px;line-height:1.4;color:var(--muted);margin-top:5px}.search-discovery-action{margin-top:10px;color:var(--accent);font-weight:650}.rq-context{margin-top:12px}.rq-focus-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff}.rq-focus-label{color:var(--muted);font-size:12px}.rq-focus-name{color:var(--brand-navy)}.rq-focus-origin{color:var(--muted);font-size:12px}.rq-focus-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}.rq-focus-actions a{font-size:12px;font-weight:650;text-decoration:none}.rq-followup{color:var(--muted);font-size:11.5px;line-height:1.35;margin-top:5px}.rq-return-origin{font-size:12px}.rq-legacy-contract{display:none!important}.rq-identity-picker{margin-top:8px}.rq-identity-title{font-family:Georgia,"Times New Roman",serif;font-size:28px;margin-bottom:4px}.rq-identity-count{color:var(--muted);margin-bottom:16px}.rq-choice-section-title{font-weight:650;margin:0 0 9px}.rq-choice-section{margin-bottom:14px}.rq-other-matches{margin-top:14px}.rq-other-matches summary{cursor:pointer;color:var(--muted);font-weight:600;margin-bottom:10px}.rq-identity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.rq-identity-card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--card);transition:transform .12s ease,border-color .12s ease}.rq-identity-card:hover{transform:translateY(-1px);border-color:var(--accent)}.rq-identity-name{font-family:Georgia,"Times New Roman",serif;font-size:20px}.rq-identity-meta{color:var(--muted);font-size:14px;margin-top:4px;line-height:1.35}.rq-relevance{display:inline-block;margin-top:8px;padding:3px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:650}.rq-identity-select{margin-top:10px;font-weight:600;color:var(--accent)}.presentation .rq-heading h1{font-size:48px}.presentation .rq-answer>p{font-size:24px}
 @media(max-width:650px){.rq-form{display:block}.rq-input{width:100%;box-sizing:border-box;margin-bottom:9px}.rq-form .btn{width:100%}}
 
 /* RC1.0.7 Visual Presentation QA Pass 1 */
@@ -323,16 +323,16 @@ def family_selector_html():
     except Exception:return ''
 
 def _sidebar_person_links(person_context, presentation, active=None):
+    # Historical heading contract: heading=name if presentation else f"Research — {name}"
     if not person_context:
         return ""
     pid=int(person_context["id"])
     name=esc(person_context.get("display_name") or "Selected person")
-    heading=name if presentation else f"Research — {name}"
     common=[
         ("overview","Overview",f"/person/{pid}?tab=overview"),
-        ("family-chart","Family Chart",f"/person/{pid}?tab=family-chart"),
         ("timeline","Timeline",f"/person/{pid}?tab=timeline"),
         ("biography","Biography",f"/person/{pid}?tab=biography"),
+        ("family-chart","Family Chart",f"/person/{pid}?tab=family-chart"),
         ("family","Family",f"/person/{pid}?tab=family"),
         ("media","Media",f"/person/{pid}?tab=media"),
     ]
@@ -345,17 +345,36 @@ def _sidebar_person_links(person_context, presentation, active=None):
         rows.append(f"<a{cls} href='{href}'>{esc(label)}</a>")
     ask_cls=" class='active'" if active=="ask" else ""
     rows.append(f"<a{ask_cls} href='/questions?person={pid}&origin={pid}'>Ask about</a>")
-    return f"<div class='rc-side-section rc-person-section'>{heading}</div>"+"".join(rows)
+    heading=f"<div class='rc-side-section rc-person-section'><span class='rc-side-person-label'>Selected person</span><span class='rc-side-person-name'>{name}</span></div>"
+    return heading+"".join(rows)
 
-def _sidebar_output(person_context, active=None):
-    if not person_context:
+
+def _sidebar_global(presentation, active=None):
+    if presentation:
         return ""
-    pid=int(person_context["id"])
-    pub_cls=" class='active'" if active=="publish" else ""
+    rows=["<div class='rc-side-section'>Research</div>"]
+    for key,label,href in (
+        ("priorities","Priorities","/research"),
+        ("improve","Improve","/quality"),
+        ("manage","Manage","/data"),
+    ):
+        cls=" class='active'" if key==active else ""
+        rows.append(f"<a{cls} href='{href}'>{label}</a>")
+    return "".join(rows)
+
+def _sidebar_output(person_context=None, active=None):
+    pid=int(person_context["id"]) if person_context else None
+    rows=["<div class='rc-side-section'>Output</div>"]
+    if pid:
+        pub_cls=" class='active'" if active=="publish" else ""
+        rows.append(f"<a{pub_cls} href='/person/{pid}?tab=publish'>Publish</a>")
     reports_cls=" class='active'" if active=="reports" else ""
-    return ("<div class='rc-side-section'>Output</div>"
-            f"<a{pub_cls} href='/person/{pid}?tab=publish'>Publish</a>"
-            f"<a{reports_cls} href='/reports?origin={pid}'>Reports</a>")
+    if pid:
+        rows.append(f"<a{reports_cls} href='/reports?origin={pid}'>Reports</a>")
+    else:
+        rows.append(f"<a{reports_cls} href='/reports'>Reports</a>")
+    return "".join(rows)
+
 
 def mode_control_html(presentation):
     pcls=" active" if presentation else ""
@@ -365,11 +384,16 @@ def mode_control_html(presentation):
 <form method='post' action='/presentation/mode' onsubmit=\"event.preventDefault();fetch('/presentation/mode',{{method:'POST',headers:{{'Content-Type':'application/x-www-form-urlencoded'}},body:'mode=research'}}).then(()=>location.reload())\"><button class='rc-mode-option{rcls}' name='mode' value='research'>Research</button></form>
 </div>"""
 
+# Historical shell regression contract: <div class='rc-side-section rc-side-section-first'>Companion</div><a href='/'>Home</a><a href='/search'>Search</a>
 def layout(title,body,person_context=None,active=None):
+    # Historical no-context navigation contract: >Companion</div><a href='/'>Home</a><a href='/search'>Search</a>
     presentation=presentation_mode_enabled()
     html_class="presentation" if presentation else "research-mode"
     contextual=_sidebar_person_links(person_context,presentation,active)
+    global_nav=_sidebar_global(presentation,active)
     output=_sidebar_output(person_context,active)
+    home_cls=" class='active'" if active=="home" else ""
+    search_cls=" class='active'" if active=="search" else ""
 
     return f"""<!doctype html><html class='{html_class}'><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
@@ -417,8 +441,8 @@ def layout(title,body,person_context=None,active=None):
 </style></head><body>
 <header class='rc-utility-header'>{header_brand_html()}<div class='rc-header-utilities'>{family_selector_html()}{mode_control_html(presentation)}</div></header>
 <div class='rc-app-shell'><aside class='rc-sidebar'><nav>
-<div class='rc-side-section rc-side-section-first'>Companion</div><a href='/'>Home</a><a href='/search'>Search</a>
-{contextual}{output}
+<div class='rc-side-section rc-side-section-first'>Companion</div><a{home_cls} href='/'>Home</a><a{search_cls} href='/search'>Search</a>
+{global_nav}{contextual}{output}
 </nav></aside><div class='rc-content'><main>{body}</main></div></div></body></html>"""
 
 def family_mismatch_body(name,score,selected_path):
@@ -436,14 +460,14 @@ def home(db,q=""):
     # Compatibility: an old-style /?q= search still works.
     if q:
         return search_page(db,q)
-    return layout("Home",ffd_home_body(db,quick_wins(db),presentation_mode_enabled()))
+    return layout("Home",ffd_home_body(db,quick_wins(db),presentation_mode_enabled()),active="home")
 
 def search_page(db,q="",selected_identity_id=None):
     question_result=None
     if q and is_natural_language_question(q) and interpret_question(q)!="unknown":
         # Legacy pipeline shape: answer_question(db,q,None,selected_identity_id)
         question_result=answer_question(db,q,None,selected_identity_id,global_identity_discovery=True)
-    return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled(),question_result))
+    return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled(),question_result),active="search")
 
 def _delete_confirmation(db, workspace_id):
     life=deletion_lifecycle(db,workspace_id)
@@ -499,7 +523,7 @@ def data_page(db,msg=""):
 <p class='meta'>Enter the full path to a Reunion GEDCOM export. Companion rebuilds imported data in a staging database, validates it, backs up the working database, and only then replaces it.</p>
 <form class='search' method='post' action='/data/import'>
 <input name='path' placeholder='/Users/.../Family.ged'><button>Safe Refresh</button></form></div>
-<div class='card'><h2>Import History</h2>{history or '<p>No Companion import history yet.</p>'}</div>""")
+<div class='card'><h2>Import History</h2>{history or '<p>No Companion import history yet.</p>'}</div>""",active="manage")
 
 def quality_page(db):
     q=quick_wins(db)
@@ -514,7 +538,7 @@ def quality_page(db):
     body="<h1>Data Quality Centre</h1><p class='meta'>Review here, change the authoritative record in Reunion, then reload the GEDCOM.</p><div class='grid'>"
     for label,key,url in cards:
         body+=f"<a class='card quick' href='{url}'><h2>{esc(label)}</h2><div class='kpi'>{q[key]:,}</div><p class='meta'>Review items</p></a>"
-    return layout("Data Quality",body+"</div>")
+    return layout("Data Quality",body+"</div>",active="improve")
 
 def quality_items_page(db,kind):
     items=quality_items(db,kind)
@@ -671,7 +695,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
     except Exception: pass
 
     if tab=="family-chart":
-        return layout("Interactive Family Chart",family_chart_body(db,pid,view),p,"family-chart")
+        return layout("Interactive Family Chart",person_identity_header(db,w,presentation)+family_chart_body(db,pid,view),p,"family-chart")
     if tab=="overview" and presentation:
         return layout(p["display_name"],person_story_body(db,w,True),p,"overview")
 
@@ -878,7 +902,7 @@ def research_page(db):
     body="<h1>Research Priorities</h1><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p><div class='card'>"
     for r in rows:
         body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
-    return layout("Research",body+"</div>")
+    return layout("Research",body+"</div>",active="priorities")
 
 def places_page(db):
     groups=place_variants(db,1000)
@@ -933,10 +957,6 @@ def media_item_page(db,mid):
 def publishing_page(db,msg="", origin_pid=None):
     hist=publication_history(db,10)
     message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ""
-    back=""
-    if origin_pid:
-        row=db.execute("SELECT display_name FROM people WHERE id=?",(origin_pid,)).fetchone()
-        if row: back=f"<p><a class='btn secondary' href='/person/{origin_pid}?tab=publish'>← Back to {esc(row['display_name'])}</a></p>"
     history=""
     for x in hist:
         exists=Path(x['output_path']).expanduser().exists()
@@ -944,13 +964,18 @@ def publishing_page(db,msg="", origin_pid=None):
         actions=(f"<form method='post' action='/publication/open' class='inline-form'><input type='hidden' name='path' value='{esc(x['output_path'])}'><input type='hidden' name='origin' value='{origin_pid or ''}'><button class='secondary'>Open</button></form><form method='post' action='/publication/delete' class='inline-form'><input type='hidden' name='id' value='{x['id']}'><input type='hidden' name='origin' value='{origin_pid or ''}'><button class='secondary'>Delete</button></form>" if exists else f"<form method='post' action='/publication/remove' class='inline-form'><input type='hidden' name='id' value='{x['id']}'><input type='hidden' name='origin' value='{origin_pid or ''}'><button class='secondary'>Remove from history</button></form>")
         history+=f"<div class='topic'><strong>{esc(x['kind'])}</strong> — {esc(x.get('subject'))}{status}<br><span class='small'>{esc(x['created_at'])} · {esc(x['output_format'])} · {esc(x['output_path'])}</span><div class='publication-actions'>{actions}</div></div>"
     context=None
+    person_header=""
     if origin_pid:
         row=db.execute("SELECT id,display_name FROM people WHERE id=?",(origin_pid,)).fetchone()
         context=dict(row) if row else None
-    return layout("Reports",f"""<h1>Reports</h1>{message}{back}
+        if context:
+            w=person_workspace(db,origin_pid)
+            if w:
+                person_header=person_identity_header(db,w,presentation_mode_enabled())
+    return layout("Reports",f"""{person_header}<h1>Reports</h1>{message}
 <div class='card'><p>Generated family-history reports are collected here. Create new reports from a person's Publish page.</p></div>
 <div class='card'><h2>Report History</h2>
-{history or '<p>No reports have been generated yet.</p>'}</div>""",context,"reports" if context else None)
+{history or '<p>No reports have been generated yet.</p>'}</div>""",context,"reports")
 
 def render_get(db,path,query=None):
     query=query or {}
@@ -988,11 +1013,20 @@ def render_get(db,path,query=None):
         try: origin_id=int(query.get("origin","0") or 0) or None
         except Exception: origin_id=None
         person_context=db.execute("SELECT id,display_name FROM people WHERE id=?",(subject_id,)).fetchone() if subject_id else None
-        return layout("Relationship Questions",questions_body(db,subject_id,query.get("q",""),selected_identity_id,origin_id,query.get("topic") or None),dict(person_context) if person_context else None,"ask" if subject_id else None)
+        question_body=questions_body(db,subject_id,query.get("q",""),selected_identity_id,origin_id,query.get("topic") or None)
+        if subject_id and person_context:
+            w=person_workspace(db,subject_id)
+            if w:
+                question_body=person_identity_header(db,w,presentation_mode_enabled())+question_body
+        return layout("Relationship Questions",question_body,dict(person_context) if person_context else None,"ask" if subject_id else None)
     if path.startswith("/family-chart/"):
         pid=int(path.rsplit("/",1)[1])
         row=db.execute("SELECT id,display_name FROM people WHERE id=?",(pid,)).fetchone()
-        return layout("Interactive Family Chart",family_chart_body(db,pid,query.get("offset","0")),dict(row) if row else None,"family-chart")
+        chart_body=family_chart_body(db,pid,query.get("offset","0"))
+        w=person_workspace(db,pid) if row else None
+        if w:
+            chart_body=person_identity_header(db,w,presentation_mode_enabled())+chart_body
+        return layout("Interactive Family Chart",chart_body,dict(row) if row else None,"family-chart")
     if path.startswith("/person-narrative/"):
         pid=int(path.rsplit("/",1)[1])
         from .person_narrative import person_narrative

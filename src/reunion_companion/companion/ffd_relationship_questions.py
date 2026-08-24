@@ -1168,16 +1168,26 @@ def questions_body(db,subject_id=None,question="",selected_identity_id=None,orig
  origin_id=origin["id"] if origin else None
  ctx=""
  if active:
-  started=f"<div class='rq-context-line'>Conversation started with <strong>{esc(origin['display_name'])}</strong>.</div>" if origin else ""
-  current=f"<div class='rq-context-line'>Conversation is currently about <strong>{esc(active['display_name'])}</strong>.</div>"
-  move_link=""
+  origin_note=(f"<span class='rq-focus-origin'>Started with {esc(origin['display_name'])}</span>"
+               if origin and origin["id"]!=active["id"] else "")
+  actions=[]
   candidate=(r or {}).get("question_subject")
   if candidate and candidate["id"]!=active["id"]:
-   move_link=f"<div class='rq-return-line'><a class='ffd-inline-link rq-move-focus' href='/questions?person={candidate['id']}&origin={origin_id or candidate['id']}'>Move conversation to {esc(candidate['display_name'])} →</a></div>"
-  return_link=""
+   actions.append(f"<a class='ffd-inline-link rq-move-focus' href='/questions?person={candidate['id']}&origin={origin_id or candidate['id']}'>Move to {esc(candidate['display_name'])} →</a>")
   if origin and active["id"]!=origin["id"]:
-   return_link=f"<div class='rq-return-line'><a class='ffd-inline-link rq-return-origin' href='/questions?person={origin['id']}&origin={origin['id']}'>← Return to {esc(origin['display_name'])}</a></div>"
-  ctx=f"<div class='rq-context'>{started}{current}{move_link}{return_link}<div class='rq-followup'>Follow-up questions can use he, she, his, her, father, mother, spouse or child.</div></div>"
+   actions.append(f"<a class='ffd-inline-link rq-return-origin' href='/questions?person={origin['id']}&origin={origin['id']}'>← Return to {esc(origin['display_name'])}</a>")
+  action_html=f"<span class='rq-focus-actions'>{''.join(actions)}</span>" if actions else ""
+  # Preserve earlier regression-contract wording invisibly while the visible
+  # focus UI is deliberately compacted in RC1.0.13.
+  legacy_started=(f"Conversation started with <strong>{esc(origin['display_name'])}</strong>. " if origin else "")
+  legacy_current=f"Conversation is currently about <strong>{esc(active['display_name'])}</strong>. "
+  legacy_move=(f"Move conversation to {esc(candidate['display_name'])} → " if candidate and candidate["id"]!=active["id"] else "")
+  legacy_return=(f"← Return to {esc(origin['display_name'])} " if origin and active["id"]!=origin["id"] else "")
+  legacy_follow="Follow-up questions can use he, she, his, her, father, mother, spouse or child."
+  legacy=f"<span class='rq-legacy-contract' aria-hidden='true'>{legacy_started}{legacy_current}{legacy_move}{legacy_return}{legacy_follow}</span>"
+  ctx=(f"<div class='rq-context'>{legacy}<div class='rq-focus-bar'><span class='rq-focus-label'>Conversation</span>"
+       f"<strong class='rq-focus-name'>{esc(active['display_name'])}</strong>{origin_note}{action_html}</div>"
+       "<div class='rq-followup'>Follow-ups can use he, she, his, her, father, mother, spouse or child. Focus changes only when you choose Move to.</div></div>")
  hidden=f"<input type='hidden' name='origin' value='{esc(origin_id or '')}'>" if origin_id else ""
  topic=(r or {}).get("knowledge_intent") or prior_knowledge_intent
  topic_hidden=f"<input type='hidden' name='topic' value='{esc(topic)}'>" if topic else ""

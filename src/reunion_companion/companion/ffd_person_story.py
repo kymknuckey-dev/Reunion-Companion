@@ -80,7 +80,7 @@ def person_identity_header(db,w,presentation=True):
     if spouse: context.append("Spouse: "+spouse)
     context_html=f"<div class='rc-person-context'>{esc(' · '.join(context))}</div>" if context else ""
     xref="" if presentation else f"<div class='small'>{esc(p.get('gedcom_xref'))}</div>"
-    return f"<section class='rc-person-strip'>{img}<div><div class='rc-person-name'>{esc(p['display_name'])}</div><div class='rc-person-life'>{esc(_lifespan(events))}</div>{context_html}{xref}</div></section>"
+    return f"<section class='rc-person-strip'>{img}<div><div class='rc-person-eyebrow'>Current person</div><div class='rc-person-name'>{esc(p['display_name'])}</div><div class='rc-person-life'>{esc(_lifespan(events))}</div>{context_html}{xref}</div></section>"
 
 def _event_icon(kind):
     k=(kind or '').casefold()

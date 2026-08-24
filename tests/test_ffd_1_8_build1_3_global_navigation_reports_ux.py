@@ -18,7 +18,7 @@ def test_global_nav_is_companion_sidebar_before_person_selection(tmp_path):
     db.close()
 
 
-def test_research_home_exposes_dataset_explore_boxes(tmp_path):
+def test_research_home_uses_persistent_sidebar_instead_of_duplicate_explore_boxes(tmp_path):
     from reunion_companion.companion.ffd_presentation import (
         presentation_mode_enabled,
         set_presentation_mode,
@@ -29,8 +29,12 @@ def test_research_home_exposes_dataset_explore_boxes(tmp_path):
     try:
         set_presentation_mode(False)
         html=render_get(db,'/',{})
-        for label in ('Research','Research Priorities','Improve the Data','Data Manager'):
-            assert label in html
+        sidebar=html.split("<aside class='rc-sidebar'>",1)[1].split('</aside>',1)[0]
+        for label in ('Research','Priorities','Improve','Manage','Reports'):
+            assert label in sidebar
+        assert 'Research Priorities' not in html
+        assert 'Improve the Data' not in html
+        assert 'Data Manager' not in html
     finally:
         set_presentation_mode(previous)
         db.close()

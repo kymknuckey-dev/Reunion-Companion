@@ -109,3 +109,24 @@
 - Removed the redundant Families section from Person > Publish.
 - Descendant Report is now the single Publish entry point for descendant reporting.
 - Deferred Research Profile, Biography and Person Report presentation harmonisation.
+
+## FFD 2.0 RC1.0.13 — Navigation, Person Focus & Conversation UX Consolidation
+- Consolidated left navigation hierarchy, active states and selected-person context.
+- Added explicit Current person labeling to the persistent person strip.
+- Compacted conversation focus into one bar with explicit Move to and Return to origin actions.
+- Relationship/query resolution behaviour is unchanged.
+
+## FFD 2.0 RC1.0.13.0.1 — Person Context Mode-aware QA Correction
+- Corrected the RC1.0.13 Current-person QA so it does not incorrectly require the compact person strip on Presentation Overview.
+- No UI or application behaviour changes.
+
+## FFD 2.0 RC1.0.13.1 — Persistent Global Navigation, Person Header Parity & Home Explore Removal
+- Added persistent Research and Output navigation appropriate to Presentation/Research mode.
+- Removed duplicated Explore/Research launch cards from Home.
+- Added the person-context header to Family Chart and Ask about.
+- Context-search and relationship behaviour are unchanged.
+
+## FFD 2.0 RC1.0.13.1.1 — Reports Person Header Parity
+- Reports now inherits the normal person header when opened in person context.
+- Removed the redundant Back-to-person button from contextual Reports.
+- Global Reports remains person-neutral.
