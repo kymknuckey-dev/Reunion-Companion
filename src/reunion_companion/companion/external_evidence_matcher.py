@@ -41,7 +41,53 @@ def _event(db, pid: int, event_type: str):
     ).fetchone()
 
 
+def death_research_state(db, pid: int):
+    """Classify the structured Death record as missing, incomplete or recorded."""
+    row = db.execute(
+        "SELECT * FROM events WHERE person_id=? AND lower(event_type)='death' ORDER BY id LIMIT 1",
+        (pid,),
+    ).fetchone()
+    if not row:
+        return {
+            "state": "missing",
+            "event_id": None,
+            "date_text": None,
+            "place_text": None,
+            "note_text": None,
+            "has_source": False,
+            "has_media": False,
+            "reasons": ("No Death event recorded",),
+        }
+
+    has_source = bool(db.execute(
+        "SELECT 1 FROM event_sources WHERE event_id=? LIMIT 1", (row["id"],)
+    ).fetchone())
+    has_media = bool(db.execute(
+        "SELECT 1 FROM event_media WHERE event_id=? LIMIT 1", (row["id"],)
+    ).fetchone())
+
+    reasons = []
+    if not (row["date_text"] or "").strip():
+        reasons.append("Death date not recorded")
+    if not (row["place_text"] or "").strip():
+        reasons.append("Death place not recorded")
+    if not has_source and not has_media:
+        reasons.append("No linked death evidence")
+
+    state = "incomplete" if reasons else "recorded"
+    return {
+        "state": state,
+        "event_id": row["id"],
+        "date_text": row["date_text"],
+        "place_text": row["place_text"],
+        "note_text": row["note_text"],
+        "has_source": has_source,
+        "has_media": has_media,
+        "reasons": tuple(reasons),
+    }
+
 def missing_death_candidates(db):
+    """Return people whose Death research state is missing or incomplete."""
     rows = []
     for p in db.execute(
         """
@@ -50,22 +96,23 @@ def missing_death_candidates(db):
         ORDER BY surname,given_names,id
         """
     ):
-        if any(gap[0] == "Death" for gap in research_gaps(db, p["id"])):
+        death = death_research_state(db, p["id"])
+        if death["state"] in ("missing", "incomplete"):
             birth = _event(db, p["id"], "Birth")
-            rows.append(
-                {
-                    "person_id": p["id"],
-                    "gedcom_xref": p["gedcom_xref"],
-                    "display_name": p["display_name"],
-                    "given_names": p["given_names"],
-                    "surname": p["surname"],
-                    "birth_date": birth["date_text"] if birth else None,
-                    "birth_place": birth["place_text"] if birth else None,
-                }
-            )
+            rows.append({
+                "person_id": p["id"],
+                "gedcom_xref": p["gedcom_xref"],
+                "display_name": p["display_name"],
+                "given_names": p["given_names"],
+                "surname": p["surname"],
+                "birth_date": birth["date_text"] if birth else None,
+                "birth_place": birth["place_text"] if birth else None,
+                "death_state": death["state"],
+                "death_event_id": death["event_id"],
+                "death_note_text": death["note_text"],
+                "death_reasons": death["reasons"],
+            })
     return rows
-
-
 def person_identity_profile(db, pid: int):
     p = db.execute(
         """

@@ -44,7 +44,15 @@ def test_missing_death_candidates_use_existing_research_gap_logic(tmp_path):
 
     _person(db, 2, "@I2@", "Already", "Dead", "Already Dead")
     _event(db, 2, "Birth", "01 Jan 1900", "Adelaide")
-    _event(db, 2, "Death", "01 Jan 1980", "Adelaide")
+    death_id = db.execute(
+        "INSERT INTO events(person_id,event_type,date_text,place_text) VALUES(?,?,?,?)",
+        (2, "Death", "01 Jan 1980", "Adelaide"),
+    ).lastrowid
+    db.execute("INSERT INTO sources(id,gedcom_xref,title) VALUES(1,'@S1@','Death source')")
+    db.execute(
+        "INSERT INTO event_sources(event_id,source_id,relation) VALUES(?,1,'GEDCOM')",
+        (death_id,),
+    )
     db.commit()
 
     rows = missing_death_candidates(db)

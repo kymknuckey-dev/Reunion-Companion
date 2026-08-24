@@ -737,21 +737,28 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
             body+=f"<div class='topic'><strong>{esc(e['type'])}</strong> {badge}<div class='small'>{esc(e['date'])} {esc(e['place'] or e['value'])}</div></div>"
         body+="</div>"
     elif tab=="research":
-        from .discovery import research_gaps
         from .external_evidence import external_evidence_for_person
+        from .external_evidence_matcher import death_research_state
         r=person_research_model(db,pid);body="<div class='card'><h2>Research</h2>"
         for a in r["anomalies"]:body+=f"<div class='topic'><span class='badge {'warn' if a['severity']=='warning' else 'info'}'>{esc(a['kind'])}</span> {esc(a['message'])}</div>"
         if not r["anomalies"]:body+="<p>No deterministic review flags.</p>"
         body+="</div>"
-        death_missing=any(g[0]=="Death" for g in research_gaps(db,pid))
+        death_state=death_research_state(db,pid)
         xref=w["person"].get("gedcom_xref")
         findings=external_evidence_for_person(db,xref) if xref else []
-        if death_missing or findings:
+        if death_state["state"]!="recorded" or findings:
             body+="<div class='card'><h2>External Evidence</h2><p class='meta'>Research findings held by Companion only. Confirmed changes are entered manually in Reunion.</p>"
-            if death_missing:
+            if death_state["state"]=="missing":
                 body+="<div class='topic'><strong>Missing death information</strong><div class='small'>No Death event is recorded in the current Reunion snapshot.</div></div>"
+            elif death_state["state"]=="incomplete":
+                body+="<div class='topic'><strong>Incomplete death information</strong><div class='small'>A Death event exists, but the structured record still needs research.</div>"
+                for reason in death_state["reasons"]:
+                    body+=f"<div class='small'>Review: {esc(reason)}</div>"
+                if death_state["note_text"]:
+                    body+=f"<div class='small'><strong>Existing event note:</strong> {esc(death_state['note_text'])}</div>"
+                body+="</div>"
             else:
-                body+="<div class='topic'><span class='badge good'>Resolved in Reunion</span> A Death event is now present in the current Reunion snapshot.</div>"
+                body+="<div class='topic'><span class='badge good'>Resolved in Reunion</span> Structured death information and linked evidence are present in the current Reunion snapshot.</div>"
             if findings:
                 for f in findings:
                     status=f["review_status"] or "new"
@@ -923,6 +930,7 @@ def book_scope_page(db,start_pid,query=None,msg=""):
 def research_page(db):
     from .external_evidence_matcher import missing_death_candidates
     from .external_evidence import external_evidence_for_person
+
     death_rows=missing_death_candidates(db)
     sql=("SELECT p.id,p.display_name, "
          "SUM(CASE WHEN e.id IS NOT NULL "
@@ -933,23 +941,36 @@ def research_page(db):
          "GROUP BY p.id,p.display_name HAVING unsourced>0 "
          "ORDER BY unsourced DESC,p.display_name LIMIT 100")
     rows=db.execute(sql).fetchall()
+
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
-    body+="<div class='card'><h2>Missing Death Information</h2><p class='meta'>A missing Death event is a research prompt, not evidence that the person has died.</p>"
+    body+="<div class='card'><h2>Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
     if death_rows:
         for r in death_rows[:100]:
             findings=external_evidence_for_person(db,r["gedcom_xref"]) if r["gedcom_xref"] else []
             accepted=sum(1 for f in findings if f["review_status"]=="accepted")
-            if accepted: badge=f"<span class='badge good' style='float:right'>{accepted} accepted finding{'s' if accepted!=1 else ''}</span>"
-            elif findings: badge=f"<span class='badge warn' style='float:right'>{len(findings)} finding{'s' if len(findings)!=1 else ''}</span>"
-            else: badge="<span class='badge warn' style='float:right'>Death missing</span>"
+            if accepted:
+                badge=f"<span class='badge good' style='float:right'>{accepted} accepted finding{'s' if accepted!=1 else ''}</span>"
+            elif findings:
+                badge=f"<span class='badge warn' style='float:right'>{len(findings)} finding{'s' if len(findings)!=1 else ''}</span>"
+            elif r["death_state"]=="incomplete":
+                badge="<span class='badge warn' style='float:right'>Death incomplete</span>"
+            else:
+                badge="<span class='badge warn' style='float:right'>Death missing</span>"
             birth=" · ".join(x for x in (r["birth_date"],r["birth_place"]) if x)
             body+=f"<a class='result' href='/person/{r['person_id']}?tab=research'><strong>{esc(r['display_name'])}</strong>{badge}"
             if birth: body+=f"<span class='meta' style='display:block'>{esc(birth)}</span>"
+            if r["death_state"]=="incomplete" and r["death_note_text"]:
+                body+="<span class='meta' style='display:block'>Existing Death event note available</span>"
             body+="</a>"
-    else: body+="<p>No people currently have a missing Death event.</p>"
-    body+="</div><div class='card'><h2>Unsourced Events</h2><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p>"
-    for r in rows: body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
-    if not rows: body+="<p>No unsourced event priorities detected.</p>"
+    else:
+        body+="<p>No current missing or incomplete Death research items.</p>"
+    body+="</div>"
+
+    body+="<div class='card'><h2>Unsourced Events</h2><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p>"
+    for r in rows:
+        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
+    if not rows:
+        body+="<p>No unsourced event priorities detected.</p>"
     return layout("Research",body+"</div>",active="priorities")
 
 def places_page(db):

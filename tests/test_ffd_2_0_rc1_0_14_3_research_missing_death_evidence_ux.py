@@ -13,7 +13,7 @@ def test_missing_death_visible(tmp_path):
     db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Rodney Thomas","Howie"); event(db,1,"Birth","07 Oct 1940","Adelaide"); db.commit()
     assert "Missing death information" in person_page(db,1,"research",presentation_override=False)
     h=research_page(db)
-    assert "Missing Death Information" in h
+    assert "Death Research" in h
     assert "Rodney Thomas Howie" in h
     assert "/person/1?tab=research" in h
 
@@ -34,7 +34,14 @@ def test_resolved_death_retains_finding(tmp_path):
     db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Peter Stanly","Rigg"); db.commit()
     add_external_evidence(db,person_gedcom_xref="@I1@",person_name_snapshot="Peter Stanly Rigg",source_name="Ryerson",
         evidence_type="death_notice",source_record_name="Peter Stanley Rigg",event_type="Death",event_date="02JAN2021",review_status="accepted")
-    event(db,1,"Death","02 Jan 2021"); db.commit()
+    event(db,1,"Death","02 Jan 2021","Curramulka")
+    death_id=db.execute("SELECT id FROM events WHERE person_id=1 AND event_type='Death' ORDER BY id DESC LIMIT 1").fetchone()[0]
+    db.execute("INSERT INTO sources(id,gedcom_xref,title) VALUES(1,'@S1@','Death notice')")
+    db.execute(
+        "INSERT INTO event_sources(event_id,source_id,relation) VALUES(?,1,'GEDCOM')",
+        (death_id,),
+    )
+    db.commit()
     h=person_page(db,1,"research",presentation_override=False)
     assert "Resolved in Reunion" in h
     assert "Peter Stanley Rigg" in h
