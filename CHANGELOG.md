@@ -68,3 +68,44 @@
 ## FFD 2.0 RC1.0.11.3.3.1 — Spouse Lineage Stacking Correction
 - Presentation-only: Father's Paternal Line and Mother's Paternal Line now stack vertically in Spouse Family & Descendants.
 - No genealogy, data, traversal, or other chart presentation changes.
+
+## FFD 2.0 RC1.0.12 — Standalone Descendant Report Pass 1
+- Added standalone indented Descendant Report generation for 1–6 generations.
+- Added HTML and PDF output paths independent of History Book scope.
+- Publish UI remains unchanged for Pass 1 while the report presentation is reviewed.
+
+## FFD 2.0 RC1.0.12.1 — Descendant Report Preview Access Correction
+- Added a visible Descendant Report — Preview (HTML) control beneath each family on Person > Publish.
+- Preview remains fixed at four generations for Pass 1 review.
+
+## FFD 2.0 RC1.0.12.2 — Descendant Report Controls & Presentation QA
+- Added a normal Descendant Report configuration page with family selection, 1–6 generations and HTML/PDF output.
+- Replaced the misleading Family Report (HTML) Publish control with Descendant Report….
+- Added explicit standalone report logo sizing while preserving the accepted report body layout.
+
+## FFD 2.0 RC1.0.12.3 — Publish & Descendant Report UX Cleanup
+- Reworked Person > Publish into consistent report tiles and family cards.
+- Removed redundant starting-family selection when family context is already known.
+- Added a clear 1–6 generation selector and inclusion summary to Descendant Report configuration.
+- Kept the accepted report renderer and genealogy unchanged.
+
+## FFD 2.0 RC1.0.12.4 — Publish Report Tile Alignment & Iconography
+- Replaced letter badges with report-specific monochrome SVG icons.
+- Aligned Descendant Report and Family-history Book controls with the established report-tile layout.
+- Added consistent iconography and chevrons to family-level Descendant Report actions.
+- Report content remains unchanged for later review.
+
+## FFD 2.0 RC1.0.12.4.1 — Publish Icon Column Alignment Correction
+- Standardised the Publish tile icon column and text start position.
+- Applied matching icon geometry to family cards.
+- Optically centred the existing SVG artwork and lifted the Descendant tree icon slightly.
+
+## FFD 2.0 RC1.0.12.4.2 — Publish Tile DOM Alignment Correction
+- Replaced mixed form/link Publish tiles with one shared form > button.publish-action DOM structure for all five actions.
+- Preserved GET navigation for Descendant Report and Family-history Book.
+- No report generation or genealogy changes.
+
+## FFD 2.0 RC1.0.12.4.3 — Publish Families Duplication Removal
+- Removed the redundant Families section from Person > Publish.
+- Descendant Report is now the single Publish entry point for descendant reporting.
+- Deferred Research Profile, Biography and Person Report presentation harmonisation.

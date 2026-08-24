@@ -18,3 +18,83 @@ FFD 2.0 RC1.0.11.1 — Family Scope & Book Presentation QA Pass 1
 Validation: 789 tests passed in two bounded runs (436 + 353).
 Targeted publishing/scope/PDF regression set: 25 passed.
 RC1.0.10 multi-page PDF reproduction renderer preserved; HTML original-media links intentionally restore access to copied source PDFs/images.
+
+FFD 2.0 RC1.0.12 — Standalone Descendant Report Pass 1
+=======================================================
+Validation: PASS
+Full suite executed in four bounded batches:
+  235 passed
+  198 passed
+  181 passed
+  220 passed
+Total: 834 passed
+Focused RC1.0.12 + RC1.0.11.3.3.1 + RC1.0.10 QA regression: 23 passed
+
+History Book family-scope and spouse-family chart behavior remain independent.
+RC1.0.10 multi-page PDF QA remains passing.
+
+FFD 2.0 RC1.0.12.1 — Descendant Report Preview Access Correction
+=================================================================
+Validation: PASS
+Focused preview-access + RC1.0.12 + prior chart regression: 21 passed.
+Full suite in four bounded batches: 232 + 214 + 196 + 195 = 837 passed.
+
+FFD 2.0 RC1.0.12.2 — Descendant Report Controls & Presentation QA
+==================================================================
+Validation: PASS
+Focused RC1.0.12.2 + RC1.0.12.1 + RC1.0.12 + RC1.0.11.3.3.1 + RC1.0.10 QA: 35 passed.
+Full suite in four bounded batches: 207 + 211 + 218 + 210 = 846 passed.
+
+Descendant Report now has family selection, 1–6 generation control, HTML/PDF output,
+and explicit publishing-mark sizing. The old Family Report control is no longer
+presented in Person > Publish.
+
+FFD 2.0 RC1.0.12.3 — Publish & Descendant Report UX Cleanup
+============================================================
+Validation: PASS
+Focused RC1.0.12.x + RC1.0.11.3.3.1 + RC1.0.10 regression: 44 passed.
+Full suite in four bounded batches: 222 + 186 + 215 + 232 = 855 passed.
+
+Scope: Publish-page and Descendant Report configuration UX only.
+Standalone Descendant Report genealogy/body renderer unchanged.
+History Book family charts and RC1.0.10 multi-page PDF reproduction remain passing.
+
+FFD 2.0 RC1.0.12.4 — Publish Report Tile Alignment & Iconography
+=================================================================
+Validation: PASS
+Focused RC1.0.12.x + History Book/PDF regression: 49 passed.
+Full suite in four bounded batches: 240 + 201 + 190 + 229 = 860 passed.
+
+Scope: Publish-page presentation only.
+Report generation, Descendant Report renderer, History Book scope/charts and
+RC1.0.10 multi-page PDF reproduction remain unchanged.
+
+FFD 2.0 RC1.0.12.4.1 — Publish Icon Column Alignment Correction
+================================================================
+Validation: PASS
+Focused RC1.0.12.x alignment regression: 46 passed.
+Full suite in four bounded batches: 238 + 219 + 205 + 204 = 866 passed.
+
+Scope: icon-column geometry and optical centering only.
+No report generation, genealogy, History Book or PDF reproduction changes.
+
+FFD 2.0 RC1.0.12.4.2 — Publish Tile DOM Alignment Correction
+==============================================================
+Validation: PASS
+Focused RC1.0.12.4.x + RC1.0.12.3/12.2 regression: 35 passed.
+Full suite in four bounded batches: 213 + 217 + 223 + 219 = 872 passed.
+
+Scope: shared Publish tile DOM/box model only.
+All five Person Publishing actions now use the same form > button.publish-action structure.
+No report generation, genealogy, History Book or PDF reproduction changes.
+
+FFD 2.0 RC1.0.12.4.3 — Publish Families Duplication Removal
+============================================================
+Validation: PASS
+Focused RC1.0.12 regression: 56 passed.
+Broader bounded regression batches completed: 228 + 192 + 219 passed.
+Final full-suite batch exceeded the execution window; no failure was reported before interruption.
+
+Scope: remove redundant Families section from Person > Publish.
+Descendant Report remains the single descendant-report entry point.
+Research Profile, Biography and Person Report presentation harmonisation is deferred.

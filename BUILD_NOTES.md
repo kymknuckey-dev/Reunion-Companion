@@ -68,3 +68,27 @@ Built from the validated RC1.0.11 family-scope baseline. RC1.0.10 PDF print geom
 
 ## RC1.0.11.3.3.1 Spouse Lineage Stacking Correction
 - Stacked the two spouse family-of-origin lineage sections vertically to match Family & Descendants.
+
+## RC1.0.12 Standalone Descendant Report Pass 1
+- New standalone descendant-report renderer with conventional Generation 1 starting-couple numbering and bounded generation depth.
+
+## RC1.0.12.1 Descendant Report Preview Access Correction
+- Corrected the missing normal-UI launch path for the RC1.0.12 report preview.
+
+## RC1.0.12.2 Descendant Report Controls & Presentation QA
+- Promoted the standalone Descendant Report from preview to a normal Publish workflow and fixed publishing-mark sizing.
+
+## RC1.0.12.3 Publish & Descendant Report UX Cleanup
+- Presentation/flow cleanup only: consistent Publish actions, family-aware Descendant Report launch and fixed-family configuration.
+
+## RC1.0.12.4 Publish Report Tile Alignment & Iconography
+- Presentation-only Publish refinement. No report-generation or genealogy changes.
+
+## RC1.0.12.4.1 Publish Icon Column Alignment Correction
+- Presentation-only alignment correction; no report or genealogy changes.
+
+## RC1.0.12.4.2 Publish Tile DOM Alignment Correction
+- Structural alignment fix: all Person Publishing tiles now share the same box model.
+
+## RC1.0.12.4.3 Publish Families Duplication Removal
+- Final RC1.0.12 cleanup: removed duplicate family-specific descendant-report launch UI.

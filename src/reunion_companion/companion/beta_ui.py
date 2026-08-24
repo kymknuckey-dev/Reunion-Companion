@@ -22,7 +22,7 @@ from .family_files import (active_family_file,default_family_file,list_family_fi
     rename_family_file,set_default_family,delete_family_file,family_report_count,preflight_family_refresh,FamilyFileMismatch,deletion_lifecycle)
 from .beta3_publishing import (
     publication_history,family_chapter_html,family_chapter_pdf,
-    descendant_chart,person_output,scoped_book_output,open_output,remove_history,delete_publication
+    descendant_chart,person_output,scoped_book_output,standalone_descendant_report_output,open_output,remove_history,delete_publication
 )
 from .version_identity import APP_DISPLAY_NAME, FFD_DISPLAY
 from .branding import header_brand_html
@@ -45,6 +45,26 @@ input,button,select{font:inherit;padding:10px 12px;border:1px solid #bbb;border-
 input{flex:1}
 button,.button{background:var(--accent);color:#fff;border-color:var(--accent);text-decoration:none;display:inline-block;padding:10px 13px;border-radius:7px;cursor:pointer}
 .secondary{background:#fff;color:var(--text)}
+.publish-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.publish-action{display:grid;grid-template-columns:42px minmax(0,1fr) 18px;align-items:center;column-gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--text);text-decoration:none;min-height:92px;width:100%}
+.publish-action:hover{border-color:#9aa8b4;background:#fafbfd}
+.publish-action.primary-action{border-color:var(--accent);background:#f4f7fa}
+.publish-action-form.wide{grid-column:1/-1}
+.publish-action-icon{width:42px;height:42px;border-radius:8px;background:#eef4f9;color:var(--accent);display:grid;place-items:center}.publish-action-icon svg{width:27px;height:27px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transform-box:fill-box;transform-origin:center}.publish-action-icon.descendant-icon svg{transform:translateY(-1.5px)}.publish-action-chevron{justify-self:end;align-self:center;color:#0b3f98;font-size:26px;line-height:1}
+.publish-action-copy strong{display:block;font-size:15px;margin:1px 0 4px}.publish-action-copy span{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.publish-action-form{margin:0}.publish-action-form{height:100%;margin:0;min-width:0}.publish-action-form>button.publish-action{height:100%;text-align:left;cursor:pointer;font:inherit}.publish-action-form>button.publish-action.primary-action{border-color:var(--accent);background:#f4f7fa}
+.publish-family-list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.publish-family-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:14px 16px;background:#fff}.publish-family-card>div:first-child{display:grid!important;grid-template-columns:42px minmax(0,1fr);column-gap:12px;align-items:center}
+.publish-family-title{font-size:16px;font-weight:700;color:#0b3f98;text-decoration:none}.publish-family-meta{font-size:13px;color:var(--muted);margin-top:4px}
+.publish-family-action{white-space:nowrap;display:inline-grid;grid-template-columns:20px auto 14px;align-items:center;column-gap:8px}.publish-family-action svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transform:translateY(-1px)}
+.descendant-scope-note{background:#f3f7fb;border:1px solid #aebfd0;border-radius:9px;padding:13px 15px;margin:12px 0 18px}
+.descendant-start-family{padding:12px 0 16px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.descendant-start-family strong{display:block;font-size:16px;color:#0b3f98;margin-top:4px}
+.descendant-control{max-width:360px}.descendant-control select{width:100%;margin-top:6px}
+.descendant-includes{border:1px solid #e1c37a;background:#fff9e9;border-radius:9px;padding:12px 14px;margin:14px 0}
+.descendant-report-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.descendant-report-actions button{min-width:180px}
+@media(max-width:760px){.publish-actions{grid-template-columns:1fr}.publish-action-form.wide{grid-column:auto}.publish-family-card{grid-template-columns:1fr}.publish-family-action{white-space:normal}}
 .result{display:block;padding:10px 0;border-bottom:1px solid #eee;color:var(--text);text-decoration:none}
 .meta,.small{color:var(--muted)}
 .small{font-size:12px;overflow-wrap:anywhere}
@@ -703,12 +723,25 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         if not flags:body+="<p>No current quick-win flags.</p>"
         body+="</div>"
     elif tab=="publish":
-        fams=family_choices_for_person(db,pid);body=f"""<div class='card'><h2>Person Publishing</h2><div class='stack'>
-<form class='publish-form' method='post' action='/publish/person/{pid}/profile'><button>Research Profile (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/biography'><button>Biography (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/person'><button>Person Report (HTML)</button></form><form class='publish-form' method='post' action='/publish/person/{pid}/family'><button>Family Report (HTML)</button></form><a class='button' href='/book-scope/{pid}'>Configure Family-history Book…</a><div id='publish-progress' class='card publishing-activity' style='display:none'><style>@keyframes rc-spin{{to{{transform:rotate(360deg)}}}}@keyframes rc-pulse{{0%,100%{{opacity:.45}}50%{{opacity:1}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.publishing-activity .rc-working{{animation:rc-pulse 1.4s ease-in-out infinite}}.publishing-activity ul{{margin:.5em 0 0 1.4em}}</style><strong><span class='rc-spinner' aria-hidden='true'></span><span class='rc-working'>Creating family history report…</span></strong><p class='meta'>Companion is working. Publication can take longer while the local narrative model reads the family material and the document is rendered.</p><ul class='meta'><li>Preparing family information</li><li>Writing publication narrative</li><li>Rendering the document and media</li></ul></div><script>document.querySelectorAll('.publish-form').forEach(function(f){{f.addEventListener('submit',function(){{document.getElementById('publish-progress').style.display='block';document.querySelectorAll('.publish-form button').forEach(function(b){{b.disabled=true;}});}});}});</script></div></div><div class='card'><h2>Families</h2>"""
-        for f in fams:
-            title=" and ".join(x for x in (f["husband"],f["wife"]) if x);body+=f"<a class='result' href='/family/{f['id']}'>{esc(title)}</a>"
-        if not fams:body+="<p>No spouse family recorded.</p>"
-        body+="</div>"
+        icon_profile="""<svg viewBox='0 0 32 32' aria-hidden='true'><path d='M7 4h13l5 5v19H7z'/><path d='M20 4v6h6'/><path d='M11 15h10M11 20h10M11 25h7'/></svg>"""
+        icon_bio="""<svg viewBox='0 0 32 32' aria-hidden='true'><path d='M4 6c5-2 9-1 12 2v20c-3-3-7-4-12-2z'/><path d='M28 6c-5-2-9-1-12 2v20c3-3 7-4 12-2z'/></svg>"""
+        icon_person="""<svg viewBox='0 0 32 32' aria-hidden='true'><circle cx='10' cy='10' r='4'/><path d='M3 25c1-6 4-9 7-9s6 3 7 9'/><path d='M20 8h9M20 14h9M20 20h9'/></svg>"""
+        icon_desc="""<svg viewBox='0 0 32 32' aria-hidden='true'><rect x='13' y='3' width='6' height='6' rx='1'/><rect x='3' y='23' width='6' height='6' rx='1'/><rect x='13' y='23' width='6' height='6' rx='1'/><rect x='23' y='23' width='6' height='6' rx='1'/><path d='M16 9v7M6 23v-5h20v5M16 16v7'/></svg>"""
+        icon_book="""<svg viewBox='0 0 32 32' aria-hidden='true'><path d='M7 4h18v24H7z'/><path d='M10 4v24'/><path d='M14 9h7M14 14h7'/></svg>"""
+        icon_family="""<svg viewBox='0 0 32 32' aria-hidden='true'><circle cx='11' cy='10' r='4'/><circle cx='22' cy='11' r='3.5'/><path d='M3 27c1-7 4-10 8-10s7 3 8 10M17 27c1-5 3-8 6-8 3 0 5 2 6 8'/></svg>"""
+        fams=family_choices_for_person(db,pid)
+        body=f"""<div class='card'><h2>Person Publishing</h2><p class='meta'>Create and export reports about this person and their descendants.</p>
+<div class='publish-actions'>
+<form class='publish-form publish-action-form' method='post' action='/publish/person/{pid}/profile'><button class='publish-action' type='submit'><span class='publish-action-icon'>{icon_profile}</span><span class='publish-action-copy'><strong>Research Profile (HTML)</strong><span>Key facts, summary and sources.</span></span><span class='publish-action-chevron'>›</span></button></form>
+<form class='publish-form publish-action-form' method='post' action='/publish/person/{pid}/biography'><button class='publish-action' type='submit'><span class='publish-action-icon'>{icon_bio}</span><span class='publish-action-copy'><strong>Biography (HTML)</strong><span>Life story with events and context.</span></span><span class='publish-action-chevron'>›</span></button></form>
+<form class='publish-form publish-action-form' method='post' action='/publish/person/{pid}/person'><button class='publish-action' type='submit'><span class='publish-action-icon'>{icon_person}</span><span class='publish-action-copy'><strong>Person Report (HTML)</strong><span>Detailed life report with evidence.</span></span><span class='publish-action-chevron'>›</span></button></form>
+<form class='publish-action-form' method='get' action='/descendant-report/{pid}'><button class='publish-action primary-action' type='submit'><span class='publish-action-icon descendant-icon'>{icon_desc}</span><span class='publish-action-copy'><strong>Descendant Report…</strong><span>Indented descendant report (1–6 generations).</span></span><span class='publish-action-chevron'>›</span></button></form>
+<form class='publish-action-form wide' method='get' action='/book-scope/{pid}'><button class='publish-action' type='submit'><span class='publish-action-icon'>{icon_book}</span><span class='publish-action-copy'><strong>Configure Family-history Book…</strong><span>Build a family history book with photos, stories and family context.</span></span><span class='publish-action-chevron'>›</span></button></form>
+</div>
+<div id='publish-progress' class='card publishing-activity' style='display:none'><style>@keyframes rc-spin{{to{{transform:rotate(360deg)}}}}@keyframes rc-pulse{{0%,100%{{opacity:.45}}50%{{opacity:1}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}.publishing-activity .rc-working{{animation:rc-pulse 1.4s ease-in-out infinite}}.publishing-activity ul{{margin:.5em 0 0 1.4em}}</style><strong><span class='rc-spinner' aria-hidden='true'></span><span class='rc-working'>Creating report…</span></strong><ul class='meta'><li>Preparing family information</li><li>Writing publication narrative</li><li>Rendering the document and media</li></ul></div>
+<script>document.querySelectorAll('.publish-form').forEach(function(f){{f.addEventListener('submit',function(){{document.getElementById('publish-progress').style.display='block';document.querySelectorAll('.publish-form button').forEach(function(b){{b.disabled=true;}});}});}});</script>
+</div>
+""" 
     else: body="<div class='card'>Unknown person tab.</div>"
     return layout(p["display_name"],person_identity_header(db,w,presentation)+body,p,tab)
 
@@ -728,8 +761,73 @@ def family_page(db,fid,msg=""):
 <div class='card'><h2>Publishing</h2><div class='stack'>
 <form method='post' action='/publish/family/{fid}/chapter'><button>Professional Chapter (HTML)</button></form>
 <form method='post' action='/publish/family/{fid}/chapter-pdf'><button>Professional Chapter (Print-ready PDF)</button></form>
-<form method='post' action='/publish/family/{fid}/descendants'><button>Descendant Chart (HTML)</button></form>
+<a class='button secondary' href='/descendant-report/{f["husband"]["id"] if f["husband"] else f["wife"]["id"]}?family={fid}'>Configure Descendant Report…</a>
 </div><p class='meta'>Nothing is generated by merely opening this page. Publication occurs only after pressing a publish button.</p></div>""")
+
+
+def descendant_report_page(db,start_pid,query=None,msg=""):
+    query=query or {}
+    start=db.execute("SELECT id,display_name FROM people WHERE id=?",(start_pid,)).fetchone()
+    if not start:
+        return layout("Descendant Report","<div class='card'>Starting person not found.</div>")
+    fams=family_choices_for_person(db,start_pid)
+    if not fams:
+        return layout("Descendant Report","<h1>Descendant Report</h1><div class='card'><p>No spouse family is recorded for this person.</p></div>",dict(start),"publish")
+
+    requested_family=None
+    try: requested_family=int(query.get("family","0") or 0) or None
+    except Exception: requested_family=None
+    valid={f["id"] for f in fams}
+    if requested_family not in valid:
+        requested_family=None
+
+    # A family-specific launch has already made the starting-family decision.
+    # A person with one spouse family is also unambiguous. Only a genuinely
+    # multi-family generic launch asks the user to choose.
+    if requested_family is None and len(fams)>1:
+        cards=[]
+        for f in fams:
+            title=" and ".join(x for x in (f["husband"],f["wife"]) if x) or f"Family {f['id']}"
+            married=(" · Married "+f["marriage_date"]) if f.get("marriage_date") else ""
+            cards.append(f"<div class='publish-family-card'><div><strong>{esc(title)}</strong><div class='publish-family-meta'>{esc(married.lstrip(' ·'))}</div></div><a class='button secondary' href='/descendant-report/{start_pid}?family={f['id']}'>Use this family</a></div>")
+        body="<h1>Descendant Report</h1><div class='card'><h2>Choose starting family</h2><p class='meta'>This person has more than one recorded spouse family. Choose which family the descendant report should start from.</p><div class='publish-family-list'>"+"".join(cards)+"</div></div>"
+        return layout("Descendant Report",body,dict(start),"publish")
+
+    selected_family=requested_family or fams[0]["id"]
+    selected=next(f for f in fams if f["id"]==selected_family)
+    family_title=" and ".join(x for x in (selected["husband"],selected["wife"]) if x) or f"Family {selected_family}"
+    married=selected.get("marriage_date") or ""
+
+    try:generations=int(query.get("generations","3") or 3)
+    except Exception:generations=3
+    generations=max(1,min(6,generations))
+    labels={1:"Starting couple only",2:"Starting couple and their children",3:"Starting couple, their children and grandchildren",4:"Through great-grandchildren",5:"Through 2× great-grandchildren",6:"Through 3× great-grandchildren"}
+    genopts="".join(f"<option value='{n}'{' selected' if n==generations else ''}>{n} generation{'s' if n!=1 else ''}</option>" for n in range(1,7))
+    message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ""
+
+    body=f"""<h1>Descendant Report</h1>{message}
+<div class='card'>
+<h2>Report scope</h2>
+<div class='descendant-scope-note'><strong>Generation 1 is the selected starting couple.</strong><div class='meta'>Their children are Generation 2, grandchildren Generation 3, and so on.</div></div>
+<form class='descendant-report-form' method='post' action='/publish/person/{start_pid}/descendant-report'>
+<input type='hidden' name='family_id' value='{selected_family}'>
+<div class='descendant-start-family'><span class='meta'>Starting family</span><strong>{esc(family_title)}</strong>{("<div class='meta'>Married "+esc(married)+"</div>") if married else ""}</div>
+<div class='descendant-control'><label><strong>Generations</strong><span class='meta' style='display:block;margin-top:4px'>Select how many generations to include (1–6).</span><select id='descendant-generations' name='generations'>{genopts}</select></label></div>
+<div id='descendant-includes' class='descendant-includes'><strong>This will include:</strong><div id='descendant-includes-text'>{esc(labels[generations])}.</div></div>
+<div class='descendant-report-actions'><button name='format' value='PDF'>Create Print-ready PDF</button><button class='secondary' name='format' value='HTML'>Create HTML</button></div>
+</form>
+<div id='descendant-report-progress' class='publishing-activity' style='display:none;margin-top:16px'><strong><span class='rc-spinner' aria-hidden='true'></span>Creating descendant report…</strong><p class='meta'>Companion is assembling the selected family and descendant generations.</p></div>
+<script>
+(function(){{
+var labels={{1:'Starting couple only.',2:'Starting couple and their children.',3:'Starting couple, their children and grandchildren.',4:'Through great-grandchildren.',5:'Through 2× great-grandchildren.',6:'Through 3× great-grandchildren.'}};
+var g=document.getElementById('descendant-generations'),o=document.getElementById('descendant-includes-text');
+if(g&&o)g.addEventListener('change',function(){{o.textContent=labels[g.value]||'';}});
+document.querySelectorAll('.descendant-report-form').forEach(function(f){{f.addEventListener('submit',function(e){{var s=e.submitter;if(s&&s.name&&s.value){{var h=document.createElement('input');h.type='hidden';h.name=s.name;h.value=s.value;f.appendChild(h);}}document.getElementById('descendant-report-progress').style.display='block';f.querySelectorAll('button').forEach(function(b){{b.disabled=true;}});}});}});
+}})();
+</script>
+</div>"""
+    return layout("Descendant Report",body,dict(start),"publish")
+
 
 def book_scope_page(db,start_pid,query=None,msg=""):
     query=query or {}
@@ -901,6 +999,8 @@ def render_get(db,path,query=None):
         force=str(query.get("force","")).casefold() in {"1","true","yes"}
         result=person_narrative(db,pid,force=force)
         return "<div class='biography-prose'>"+esc(result.get("narrative") or "No biographical material is recorded.")+"</div>"
+    if path.startswith("/descendant-report/"):
+        return descendant_report_page(db,int(path.rsplit("/",1)[1]),query)
     if path.startswith("/book-scope/"):
         return book_scope_page(db,int(path.rsplit("/",1)[1]),query)
     if path.startswith("/person/"):
@@ -1151,6 +1251,19 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                         else:
                             p=descendant_chart(db,fid,subject)
                         self.send_html(family_page(db,fid,f"Published: {p}"))
+                        return
+
+                    m=re.match(r"^/publish/person/(\d+)/descendant-report$",u.path)
+                    if m:
+                        pid=int(m.group(1))
+                        family_id=int(form.get('family_id','0') or 0)
+                        generations=int(form.get('generations','3') or 3)
+                        if not 1 <= generations <= 6:
+                            raise ValueError("Generations must be between 1 and 6.")
+                        row=db.execute("SELECT display_name FROM people WHERE id=?",(pid,)).fetchone()
+                        fmt=(form.get('format') or 'HTML').upper()
+                        p=standalone_descendant_report_output(db,pid,row['display_name'],generations,family_id,fmt)
+                        self.send_html(descendant_report_page(db,pid,{'family':str(family_id),'generations':str(generations)},f"Published: {p}"))
                         return
 
                     m=re.match(r"^/publish/person/(\d+)/scoped-book$",u.path)

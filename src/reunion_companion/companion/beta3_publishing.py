@@ -9,6 +9,7 @@ from .publishing_v7 import write_person_report,write_family_report
 from .publish_profile import write_profile
 from .publishing_v10 import descendant_chart_html_document
 from .family_publication_model import family_partners
+from .descendant_report import write_descendant_report,write_descendant_report_pdf
 from .publication_themes import DEFAULT_THEME
 from .family_files import active_family_file, ensure_family_files
 
@@ -42,9 +43,13 @@ def family_chapter_pdf(db,fid,subject):
     return _record(db,"Professional Family Chapter",subject,pp,"PDF")
 
 def descendant_chart(db,fid,subject,generations=4):
+    """Existing Publish family action, now backed by the RC1.0.12 standalone report."""
     h,w=family_partners(db,fid)
-    p=descendant_chart_html_document(db,h["id"] if h else None,w["id"] if w else None,None,generations,DEFAULT_THEME)
-    return _record(db,"Descendant Chart",subject,p,"HTML")
+    start=h or w
+    if not start:
+        raise ValueError("The selected family has no recorded partner to start the descendant report.")
+    p=write_descendant_report(db,start["id"],None,generations,fid,DEFAULT_THEME)
+    return _record(db,"Descendant Report",subject,p,"HTML")
 
 def person_output(db,pid,subject,kind):
     funcs={"profile":(write_profile,"Research Profile"),"biography":(write_biography,"Biography"),
@@ -59,6 +64,14 @@ def scoped_book_output(db,start_pid,end_pid,selected_family_ids,subject,fmt='PDF
         return _record(db,'Family-history Book',subject,p,'HTML')
     p=write_book_pdf(db,start_pid,None,generations,DEFAULT_THEME,end_pid,selected_family_ids)
     return _record(db,'Family-history Book',subject,p,'PDF')
+
+def standalone_descendant_report_output(db,start_pid,subject,generations=3,family_id=None,fmt='HTML'):
+    """Generate the RC1.0.12 standalone descendant report without changing Publish UI."""
+    if fmt.upper()=='PDF':
+        p=write_descendant_report_pdf(db,start_pid,None,generations,family_id,DEFAULT_THEME)
+        return _record(db,"Descendant Report",subject,p,"PDF")
+    p=write_descendant_report(db,start_pid,None,generations,family_id,DEFAULT_THEME)
+    return _record(db,"Descendant Report",subject,p,"HTML")
 
 def open_output(path):
     p=Path(path).expanduser()
