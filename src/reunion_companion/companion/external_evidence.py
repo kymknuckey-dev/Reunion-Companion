@@ -34,6 +34,26 @@ ON companion_external_evidence(person_gedcom_xref);
 
 CREATE INDEX IF NOT EXISTS idx_companion_external_evidence_status
 ON companion_external_evidence(review_status);
+
+CREATE TABLE IF NOT EXISTS companion_external_scan_queue(
+    id INTEGER PRIMARY KEY,
+    source_name TEXT NOT NULL,
+    person_gedcom_xref TEXT NOT NULL,
+    person_name_snapshot TEXT,
+    status TEXT NOT NULL DEFAULT 'queued',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    last_attempt_at TEXT,
+    next_retry_at TEXT,
+    completed_at TEXT,
+    result_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source_name,person_gedcom_xref)
+);
+
+CREATE INDEX IF NOT EXISTS idx_companion_external_scan_status
+ON companion_external_scan_queue(source_name,status,next_retry_at);
 """
 
 VALID_STATUSES = {"new", "reviewed", "accepted", "rejected"}

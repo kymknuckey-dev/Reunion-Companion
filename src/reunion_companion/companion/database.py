@@ -1,6 +1,6 @@
 from pathlib import Path
 import sqlite3
-SCHEMA_VERSION=8
+SCHEMA_VERSION=9
 SCHEMA="""
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
