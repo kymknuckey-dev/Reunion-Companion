@@ -113,6 +113,65 @@ def missing_death_candidates(db):
                 "death_reasons": death["reasons"],
             })
     return rows
+
+def _usable_surname(value: str | None) -> bool:
+    surname=(value or "").strip()
+    if len(surname) < 2:
+        return False
+    return bool(re.search(r"[A-Za-z]",surname))
+
+
+def _ryerson_priority(db, row: dict) -> tuple[int, tuple[str, ...]]:
+    score=10
+    reasons=["usable surname"]
+    given=(row.get("given_names") or "").strip()
+    if given:
+        score+=20
+        reasons.append("given name recorded")
+        if len(given.split()) > 1:
+            score+=5
+            reasons.append("multiple given names")
+    if row.get("birth_date"):
+        score+=30
+        reasons.append("birth date recorded")
+    if row.get("birth_place"):
+        score+=10
+        reasons.append("birth place recorded")
+    if row.get("death_state")=="incomplete":
+        score+=10
+        reasons.append("existing Death event")
+    if row.get("death_note_text"):
+        score+=15
+        reasons.append("Death event note available")
+    rel=relationship_connections(db,row["person_id"])
+    if rel["spouses"]:
+        score+=10
+        reasons.append("spouse recorded")
+    if rel["parents"]:
+        score+=10
+        reasons.append("parents recorded")
+    if rel["children"]:
+        score+=5
+        reasons.append("children recorded")
+    return score,tuple(reasons)
+
+
+def ryerson_death_candidates(db):
+    # Surname is the only additional hard requirement; other identity data ranks.
+    out=[]
+    for row in missing_death_candidates(db):
+        if not _usable_surname(row.get("surname")):
+            continue
+        score,reasons=_ryerson_priority(db,row)
+        item=dict(row)
+        item["ryerson_priority"]=score
+        item["ryerson_priority_reasons"]=reasons
+        out.append(item)
+    out.sort(key=lambda r:(-r["ryerson_priority"],(r.get("surname") or "").casefold(),
+                           (r.get("given_names") or "").casefold(),r["person_id"]))
+    return out
+
+
 def person_identity_profile(db, pid: int):
     p = db.execute(
         """

@@ -5,8 +5,8 @@ from datetime import datetime, timedelta, timezone
 from .external_evidence import add_external_evidence
 from .external_evidence_matcher import (
     match_external_evidence,
-    missing_death_candidates,
     person_identity_profile,
+    ryerson_death_candidates,
 )
 
 SOURCE_RYERSON = "Ryerson"
@@ -34,7 +34,7 @@ def backoff_seconds(attempts):
 
 def enqueue_death_research_candidates(db, source_name=SOURCE_RYERSON):
     added=0
-    for row in missing_death_candidates(db):
+    for row in ryerson_death_candidates(db):
         xref=row.get("gedcom_xref")
         if not xref:
             continue

@@ -943,10 +943,10 @@ def book_scope_page(db,start_pid,query=None,msg=""):
 
 
 def research_page(db):
-    from .external_evidence_matcher import missing_death_candidates
+    from .external_evidence_matcher import ryerson_death_candidates
     from .external_evidence import external_evidence_for_person
 
-    death_rows=missing_death_candidates(db)
+    death_rows=ryerson_death_candidates(db)
     sql=("SELECT p.id,p.display_name, "
          "SUM(CASE WHEN e.id IS NOT NULL "
          "AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id) "
@@ -958,7 +958,7 @@ def research_page(db):
     rows=db.execute(sql).fetchall()
 
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
-    body+="<div class='card'><h2>Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
+    body+="<div class='card'><h2>Ryerson Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
     if death_rows:
         for r in death_rows[:100]:
             findings=external_evidence_for_person(db,r["gedcom_xref"]) if r["gedcom_xref"] else []
