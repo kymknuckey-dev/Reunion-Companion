@@ -66,6 +66,27 @@ def test_incomplete_harvest_does_not_complete_queue(tmp_path,monkeypatch):
     db.commit()
     start_bootstrap(db)
 
+    from reunion_companion.companion.ryerson_harvest import cache_harvest_rows
+
+    cached_notice={
+        "evidence_type":"death_notice",
+        "source_record_name":"Test MITCHELL",
+        "event_type":"Death",
+        "event_date":"01JAN2000",
+        "publication":"Test Paper",
+        "publication_date":"02JAN2000",
+        "details":None,
+        "birth_date_claim":None,
+        "place_claim":None,
+    }
+    cache_harvest_rows(
+        db,[cached_notice],
+        harvest_kind="surname",
+        harvest_value="Mitchell",
+        harvest_year=0,
+        page_number=1,
+    )
+
     def partial(db,surname):
         return {
             "surname":surname,
@@ -73,6 +94,7 @@ def test_incomplete_harvest_does_not_complete_queue(tmp_path,monkeypatch):
             "rows":2000,
             "inserted":999,
             "existing":1001,
+            "unique_cached":1,
             "truncated":True,
             "paused":False,
         }
@@ -90,5 +112,5 @@ def test_incomplete_harvest_does_not_complete_queue(tmp_path,monkeypatch):
         "SELECT status,result_count,completed_at FROM companion_ryerson_surname_queue"
     ).fetchone()
     assert row["status"]=="queued"
-    assert row["result_count"]==2000
+    assert row["result_count"]==1
     assert row["completed_at"] is None

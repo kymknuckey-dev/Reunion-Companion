@@ -14,7 +14,7 @@ import time
 
 from .external_evidence_scan import SourceBusyError, SourceSearchError, backoff_seconds
 from .ryerson_adapter import parse_ryerson_results
-from .ryerson_harvest import cache_harvest_rows, cross_match_cached_notices
+from .ryerson_harvest import cache_harvest_rows, cross_match_cached_notices, harvest_record_key
 from .ryerson_safari_transport import (
     BrowserTransportUnavailable,
     RYERSON_SEARCH_URL,
@@ -251,6 +251,23 @@ def _rows_correspond_to_surname(rows, surname: str) -> bool:
     return matching / len(observed) >= 0.90
 
 
+def _page_record_keys(rows):
+    return {harvest_record_key(r) for r in rows}
+
+
+def _unique_cached_count(db, surname: str) -> int:
+    return int(db.execute(
+        """
+        SELECT COUNT(*)
+        FROM companion_external_notice_cache
+        WHERE source_name='Ryerson'
+          AND harvest_kind='surname'
+          AND lower(trim(harvest_value))=lower(trim(?))
+        """,
+        (surname,),
+    ).fetchone()[0])
+
+
 def _wait_for_results(*, expected_surname=None, timeout_seconds=45.0, poll_seconds=1.0):
     started=time.monotonic()
     last_rows=0
@@ -292,9 +309,8 @@ def submit_surname_search(surname: str, *, timeout_seconds=45.0, poll_seconds=1.
 
 
 def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, poll_seconds=1.0):
-    """Harvest one surname with page-level checkpoints and cooperative pause."""
+    """Harvest one surname with page identity verification."""
     progress=surname_progress(db,surname)
-
     pages_completed=int(progress["pages_completed"]) if progress else 0
     rows_total=int(progress["rows_seen"]) if progress else 0
     inserted=int(progress["inserted_rows"]) if progress else 0
@@ -302,47 +318,34 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
 
     if progress and progress["current_url"] and not progress["is_complete"]:
         _safari_open(progress["current_url"])
-        url,html=_wait_for_results(
-            expected_surname=surname,
-            timeout_seconds=timeout_seconds,
-            poll_seconds=poll_seconds,
-        )
+        url,html=_wait_for_results(expected_surname=surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
         page_no=max(1,int(progress["current_page"] or 1))
     else:
-        url,html=submit_surname_search(
-            surname,
-            timeout_seconds=timeout_seconds,
-            poll_seconds=poll_seconds,
-        )
+        url,html=submit_surname_search(surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
         page_no=1
 
     visited=set()
+    seen_record_keys=set()
+    for row in db.execute(
+        "SELECT normalized_json FROM companion_external_notice_cache "
+        "WHERE source_name='Ryerson' AND harvest_kind='surname' "
+        "AND lower(trim(harvest_value))=lower(trim(?))",
+        (surname,),
+    ).fetchall():
+        try:
+            seen_record_keys.add(harvest_record_key(json.loads(row["normalized_json"])))
+        except Exception:
+            pass
 
     while pages_completed < max_pages:
         if not bootstrap_enabled(db):
-            _save_progress(
-                db,surname,
-                current_page=page_no,
-                current_url=url,
-                pages_completed=pages_completed,
-                rows_seen=rows_total,
-                inserted_rows=inserted,
-                existing_rows=existing,
-                is_complete=False,
-            )
+            _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
+                           rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
             raise BootstrapPaused(f"Surname bootstrap paused during {surname}")
 
         if _ryerson_page_is_busy(html):
-            _save_progress(
-                db,surname,
-                current_page=page_no,
-                current_url=url,
-                pages_completed=pages_completed,
-                rows_seen=rows_total,
-                inserted_rows=inserted,
-                existing_rows=existing,
-                is_complete=False,
-            )
+            _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
+                           rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
             raise SourceBusyError("Ryerson server overloaded; retry later")
 
         if url in visited:
@@ -353,28 +356,28 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
         if rows and not _rows_correspond_to_surname(rows,surname):
             raise SourceSearchError(f"Unverified surname result page for {surname}")
 
-        cached=cache_harvest_rows(
-            db,rows,
-            harvest_kind="surname",
-            harvest_value=surname,
-            harvest_year=0,
-            page_number=page_no,
-        )
+        page_keys=_page_record_keys(rows)
+        new_keys=page_keys-seen_record_keys
+        if page_no > 1 and rows and not new_keys:
+            _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
+                           rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
+            return {
+                "surname":surname,"pages":pages_completed,"rows":rows_total,
+                "inserted":inserted,"existing":existing,
+                "unique_cached":_unique_cached_count(db,surname),
+                "truncated":True,"paused":False,
+                "reason":"next page repeated already-seen Ryerson records",
+            }
+
+        cached=cache_harvest_rows(db,rows,harvest_kind="surname",harvest_value=surname,harvest_year=0,page_number=page_no)
         pages_completed+=1
         rows_total+=len(rows)
         inserted+=cached["inserted"]
         existing+=cached["existing"]
+        seen_record_keys.update(page_keys)
 
-        _save_progress(
-            db,surname,
-            current_page=page_no,
-            current_url=url,
-            pages_completed=pages_completed,
-            rows_seen=rows_total,
-            inserted_rows=inserted,
-            existing_rows=existing,
-            is_complete=False,
-        )
+        _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
+                       rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
 
         links=pagination_links()
         next_link=None
@@ -382,72 +385,37 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
             href=item["href"]
             if href in visited:
                 continue
-            pn=_page_number_from_link(item["text"],href,i)
-            next_link=(pn,href)
+            next_link=(_page_number_from_link(item["text"],href,i),href)
             break
 
         if next_link is None:
-            _save_progress(
-                db,surname,
-                current_page=page_no,
-                current_url=url,
-                pages_completed=pages_completed,
-                rows_seen=rows_total,
-                inserted_rows=inserted,
-                existing_rows=existing,
-                is_complete=True,
-            )
+            unique_cached=_unique_cached_count(db,surname)
+            _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
+                           rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=True)
             return {
-                "surname":surname,
-                "pages":pages_completed,
-                "rows":rows_total,
-                "inserted":inserted,
-                "existing":existing,
-                "truncated":False,
-                "paused":False,
+                "surname":surname,"pages":pages_completed,"rows":rows_total,
+                "inserted":inserted,"existing":existing,"unique_cached":unique_cached,
+                "truncated":False,"paused":False,
             }
 
         next_page,next_url=next_link
-
         if not bootstrap_enabled(db):
-            _save_progress(
-                db,surname,
-                current_page=next_page,
-                current_url=next_url,
-                pages_completed=pages_completed,
-                rows_seen=rows_total,
-                inserted_rows=inserted,
-                existing_rows=existing,
-                is_complete=False,
-            )
+            _save_progress(db,surname,current_page=next_page,current_url=next_url,pages_completed=pages_completed,
+                           rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
             raise BootstrapPaused(f"Surname bootstrap paused during {surname}")
 
         _safari_open(next_url)
-        url,html=_wait_for_results(
-            expected_surname=surname,
-            timeout_seconds=timeout_seconds,
-            poll_seconds=poll_seconds,
-        )
+        url,html=_wait_for_results(expected_surname=surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
         page_no=next_page
 
-    _save_progress(
-        db,surname,
-        current_page=page_no,
-        current_url=url,
-        pages_completed=pages_completed,
-        rows_seen=rows_total,
-        inserted_rows=inserted,
-        existing_rows=existing,
-        is_complete=False,
-    )
+    _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
+                   rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
     return {
-        "surname":surname,
-        "pages":pages_completed,
-        "rows":rows_total,
-        "inserted":inserted,
-        "existing":existing,
-        "truncated":True,
-        "paused":False,
+        "surname":surname,"pages":pages_completed,"rows":rows_total,
+        "inserted":inserted,"existing":existing,
+        "unique_cached":_unique_cached_count(db,surname),
+        "truncated":True,"paused":False,
+        "reason":"maximum page safety limit reached",
     }
 
 
@@ -514,8 +482,8 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
             db,row["id"],
             status="queued",
             attempts=attempts,
-            result_count=int(harvest["rows"]),
-            last_error="Paged surname harvest incomplete; resume required",
+            result_count=int(harvest.get("unique_cached",_unique_cached_count(db,row["surname"]))),
+            last_error=harvest.get("reason") or "Paged surname harvest incomplete; resume required",
         )
         return {
             "status":"incomplete",
@@ -529,7 +497,7 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
         status="completed",
         attempts=attempts,
         completed_at=_iso(now),
-        result_count=int(harvest["rows"]),
+        result_count=int(harvest.get("unique_cached",_unique_cached_count(db,row["surname"]))),
         match_count=int(matches["findings"]),
         last_error="",
     )

@@ -60,14 +60,51 @@ def test_successful_surname_marks_completed(tmp_path,monkeypatch):
     db.commit()
     enqueue_unique_surnames(db)
 
+    from reunion_companion.companion.ryerson_harvest import cache_harvest_rows
+
     def harvest(db,surname):
-        return {"surname":surname,"pages":1,"rows":4,"inserted":4,"existing":0,"truncated":False}
+        rows=[]
+        for i in range(4):
+            rows.append({
+                "evidence_type":"death_notice",
+                "source_record_name":f"Person {i} RIGG",
+                "event_type":"Death",
+                "event_date":f"0{i+1}JAN2000",
+                "publication":"Test Paper",
+                "publication_date":f"0{i+1}JAN2000",
+                "details":None,
+                "birth_date_claim":None,
+                "place_claim":None,
+            })
+        cache_harvest_rows(
+            db,
+            rows,
+            harvest_kind="surname",
+            harvest_value=surname,
+            harvest_year=0,
+            page_number=1,
+        )
+        return {
+            "surname":surname,
+            "pages":1,
+            "rows":4,
+            "inserted":4,
+            "existing":0,
+            "unique_cached":4,
+            "truncated":False,
+        }
 
     import reunion_companion.companion.ryerson_surname_bootstrap as mod
-    monkeypatch.setattr(mod,"cross_match_surname",lambda db,surname:{"findings":2,"created_findings":2})
+    monkeypatch.setattr(
+        mod,
+        "cross_match_surname",
+        lambda db,surname:{"findings":2,"created_findings":2},
+    )
     result=run_one_surname(db,now=NOW,harvest_fn=harvest)
     assert result["status"]=="completed"
-    row=db.execute("SELECT status,result_count,match_count FROM companion_ryerson_surname_queue").fetchone()
+    row=db.execute(
+        "SELECT status,result_count,match_count FROM companion_ryerson_surname_queue"
+    ).fetchone()
     assert row["status"]=="completed"
     assert row["result_count"]==4
     assert row["match_count"]==2
