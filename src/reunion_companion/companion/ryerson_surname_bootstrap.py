@@ -732,27 +732,75 @@ def bootstrap_enabled(db):
     return _meta_get(db,META_BOOTSTRAP_ENABLED,"0")=="1"
 
 def reconcile_cached_surnames(db):
+    """Complete cached surnames only when no incomplete page checkpoint exists."""
     rows=db.execute(
-        "SELECT q.id,q.surname,COUNT(c.id) cache_count "
-        "FROM companion_ryerson_surname_queue q "
-        "LEFT JOIN companion_external_notice_cache c "
-        "ON c.source_name='Ryerson' AND c.harvest_kind='surname' "
-        "AND lower(trim(c.harvest_value))=lower(trim(q.surname)) "
-        "WHERE q.status IN ('queued','retry_wait','failed') "
-        "GROUP BY q.id,q.surname HAVING cache_count>0"
+        """
+        SELECT q.id,q.surname,
+               COUNT(c.id) cache_count,
+               MAX(CASE
+                   WHEN p.surname_key IS NOT NULL AND COALESCE(p.is_complete,0)=0
+                   THEN 1 ELSE 0
+               END) has_incomplete_progress
+        FROM companion_ryerson_surname_queue q
+        LEFT JOIN companion_external_notice_cache c
+          ON c.source_name='Ryerson'
+         AND c.harvest_kind='surname'
+         AND lower(trim(c.harvest_value))=lower(trim(q.surname))
+        LEFT JOIN companion_ryerson_surname_progress p
+          ON p.surname_key=q.surname_key
+        WHERE q.status IN ('queued','retry_wait','failed')
+        GROUP BY q.id,q.surname
+        HAVING cache_count>0
+        """
     ).fetchall()
+
     changed=0
     for row in rows:
+        if int(row["has_incomplete_progress"] or 0):
+            continue
+
         db.execute(
-            "UPDATE companion_ryerson_surname_queue "
-            "SET status='completed', completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP), "
-            "result_count=?, last_error='', next_retry_at=NULL, updated_at=CURRENT_TIMESTAMP "
-            "WHERE id=?",
-            (int(row['cache_count']),row['id']),
+            """
+            UPDATE companion_ryerson_surname_queue
+            SET status='completed',
+                completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP),
+                result_count=?,
+                last_error='',
+                next_retry_at=NULL,
+                updated_at=CURRENT_TIMESTAMP
+            WHERE id=?
+            """,
+            (int(row["cache_count"]),row["id"]),
         )
         changed+=1
+
     db.commit()
     return changed
+
+
+def reconcile_cached_surnames_detail(db):
+    """Return reconciliation counts for diagnostics."""
+    protected=db.execute(
+        """
+        SELECT COUNT(DISTINCT q.id)
+        FROM companion_ryerson_surname_queue q
+        JOIN companion_external_notice_cache c
+          ON c.source_name='Ryerson'
+         AND c.harvest_kind='surname'
+         AND lower(trim(c.harvest_value))=lower(trim(q.surname))
+        JOIN companion_ryerson_surname_progress p
+          ON p.surname_key=q.surname_key
+         AND COALESCE(p.is_complete,0)=0
+        WHERE q.status IN ('queued','retry_wait','failed')
+        """
+    ).fetchone()[0]
+    changed=reconcile_cached_surnames(db)
+    return {
+        "reconciled":changed,
+        "protected_incomplete":int(protected),
+    }
+
+
 
 def start_bootstrap(db):
     added=enqueue_unique_surnames(db)
