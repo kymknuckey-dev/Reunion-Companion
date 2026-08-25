@@ -139,16 +139,36 @@ def _form_fill_javascript(query: RyersonQuery) -> str:
 
 
 def _safari_do_javascript(js: str, runner=subprocess.run) -> str:
-    script=(
-        'tell application "Safari"\n'
-        'if (count of windows) = 0 then make new document\n'
-        'tell front document\n'
-        f'do JavaScript {json.dumps(js)}\n'
-        'end tell\n'
-        'end tell'
-    )
-    return _run_osascript(script,runner=runner)
-
+    """Execute JavaScript in Safari without embedding JS in AppleScript source."""
+    scripts=[
+        'on run argv',
+        'tell application "Safari"',
+        'if (count of windows) = 0 then make new document',
+        'tell front document',
+        'set jsSource to item 1 of argv',
+        'set jsResult to do JavaScript jsSource',
+        'end tell',
+        'end tell',
+        'return jsResult',
+        'end run',
+    ]
+    args=["osascript"]
+    for part in scripts:
+        args += ["-e",part]
+    args += ["--",js]
+    cp=runner(args,capture_output=True,text=True,timeout=30)
+    if cp.returncode != 0:
+        detail=(cp.stderr or cp.stdout or "").strip()
+        low=detail.casefold()
+        if (
+            "not authorized" in low
+            or "not permitted" in low
+            or "javascript from apple events" in low
+            or "automation" in low
+        ):
+            raise BrowserTransportUnavailable(detail or "Safari automation is not permitted")
+        raise SourceSearchError(detail or f"osascript exited {cp.returncode}")
+    return (cp.stdout or "").strip()
 
 def _safari_open(url: str, runner=subprocess.run):
     # Fresh GET navigation avoids Safari POST-resubmission confirmation.
