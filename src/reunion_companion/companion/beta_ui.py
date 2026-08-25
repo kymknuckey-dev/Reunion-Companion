@@ -961,7 +961,7 @@ def research_page(db):
 
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
 
-    state="Waiting for Ryerson" if run.get("source_waiting") else ("Running" if run["enabled"] else "Paused")
+    state=("Paused" if not run["enabled"] else ("Waiting for Ryerson" if run.get("source_waiting") else "Running"))
     body+=f"""<div class='card'><h2>Ryerson Research Runner</h2><p class='meta'>Unattended research uses the normal Safari session at a deliberately slow rate. If Ryerson is overloaded, Companion pauses the source and retries later.</p><div class='topic'><strong>{state}</strong><div class='small'>Queued: {run["queued"]} · Waiting for Ryerson: {run["retry_wait"]} · Findings: {run["findings"]} · No finding: {run["no_match"]} · Errors: {run["failed"]}</div></div>"""
     if run["enabled"]:
         body+="<form method=\'post\' action=\'/research/ryerson/runner/pause\'><button type=\'submit\'>Pause Ryerson Research</button></form>"
@@ -1367,8 +1367,12 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             try:
                 try:
                     if u.path in ("/research/ryerson/runner/start","/research/ryerson/runner/pause"):
-                        from .external_research_runner import start_runner,pause_runner
-                        start_runner(db) if u.path.endswith("/start") else pause_runner(db)
+                        from .external_research_runner import start_runner,pause_runner,recover_transport_failures
+                        if u.path.endswith("/start"):
+                            recover_transport_failures(db)
+                            start_runner(db)
+                        else:
+                            pause_runner(db)
                         self.send_html(research_page(db))
                         return
 

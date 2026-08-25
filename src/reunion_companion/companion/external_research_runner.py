@@ -66,6 +66,27 @@ def runner_tick(db,search_fn,now=None):
         _set_source_cooldown(db,"")
     return result
 
+def recover_transport_failures(db, source_name=SOURCE_RYERSON):
+    """Requeue failures caused by transport/form discovery, not evidence semantics."""
+    recoverable=(
+        "surname field not found",
+        "given name field not found",
+        "state field not found",
+    )
+    rows=db.execute(
+        "SELECT id,last_error FROM companion_external_scan_queue WHERE source_name=? AND status='failed'",
+        (source_name,),
+    ).fetchall()
+    ids=[r["id"] for r in rows if (r["last_error"] or "").casefold() in recoverable]
+    for qid in ids:
+        db.execute(
+            "UPDATE companion_external_scan_queue SET status='queued', attempts=0, last_error=NULL, "
+            "last_attempt_at=NULL, next_retry_at=NULL, completed_at=NULL, result_count=0 WHERE id=?",
+            (qid,),
+        )
+    db.commit()
+    return len(ids)
+
 def live_ryerson_search(profile):
     from .ryerson_adapter import search_ryerson
     from .ryerson_safari_transport import safari_fetch
