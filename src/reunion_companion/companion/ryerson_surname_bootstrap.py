@@ -663,6 +663,13 @@ def _finalize_cached_surname(db, queue_row, now):
     }
 
 
+def ryerson_overload_backoff_seconds(attempts: int) -> int:
+    """Short bounded retry schedule for Ryerson's temporary overload page."""
+    attempts=max(1,int(attempts))
+    schedule=(30,60,120,300)
+    return schedule[min(attempts-1,len(schedule)-1)]
+
+
 def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
     now=now or _utcnow()
     row=next_surname(db,now)
@@ -693,7 +700,7 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
         )
         return {"status":"paused","surname":row["surname"]}
     except SourceBusyError as exc:
-        retry=now+timedelta(seconds=backoff_seconds(attempts))
+        retry=now+timedelta(seconds=ryerson_overload_backoff_seconds(attempts))
         _set_queue(
             db,row["id"],
             status="retry_wait",

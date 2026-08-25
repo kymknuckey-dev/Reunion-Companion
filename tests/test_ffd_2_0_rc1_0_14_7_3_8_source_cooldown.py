@@ -31,7 +31,7 @@ def test_global_cooldown_blocks_other_surnames(tmp_path):
     bootstrap_tick(db,now=NOW,harvest_fn=busy)
     calls=[]
     def should_not_run(db,surname): calls.append(surname); return {}
-    result=bootstrap_tick(db,now=NOW+timedelta(minutes=1),harvest_fn=should_not_run)
+    result=bootstrap_tick(db,now=NOW+timedelta(seconds=10),harvest_fn=should_not_run)
     assert result["status"]=="source_wait"
     assert calls==[]
 
