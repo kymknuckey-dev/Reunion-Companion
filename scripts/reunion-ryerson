@@ -1,0 +1,10 @@
+#!/bin/zsh
+set -euo pipefail
+repo="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$repo"
+
+if [[ -x "$repo/.venv/bin/python" ]]; then
+  exec "$repo/.venv/bin/python" -m reunion_companion.companion.ryerson_cli "$@"
+fi
+
+exec python -m reunion_companion.companion.ryerson_cli "$@"

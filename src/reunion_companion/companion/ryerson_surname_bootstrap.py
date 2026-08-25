@@ -444,6 +444,24 @@ def _resume_paged_surname(
     )
 
 
+def _select_forward_pagination_link(links, current_page: int, visited=None):
+    """Return the first genuine forward page link, never a completed/backward page."""
+    visited=visited or set()
+    candidates=[]
+    for i,item in enumerate(links,2):
+        href=item["href"]
+        if href in visited:
+            continue
+        pn=_page_number_from_link(item["text"],href,i)
+        if int(pn) <= int(current_page):
+            continue
+        candidates.append((int(pn),href))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x:x[0])
+    return candidates[0]
+
+
 def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, poll_seconds=1.0):
     """Harvest one surname with page identity verification."""
     progress=surname_progress(db,surname)
@@ -533,13 +551,11 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
                        rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
 
         links=pagination_links()
-        next_link=None
-        for i,item in enumerate(links,2):
-            href=item["href"]
-            if href in visited:
-                continue
-            next_link=(_page_number_from_link(item["text"],href,i),href)
-            break
+        next_link=_select_forward_pagination_link(
+            links,
+            page_no,
+            visited=visited,
+        )
 
         if next_link is None:
             unique_cached=_unique_cached_count(db,surname)
