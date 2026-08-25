@@ -612,11 +612,65 @@ def cross_match_surname(db, surname: str, *, minimum_score=55):
     )
 
 
+def _progress_can_finalize_locally(db, surname: str) -> bool:
+    progress=surname_progress(db,surname)
+    if not progress:
+        return False
+    if int(progress["pages_completed"] or 0) <= 0:
+        return False
+    if int(progress["is_complete"] or 0):
+        return True
+    cached=_unique_cached_count(db,surname)
+    rows_seen=int(progress["rows_seen"] or 0)
+    return cached>0 and cached==rows_seen
+
+
+def _finalize_cached_surname(db, queue_row, now):
+    surname=queue_row["surname"]
+    cached=_unique_cached_count(db,surname)
+    progress=surname_progress(db,surname)
+    matches=cross_match_surname(db,surname)
+
+    _set_queue(
+        db,queue_row["id"],
+        status="completed",
+        attempts=int(queue_row["attempts"] or 0),
+        completed_at=_iso(now),
+        result_count=cached,
+        match_count=int(matches["findings"]),
+        last_error="",
+        next_retry_at=None,
+    )
+
+    if progress:
+        _save_progress(
+            db,surname,
+            current_page=int(progress["current_page"] or 0),
+            current_url=progress["current_url"],
+            pages_completed=int(progress["pages_completed"] or 0),
+            rows_seen=cached,
+            inserted_rows=cached,
+            existing_rows=0,
+            is_complete=True,
+        )
+
+    return {
+        "status":"completed",
+        "surname":surname,
+        "result_count":cached,
+        "matches":matches,
+        "finalized_locally":True,
+    }
+
+
 def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
     now=now or _utcnow()
     row=next_surname(db,now)
     if row is None:
         return {"status":"idle"}
+
+    if _progress_can_finalize_locally(db,row["surname"]):
+        return _finalize_cached_surname(db,row,now)
 
     attempts=int(row["attempts"] or 0)+1
     _set_queue(
@@ -716,17 +770,32 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
             "harvest":harvest,
         }
 
+    cached_count=int(
+        harvest.get("unique_cached",_unique_cached_count(db,row["surname"]))
+    )
+    progress=surname_progress(db,row["surname"])
+    if progress:
+        _save_progress(
+            db,row["surname"],
+            current_page=int(progress["current_page"] or 0),
+            current_url=progress["current_url"],
+            pages_completed=int(progress["pages_completed"] or 0),
+            rows_seen=cached_count,
+            inserted_rows=cached_count,
+            existing_rows=0,
+            is_complete=True,
+        )
+
     matches=cross_match_surname(db,row["surname"])
     _set_queue(
         db,row["id"],
         status="completed",
         attempts=attempts,
         completed_at=_iso(now),
-        result_count=int(harvest.get("unique_cached",_unique_cached_count(db,row["surname"]))),
+        result_count=cached_count,
         match_count=int(matches["findings"]),
         last_error="",
     )
-    _clear_progress(db,row["surname"])
     _set_bootstrap_cooldown(db,"")
     return {
         "status":"completed",
@@ -734,6 +803,7 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
         "harvest":harvest,
         "matches":matches,
     }
+
 
 
 def location_learning(db, *, minimum_confidence=55, limit=100):
@@ -840,6 +910,13 @@ def reconcile_cached_surnames(db):
     changed=0
     for row in rows:
         if int(row["has_incomplete_progress"] or 0):
+            if _progress_can_finalize_locally(db,row["surname"]):
+                q=db.execute(
+                    "SELECT * FROM companion_ryerson_surname_queue WHERE id=?",
+                    (row["id"],),
+                ).fetchone()
+                _finalize_cached_surname(db,q,_utcnow())
+                changed+=1
             continue
 
         db.execute(
