@@ -18,6 +18,16 @@ from .ryerson_adapter import RyersonQuery, response_is_busy
 
 RYERSON_SEARCH_URL = "https://ryersonindex.org/search.php"
 
+RYERSON_BUSY_PHRASES = (
+    "server overloaded",
+    "server is feeling a bit overworked",
+    "unable to handle the number of requests",
+)
+
+def _ryerson_page_is_busy(html: str | None) -> bool:
+    low=(html or "").casefold()
+    return response_is_busy(200,html) or any(p in low for p in RYERSON_BUSY_PHRASES)
+
 
 class BrowserTransportUnavailable(RuntimeError):
     pass
@@ -138,10 +148,15 @@ def _safari_do_javascript(js: str, runner=subprocess.run) -> str:
 
 
 def _safari_open(url: str, runner=subprocess.run):
+    # Fresh GET navigation avoids Safari POST-resubmission confirmation.
     script=(
         'tell application "Safari"\n'
         'activate\n'
-        f'open location {json.dumps(url)}\n'
+        'if (count of windows) = 0 then\n'
+        f'  make new document with properties {{URL:{json.dumps(url)}}}\n'
+        'else\n'
+        f'  set URL of front document to {json.dumps(url)}\n'
+        'end if\n'
         'end tell'
     )
     _run_osascript(script,runner=runner)
@@ -187,8 +202,8 @@ def safari_fetch(
     if not html:
         raise SourceSearchError("Ryerson search page did not become available in Safari")
 
-    if response_is_busy(200,html):
-        raise SourceBusyError("Ryerson server busy; try again later")
+    if _ryerson_page_is_busy(html):
+        raise SourceBusyError("Ryerson server overloaded; retry later")
 
     raw=_safari_do_javascript(_form_fill_javascript(query),runner=runner)
     try:
@@ -205,8 +220,8 @@ def safari_fetch(
     while time.monotonic()-started < timeout_seconds:
         sleep(poll_seconds)
         url,html=_safari_snapshot(runner=runner)
-        if response_is_busy(200,html):
-            raise SourceBusyError("Ryerson server busy; try again later")
+        if _ryerson_page_is_busy(html):
+            raise SourceBusyError("Ryerson server overloaded; retry later")
         # A result may render at the same URL, so accept either navigation or a
         # page that no longer contains the obvious search form only.
         low=html.casefold()
