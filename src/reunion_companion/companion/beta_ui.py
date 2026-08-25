@@ -1375,6 +1375,15 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             db=connect(db_path)
             try:
                 try:
+                    if u.path in ("/research/ryerson/surnames/start","/research/ryerson/surnames/pause"):
+                        from .ryerson_surname_bootstrap import start_bootstrap,pause_bootstrap
+                        if u.path.endswith("/start"):
+                            start_bootstrap(db)
+                        else:
+                            pause_bootstrap(db)
+                        self.send_html(research_page(db))
+                        return
+
                     if u.path in ("/research/ryerson/runner/start","/research/ryerson/runner/pause"):
                         from .external_research_runner import start_runner,pause_runner,recover_transport_failures
                         if u.path.endswith("/start"):
