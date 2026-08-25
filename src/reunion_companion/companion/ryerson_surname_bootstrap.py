@@ -27,6 +27,10 @@ from .ryerson_safari_harvest import pagination_links, _page_number_from_link
 
 SOURCE_RYERSON="Ryerson"
 
+class BootstrapPaused(RuntimeError):
+    pass
+
+
 
 def _utcnow():
     return datetime.now(timezone.utc)
@@ -72,6 +76,61 @@ def enqueue_unique_surnames(db):
         added+=int(cur.rowcount or 0)
     db.commit()
     return added
+
+
+def surname_progress(db, surname: str):
+    key=_clean_surname(surname).casefold()
+    return db.execute(
+        "SELECT * FROM companion_ryerson_surname_progress WHERE surname_key=?",
+        (key,),
+    ).fetchone()
+
+
+def _save_progress(
+    db,
+    surname: str,
+    *,
+    current_page: int,
+    current_url: str | None,
+    pages_completed: int,
+    rows_seen: int,
+    inserted_rows: int,
+    existing_rows: int,
+    is_complete: bool = False,
+):
+    key=_clean_surname(surname).casefold()
+    db.execute(
+        """
+        INSERT INTO companion_ryerson_surname_progress(
+            surname_key,surname,current_page,current_url,pages_completed,
+            rows_seen,inserted_rows,existing_rows,is_complete,updated_at
+        ) VALUES(?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+        ON CONFLICT(surname_key) DO UPDATE SET
+            surname=excluded.surname,
+            current_page=excluded.current_page,
+            current_url=excluded.current_url,
+            pages_completed=excluded.pages_completed,
+            rows_seen=excluded.rows_seen,
+            inserted_rows=excluded.inserted_rows,
+            existing_rows=excluded.existing_rows,
+            is_complete=excluded.is_complete,
+            updated_at=CURRENT_TIMESTAMP
+        """,
+        (
+            key,surname,int(current_page),current_url,int(pages_completed),
+            int(rows_seen),int(inserted_rows),int(existing_rows),
+            1 if is_complete else 0,
+        ),
+    )
+    db.commit()
+
+
+def _clear_progress(db, surname: str):
+    db.execute(
+        "DELETE FROM companion_ryerson_surname_progress WHERE surname_key=?",
+        (_clean_surname(surname).casefold(),),
+    )
+    db.commit()
 
 
 def surname_queue_rows(db):
@@ -233,26 +292,67 @@ def submit_surname_search(surname: str, *, timeout_seconds=45.0, poll_seconds=1.
 
 
 def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, poll_seconds=1.0):
-    """Harvest all ordinary anchor-paginated results for one surname."""
-    url,html=submit_surname_search(
-        surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds
-    )
-    visited=set()
-    pending=[(1,url,html)]
-    pages=0
-    rows_total=0
-    inserted=0
-    existing=0
+    """Harvest one surname with page-level checkpoints and cooperative pause."""
+    progress=surname_progress(db,surname)
 
-    while pending and pages<max_pages:
-        page_no,url,html=pending.pop(0)
-        if url in visited:
-            continue
-        visited.add(url)
+    pages_completed=int(progress["pages_completed"]) if progress else 0
+    rows_total=int(progress["rows_seen"]) if progress else 0
+    inserted=int(progress["inserted_rows"]) if progress else 0
+    existing=int(progress["existing_rows"]) if progress else 0
+
+    if progress and progress["current_url"] and not progress["is_complete"]:
+        _safari_open(progress["current_url"])
+        url,html=_wait_for_results(
+            expected_surname=surname,
+            timeout_seconds=timeout_seconds,
+            poll_seconds=poll_seconds,
+        )
+        page_no=max(1,int(progress["current_page"] or 1))
+    else:
+        url,html=submit_surname_search(
+            surname,
+            timeout_seconds=timeout_seconds,
+            poll_seconds=poll_seconds,
+        )
+        page_no=1
+
+    visited=set()
+
+    while pages_completed < max_pages:
+        if not bootstrap_enabled(db):
+            _save_progress(
+                db,surname,
+                current_page=page_no,
+                current_url=url,
+                pages_completed=pages_completed,
+                rows_seen=rows_total,
+                inserted_rows=inserted,
+                existing_rows=existing,
+                is_complete=False,
+            )
+            raise BootstrapPaused(f"Surname bootstrap paused during {surname}")
+
         if _ryerson_page_is_busy(html):
+            _save_progress(
+                db,surname,
+                current_page=page_no,
+                current_url=url,
+                pages_completed=pages_completed,
+                rows_seen=rows_total,
+                inserted_rows=inserted,
+                existing_rows=existing,
+                is_complete=False,
+            )
             raise SourceBusyError("Ryerson server overloaded; retry later")
 
+        if url in visited:
+            raise SourceSearchError(f"Pagination loop detected during {surname}")
+        visited.add(url)
+
         rows=parse_ryerson_results(html)
+        if rows and not _rows_correspond_to_surname(rows,surname):
+            raise SourceSearchError(f"Unverified surname result page for {surname}")
+
         cached=cache_harvest_rows(
             db,rows,
             harvest_kind="surname",
@@ -260,30 +360,94 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
             harvest_year=0,
             page_number=page_no,
         )
-        pages+=1
+        pages_completed+=1
         rows_total+=len(rows)
         inserted+=cached["inserted"]
         existing+=cached["existing"]
 
-        for i,item in enumerate(pagination_links(),2):
+        _save_progress(
+            db,surname,
+            current_page=page_no,
+            current_url=url,
+            pages_completed=pages_completed,
+            rows_seen=rows_total,
+            inserted_rows=inserted,
+            existing_rows=existing,
+            is_complete=False,
+        )
+
+        links=pagination_links()
+        next_link=None
+        for i,item in enumerate(links,2):
             href=item["href"]
-            if href in visited or any(x[1]==href for x in pending):
+            if href in visited:
                 continue
             pn=_page_number_from_link(item["text"],href,i)
-            _safari_open(href)
-            next_url,next_html=_wait_for_results(
-                expected_surname=surname,
-                timeout_seconds=timeout_seconds,poll_seconds=poll_seconds
-            )
-            pending.append((pn,next_url,next_html))
+            next_link=(pn,href)
+            break
 
+        if next_link is None:
+            _save_progress(
+                db,surname,
+                current_page=page_no,
+                current_url=url,
+                pages_completed=pages_completed,
+                rows_seen=rows_total,
+                inserted_rows=inserted,
+                existing_rows=existing,
+                is_complete=True,
+            )
+            return {
+                "surname":surname,
+                "pages":pages_completed,
+                "rows":rows_total,
+                "inserted":inserted,
+                "existing":existing,
+                "truncated":False,
+                "paused":False,
+            }
+
+        next_page,next_url=next_link
+
+        if not bootstrap_enabled(db):
+            _save_progress(
+                db,surname,
+                current_page=next_page,
+                current_url=next_url,
+                pages_completed=pages_completed,
+                rows_seen=rows_total,
+                inserted_rows=inserted,
+                existing_rows=existing,
+                is_complete=False,
+            )
+            raise BootstrapPaused(f"Surname bootstrap paused during {surname}")
+
+        _safari_open(next_url)
+        url,html=_wait_for_results(
+            expected_surname=surname,
+            timeout_seconds=timeout_seconds,
+            poll_seconds=poll_seconds,
+        )
+        page_no=next_page
+
+    _save_progress(
+        db,surname,
+        current_page=page_no,
+        current_url=url,
+        pages_completed=pages_completed,
+        rows_seen=rows_total,
+        inserted_rows=inserted,
+        existing_rows=existing,
+        is_complete=False,
+    )
     return {
         "surname":surname,
-        "pages":pages,
+        "pages":pages_completed,
         "rows":rows_total,
         "inserted":inserted,
         "existing":existing,
-        "truncated":bool(pending),
+        "truncated":True,
+        "paused":False,
     }
 
 
@@ -314,6 +478,14 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
 
     try:
         harvest=harvest_fn(db,row["surname"])
+    except BootstrapPaused:
+        _set_queue(
+            db,row["id"],
+            status="queued",
+            attempts=attempts,
+            last_error="Paused during paged surname harvest",
+        )
+        return {"status":"paused","surname":row["surname"]}
     except SourceBusyError as exc:
         retry=now+timedelta(seconds=backoff_seconds(attempts))
         _set_queue(
@@ -337,6 +509,20 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
         )
         return {"status":"failed","surname":row["surname"],"error":str(exc)}
 
+    if harvest.get("truncated"):
+        _set_queue(
+            db,row["id"],
+            status="queued",
+            attempts=attempts,
+            result_count=int(harvest["rows"]),
+            last_error="Paged surname harvest incomplete; resume required",
+        )
+        return {
+            "status":"incomplete",
+            "surname":row["surname"],
+            "harvest":harvest,
+        }
+
     matches=cross_match_surname(db,row["surname"])
     _set_queue(
         db,row["id"],
@@ -347,6 +533,7 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
         match_count=int(matches["findings"]),
         last_error="",
     )
+    _clear_progress(db,row["surname"])
     return {
         "status":"completed",
         "surname":row["surname"],

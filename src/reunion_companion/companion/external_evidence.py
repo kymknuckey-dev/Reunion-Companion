@@ -100,6 +100,19 @@ CREATE TABLE IF NOT EXISTS companion_ryerson_surname_queue(
 
 CREATE INDEX IF NOT EXISTS idx_companion_ryerson_surname_queue_status
 ON companion_ryerson_surname_queue(status,next_retry_at,people_count);
+
+CREATE TABLE IF NOT EXISTS companion_ryerson_surname_progress(
+    surname_key TEXT PRIMARY KEY,
+    surname TEXT NOT NULL,
+    current_page INTEGER NOT NULL DEFAULT 0,
+    current_url TEXT,
+    pages_completed INTEGER NOT NULL DEFAULT 0,
+    rows_seen INTEGER NOT NULL DEFAULT 0,
+    inserted_rows INTEGER NOT NULL DEFAULT 0,
+    existing_rows INTEGER NOT NULL DEFAULT 0,
+    is_complete INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 VALID_STATUSES = {"new", "reviewed", "accepted", "rejected"}
