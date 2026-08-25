@@ -80,6 +80,26 @@ CREATE TABLE IF NOT EXISTS companion_external_notice_cache(
 
 CREATE INDEX IF NOT EXISTS idx_companion_external_notice_harvest
 ON companion_external_notice_cache(source_name,harvest_kind,harvest_value,harvest_year);
+
+CREATE TABLE IF NOT EXISTS companion_ryerson_surname_queue(
+    id INTEGER PRIMARY KEY,
+    surname TEXT NOT NULL,
+    surname_key TEXT NOT NULL UNIQUE,
+    people_count INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'queued',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    last_attempt_at TEXT,
+    next_retry_at TEXT,
+    completed_at TEXT,
+    result_count INTEGER NOT NULL DEFAULT 0,
+    match_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_companion_ryerson_surname_queue_status
+ON companion_ryerson_surname_queue(status,next_retry_at,people_count);
 """
 
 VALID_STATUSES = {"new", "reviewed", "accepted", "rejected"}
