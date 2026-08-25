@@ -331,3 +331,96 @@ def location_learning(db, *, minimum_confidence=55, limit=100):
         (int(minimum_confidence),int(limit)),
     ).fetchall()
     return [{"location":r["place_claim"],"count":r["count"]} for r in rows]
+
+
+META_BOOTSTRAP_ENABLED="ryerson_surname_bootstrap_enabled"
+
+def _meta_get(db,key,default=""):
+    row=db.execute("SELECT value FROM meta WHERE key=?",(key,)).fetchone()
+    return row["value"] if row else default
+
+def _meta_set(db,key,value):
+    db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)",(key,value))
+    db.commit()
+
+def bootstrap_enabled(db):
+    return _meta_get(db,META_BOOTSTRAP_ENABLED,"0")=="1"
+
+def reconcile_cached_surnames(db):
+    rows=db.execute(
+        "SELECT q.id,q.surname,COUNT(c.id) cache_count "
+        "FROM companion_ryerson_surname_queue q "
+        "LEFT JOIN companion_external_notice_cache c "
+        "ON c.source_name='Ryerson' AND c.harvest_kind='surname' "
+        "AND lower(trim(c.harvest_value))=lower(trim(q.surname)) "
+        "WHERE q.status IN ('queued','retry_wait','failed') "
+        "GROUP BY q.id,q.surname HAVING cache_count>0"
+    ).fetchall()
+    changed=0
+    for row in rows:
+        db.execute(
+            "UPDATE companion_ryerson_surname_queue "
+            "SET status='completed', completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP), "
+            "result_count=?, last_error='', next_retry_at=NULL, updated_at=CURRENT_TIMESTAMP "
+            "WHERE id=?",
+            (int(row['cache_count']),row['id']),
+        )
+        changed+=1
+    db.commit()
+    return changed
+
+def start_bootstrap(db):
+    added=enqueue_unique_surnames(db)
+    reconciled=reconcile_cached_surnames(db)
+    _meta_set(db,META_BOOTSTRAP_ENABLED,"1")
+    out=bootstrap_status(db)
+    out["newly_queued"]=added
+    out["reconciled_cached"]=reconciled
+    return out
+
+def pause_bootstrap(db):
+    _meta_set(db,META_BOOTSTRAP_ENABLED,"0")
+    return bootstrap_status(db)
+
+def bootstrap_status(db):
+    summary=surname_queue_summary(db)
+    return {
+        "enabled":bootstrap_enabled(db),
+        "total":summary["total"],
+        "queued":summary["queued"],
+        "retry_wait":summary["retry_wait"],
+        "completed":summary["completed"],
+        "failed":summary["failed"],
+    }
+
+def bootstrap_tick(db, *, now=None, harvest_fn=harvest_surname):
+    if not bootstrap_enabled(db):
+        return {"status":"paused"}
+    return run_one_surname(db,now=now,harvest_fn=harvest_fn)
+
+def start_background_surname_bootstrap(db_path, *, interval_seconds=120, poll_seconds=10):
+    import threading
+    def worker():
+        next_allowed=0.0
+        while True:
+            try:
+                from .database import connect
+                db=connect(db_path)
+                try:
+                    enabled=bootstrap_enabled(db)
+                finally:
+                    db.close()
+                now_mono=time.monotonic()
+                if enabled and now_mono>=next_allowed:
+                    db=connect(db_path)
+                    try:
+                        bootstrap_tick(db)
+                    finally:
+                        db.close()
+                    next_allowed=time.monotonic()+interval_seconds
+            except Exception:
+                next_allowed=time.monotonic()+interval_seconds
+            time.sleep(poll_seconds)
+    thread=threading.Thread(target=worker,name="ReunionCompanion-RyersonSurnameBootstrap",daemon=True)
+    thread.start()
+    return thread

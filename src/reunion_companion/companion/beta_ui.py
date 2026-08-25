@@ -946,9 +946,11 @@ def research_page(db):
     from .external_evidence_matcher import ryerson_death_candidates
     from .external_evidence import external_evidence_for_person
     from .external_research_runner import runner_status
+    from .ryerson_surname_bootstrap import bootstrap_status
 
     death_rows=ryerson_death_candidates(db)
     run=runner_status(db)
+    surname_run=bootstrap_status(db)
     sql=("SELECT p.id,p.display_name, "
          "SUM(CASE WHEN e.id IS NOT NULL "
          "AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id) "
@@ -967,6 +969,13 @@ def research_page(db):
         body+="<form method=\'post\' action=\'/research/ryerson/runner/pause\'><button type=\'submit\'>Pause Ryerson Research</button></form>"
     else:
         body+="<form method=\'post\' action=\'/research/ryerson/runner/start\'><button type=\'submit\'>Start Ryerson Research</button></form>"
+    body+="</div>"
+    surname_state="Running" if surname_run["enabled"] else "Paused"
+    body+=f"""<div class='card'><h2>Ryerson Surname Bootstrap Runner</h2><p class='meta'>One-time catch-up harvest across unique Reunion surnames. Completed surnames are retained and are not repeated on restart. Ryerson overloads are retried later.</p><div class='topic'><strong>{surname_state}</strong><div class='small'>Completed: {surname_run["completed"]} · Queued: {surname_run["queued"]} · Waiting: {surname_run["retry_wait"]} · Errors: {surname_run["failed"]} · Total: {surname_run["total"]}</div></div>"""
+    if surname_run["enabled"]:
+        body+="<form method='post' action='/research/ryerson/surnames/pause'><button type='submit'>Pause Surname Bootstrap</button></form>"
+    else:
+        body+="<form method='post' action='/research/ryerson/surnames/start'><button type='submit'>Start Surname Bootstrap</button></form>"
     body+="</div>"
     body+="<div class='card'><h2>Ryerson Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
     if death_rows:
@@ -1470,7 +1479,9 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             pass
 
     from .external_research_runner import start_background_runner
+    from .ryerson_surname_bootstrap import start_background_surname_bootstrap
     start_background_runner(db_path)
+    start_background_surname_bootstrap(db_path)
     server=ThreadingHTTPServer((host,port),Handler)
     url=f"http://{host}:{port}/"
     print(APP_DISPLAY_NAME)
