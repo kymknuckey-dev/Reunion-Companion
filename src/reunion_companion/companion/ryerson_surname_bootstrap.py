@@ -172,16 +172,51 @@ def _decode(raw,label):
         raise SourceSearchError(f"Could not decode Safari {label}: {raw[:200]}") from exc
 
 
-def _wait_for_results(*, timeout_seconds=45.0, poll_seconds=1.0):
+def _result_surname(name: str | None) -> str:
+    text=" ".join((name or "").split())
+    if not text:
+        return ""
+    tokens=re.findall(r"[A-Za-z][A-Za-z'’-]*",text)
+    return tokens[-1].casefold() if tokens else ""
+
+
+def _rows_correspond_to_surname(rows, surname: str) -> bool:
+    expected=_clean_surname(surname).casefold()
+    if not expected or not rows:
+        return False
+    observed=[_result_surname(r.get("source_record_name")) for r in rows]
+    observed=[x for x in observed if x]
+    if not observed:
+        return False
+    matching=sum(1 for x in observed if x==expected)
+    return matching / len(observed) >= 0.90
+
+
+def _wait_for_results(*, expected_surname=None, timeout_seconds=45.0, poll_seconds=1.0):
     started=time.monotonic()
+    last_rows=0
     while time.monotonic()-started<timeout_seconds:
         time.sleep(poll_seconds)
         url,html=_safari_snapshot()
         if _ryerson_page_is_busy(html):
             raise SourceBusyError("Ryerson server overloaded; retry later")
-        if html and ("<table" in html.casefold() or "ryerson" in html.casefold()):
+        if not html:
+            continue
+        if expected_surname is None:
+            if "<table" in html.casefold() or "ryerson" in html.casefold():
+                return url,html
+            continue
+
+        rows=parse_ryerson_results(html)
+        last_rows=len(rows)
+        if _rows_correspond_to_surname(rows,expected_surname):
             return url,html
-    raise SourceSearchError("Timed out waiting for Ryerson surname results")
+
+    label=f" for {expected_surname}" if expected_surname else ""
+    raise SourceSearchError(
+        f"Timed out waiting for verified Ryerson surname results{label}; "
+        f"last parsed row count={last_rows}"
+    )
 
 
 def submit_surname_search(surname: str, *, timeout_seconds=45.0, poll_seconds=1.0):
@@ -190,7 +225,11 @@ def submit_surname_search(surname: str, *, timeout_seconds=45.0, poll_seconds=1.
     result=_decode(_safari_do_javascript(_surname_form_javascript(surname)),"surname submission")
     if result.get("status")!="submitted":
         raise BrowserTransportUnavailable(result.get("reason") or "Surname search form not recognised")
-    return _wait_for_results(timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
+    return _wait_for_results(
+        expected_surname=surname,
+        timeout_seconds=timeout_seconds,
+        poll_seconds=poll_seconds,
+    )
 
 
 def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, poll_seconds=1.0):
@@ -233,6 +272,7 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
             pn=_page_number_from_link(item["text"],href,i)
             _safari_open(href)
             next_url,next_html=_wait_for_results(
+                expected_surname=surname,
                 timeout_seconds=timeout_seconds,poll_seconds=poll_seconds
             )
             pending.append((pn,next_url,next_html))
