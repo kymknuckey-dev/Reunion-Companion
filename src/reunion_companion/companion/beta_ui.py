@@ -961,8 +961,8 @@ def research_page(db):
 
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
 
-    state="Running" if run["enabled"] else "Paused"
-    body+=f"""<div class='card'><h2>Ryerson Research Runner</h2><p class='meta'>Persistent queue controller for unattended research. Live Ryerson transport is not enabled yet because direct Python access is currently rate-limited.</p><div class='topic'><strong>{state}</strong><div class='small'>Queued: {run["queued"]} · Waiting for Ryerson: {run["retry_wait"]} · Findings: {run["findings"]} · No finding: {run["no_match"]} · Errors: {run["failed"]}</div></div>"""
+    state="Waiting for Ryerson" if run.get("source_waiting") else ("Running" if run["enabled"] else "Paused")
+    body+=f"""<div class='card'><h2>Ryerson Research Runner</h2><p class='meta'>Unattended research uses the normal Safari session at a deliberately slow rate. If Ryerson is overloaded, Companion pauses the source and retries later.</p><div class='topic'><strong>{state}</strong><div class='small'>Queued: {run["queued"]} · Waiting for Ryerson: {run["retry_wait"]} · Findings: {run["findings"]} · No finding: {run["no_match"]} · Errors: {run["failed"]}</div></div>"""
     if run["enabled"]:
         body+="<form method=\'post\' action=\'/research/ryerson/runner/pause\'><button type=\'submit\'>Pause Ryerson Research</button></form>"
     else:
@@ -1465,6 +1465,8 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
         def log_message(self,*args):
             pass
 
+    from .external_research_runner import start_background_runner
+    start_background_runner(db_path)
     server=ThreadingHTTPServer((host,port),Handler)
     url=f"http://{host}:{port}/"
     print(APP_DISPLAY_NAME)

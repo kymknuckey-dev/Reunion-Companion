@@ -2,6 +2,7 @@ from __future__ import annotations
 from .external_evidence_scan import SOURCE_RYERSON, enqueue_death_research_candidates, run_one_scan, scan_summary
 
 META_ENABLED="ryerson_runner_enabled"
+META_COOLDOWN_UNTIL="ryerson_runner_cooldown_until"
 
 def _meta_get(db,key,default=""):
     row=db.execute("SELECT value FROM meta WHERE key=?",(key,)).fetchone()
@@ -9,6 +10,24 @@ def _meta_get(db,key,default=""):
 
 def _meta_set(db,key,value):
     db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)",(key,value)); db.commit()
+
+def _parse_iso(value):
+    if not value:
+        return None
+    from datetime import datetime
+    return datetime.fromisoformat(value)
+
+def source_cooldown_until(db):
+    return _parse_iso(_meta_get(db,META_COOLDOWN_UNTIL,""))
+
+def _set_source_cooldown(db,value):
+    _meta_set(db,META_COOLDOWN_UNTIL,value or "")
+
+def source_waiting(db, now=None):
+    from datetime import datetime, timezone
+    now=now or datetime.now(timezone.utc)
+    until=source_cooldown_until(db)
+    return bool(until and until > now)
 
 def runner_enabled(db):
     return _meta_get(db,META_ENABLED,"0")=="1"
@@ -24,11 +43,65 @@ def pause_runner(db):
 
 def runner_status(db):
     summary=scan_summary(db,SOURCE_RYERSON); c=summary["counts"]
+    until=source_cooldown_until(db)
     return {"enabled":runner_enabled(db),"source_name":SOURCE_RYERSON,"total":summary["total"],
             "queued":c.get("queued",0),"searching":c.get("searching",0),
             "retry_wait":c.get("retry_wait",0),"findings":c.get("succeeded_with_findings",0),
-            "no_match":c.get("succeeded_no_match",0),"failed":c.get("failed",0)}
+            "no_match":c.get("succeeded_no_match",0),"failed":c.get("failed",0),
+            "source_waiting":source_waiting(db),
+            "cooldown_until":until.isoformat() if until else None}
 
-def runner_tick(db,search_fn):
-    if not runner_enabled(db): return {"status":"paused"}
-    return run_one_scan(db,search_fn,source_name=SOURCE_RYERSON)
+def runner_tick(db,search_fn,now=None):
+    from datetime import datetime, timezone
+    now=now or datetime.now(timezone.utc)
+    if not runner_enabled(db):
+        return {"status":"paused"}
+    if source_waiting(db,now):
+        until=source_cooldown_until(db)
+        return {"status":"source_wait","next_retry_at":until.isoformat() if until else None}
+    result=run_one_scan(db,search_fn,source_name=SOURCE_RYERSON,now=now)
+    if result.get("status")=="retry_wait":
+        _set_source_cooldown(db,result.get("next_retry_at"))
+    elif result.get("status") in ("succeeded_no_match","succeeded_with_findings"):
+        _set_source_cooldown(db,"")
+    return result
+
+def live_ryerson_search(profile):
+    from .ryerson_adapter import search_ryerson
+    from .ryerson_safari_transport import safari_fetch
+    return search_ryerson(profile,safari_fetch)
+
+def live_runner_tick(db,now=None):
+    return runner_tick(db,live_ryerson_search,now=now)
+
+def start_background_runner(db_path, *, interval_seconds=90, poll_seconds=10):
+    import threading
+    import time
+
+    def worker():
+        from .database import connect
+        next_allowed=0.0
+        while True:
+            try:
+                db=connect(db_path)
+                try:
+                    enabled=runner_enabled(db)
+                    waiting=source_waiting(db)
+                finally:
+                    db.close()
+
+                now_mono=time.monotonic()
+                if enabled and not waiting and now_mono >= next_allowed:
+                    db=connect(db_path)
+                    try:
+                        live_runner_tick(db)
+                    finally:
+                        db.close()
+                    next_allowed=time.monotonic()+interval_seconds
+            except Exception:
+                next_allowed=time.monotonic()+interval_seconds
+            time.sleep(poll_seconds)
+
+    thread=threading.Thread(target=worker,name="ReunionCompanion-RyersonRunner",daemon=True)
+    thread.start()
+    return thread
