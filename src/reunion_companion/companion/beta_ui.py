@@ -778,6 +778,21 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
             else:
                 body+="<p>No external evidence findings recorded yet.</p>"
             body+="</div>"
+        if death_state["state"] in ("missing","incomplete"):
+            from .ryerson_browser_assist import build_browser_search_plan,RYERSON_SEARCH_URL
+            profile={"surname":w["person"].get("surname"),"given_names":w["person"].get("given_names"),"display_name":w["person"].get("display_name")}
+            plan=build_browser_search_plan(profile)
+            body+="<div class='card'><h2>Search Ryerson</h2><p class='meta'>Use Ryerson in your normal browser, then paste the matching result row back into Companion. Companion will assess and store the finding; Reunion is not changed.</p>"
+            if plan.searches:
+                body+="<div class='topic'><strong>Suggested searches</strong>"
+                for q in plan.searches:
+                    body+=f"<div class='small'>Surname: {esc(q['surname'])} · Given names: {esc(q['given_names'] or '(blank)')} · State: {esc(q['state'])}</div>"
+                body+="</div>"
+                body+=f"<p><a class='ffd-inline-link' href='{RYERSON_SEARCH_URL}' target='_blank' rel='noopener'>Search Ryerson →</a></p>"
+                body+=f"<form method='post' action='/research/ryerson/import/{pid}'><label for='ryerson-result'><strong>Paste Ryerson result</strong></label><p class='meta'>Copy the result row from Ryerson and paste it here. Tab-separated text or copied table HTML is accepted.</p><textarea id='ryerson-result' name='content' rows='7' style='width:100%' placeholder='Paste Ryerson result here'></textarea><div style='margin-top:12px'><button type='submit'>Import and assess finding</button></div></form>"
+            else:
+                body+="<p>No safe Ryerson search can be generated for this person because a usable surname is not recorded.</p>"
+            body+="</div>"
     elif tab=="data-quality":
         flags=person_quality(db,pid);body="<div class='card'><h2>Data Quality</h2><p class='meta'>Suggested changes are made in Reunion, then the GEDCOM is reloaded.</p>"
         for f in flags:body+=f"<div class='topic'><strong>{esc(f['kind'])}</strong><div>{esc(f['detail'])}</div></div>"
@@ -1341,6 +1356,21 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             db=connect(db_path)
             try:
                 try:
+                    m=re.match(r"^/research/ryerson/import/(\d+)$",u.path)
+                    if m:
+                        from .ryerson_browser_assist import import_copied_ryerson_content
+                        pid=int(m.group(1))
+                        result=import_copied_ryerson_content(db,pid,form.get("content",""))
+                        html=person_page(db,pid,"research",presentation_override=False)
+                        if result["status"]=="imported":
+                            msg=f"<div class='card'><span class='badge good'>Ryerson import</span> {result['stored']} finding{'s' if result['stored']!=1 else ''} imported for review.</div>"
+                        elif result["parsed"]==0:
+                            msg="<div class='card'><span class='badge warn'>Ryerson import</span> No recognisable Ryerson result rows were found in the pasted content.</div>"
+                        else:
+                            msg=f"<div class='card'><span class='badge warn'>Ryerson import</span> {result['parsed']} row{'s' if result['parsed']!=1 else ''} assessed; no acceptable finding was stored.</div>"
+                        html=html.replace("<main>",f"<main>{msg}",1)
+                        self.send_html(html)
+                        return
                     m=re.match(r"^/publish/family/(\d+)/(chapter|chapter-pdf|descendants)$",u.path)
                     if m:
                         fid=int(m.group(1))
