@@ -308,6 +308,142 @@ def submit_surname_search(surname: str, *, timeout_seconds=45.0, poll_seconds=1.
     )
 
 
+def _pagination_control_javascript(target_page: int) -> str:
+    """Return JS that clicks Ryerson's in-page pagination control."""
+    target_json=json.dumps(str(int(target_page)))
+    return f"""
+(() => {{
+  const target={target_json};
+  const controls=[...document.querySelectorAll(
+    'a,button,input[type="submit"],input[type="button"]'
+  )];
+
+  const textOf=(el) => (
+    el.innerText || el.value || el.textContent || ''
+  ).trim();
+
+  for (const el of controls) {{
+    const text=textOf(el);
+    if (text === target) {{
+      el.click();
+      return JSON.stringify({{
+        status:'clicked',
+        mode:'page',
+        text,
+        href:el.href || '',
+        onclick:el.getAttribute('onclick') || ''
+      }});
+    }}
+  }}
+
+  for (const el of controls) {{
+    const text=textOf(el);
+    const aria=(el.getAttribute('aria-label') || '').trim();
+    const title=(el.getAttribute('title') || '').trim();
+    if (
+      /^(next|>|»|›)$/i.test(text) ||
+      /next/i.test(aria) ||
+      /next/i.test(title)
+    ) {{
+      el.click();
+      return JSON.stringify({{
+        status:'clicked',
+        mode:'next',
+        text,
+        href:el.href || '',
+        onclick:el.getAttribute('onclick') || ''
+      }});
+    }}
+  }}
+
+  return JSON.stringify({{
+    status:'not_found',
+    target,
+    controls:controls.map(el => ({{
+      tag:el.tagName,
+      text:textOf(el),
+      href:el.href || '',
+      onclick:el.getAttribute('onclick') || '',
+      name:el.getAttribute('name') || '',
+      id:el.id || ''
+    }})).filter(x => x.text || x.onclick || x.href.includes('#'))
+  }});
+}})()
+""".strip()
+
+
+def _click_pagination_control(target_page: int):
+    result=_decode(
+        _safari_do_javascript(_pagination_control_javascript(target_page)),
+        f"pagination control {target_page}",
+    )
+    if result.get("status")!="clicked":
+        raise SourceSearchError(
+            f"Ryerson page {target_page} control not found: "
+            f"{json.dumps(result.get('controls',[])[:12],ensure_ascii=False)}"
+        )
+    return result
+
+
+def _wait_for_distinct_surname_page(
+    surname: str,
+    previous_keys,
+    *,
+    timeout_seconds=45.0,
+    poll_seconds=1.0,
+):
+    """Wait until Safari shows surname-correct rows that differ from the prior page."""
+    started=time.monotonic()
+    last_rows=0
+    while time.monotonic()-started<timeout_seconds:
+        time.sleep(poll_seconds)
+        url,html=_safari_snapshot()
+        if _ryerson_page_is_busy(html):
+            raise SourceBusyError("Ryerson server overloaded; retry later")
+        if not html:
+            continue
+
+        rows=parse_ryerson_results(html)
+        last_rows=len(rows)
+        if not rows or not _rows_correspond_to_surname(rows,surname):
+            continue
+
+        keys=_page_record_keys(rows)
+        if keys-previous_keys:
+            return url,html
+
+    raise SourceSearchError(
+        f"Timed out waiting for distinct Ryerson surname page for {surname}; "
+        f"last parsed row count={last_rows}"
+    )
+
+
+def _resume_paged_surname(
+    surname: str,
+    target_page: int,
+    *,
+    timeout_seconds=45.0,
+    poll_seconds=1.0,
+):
+    """Recreate the first result page, then activate the saved page control."""
+    url,html=submit_surname_search(
+        surname,
+        timeout_seconds=timeout_seconds,
+        poll_seconds=poll_seconds,
+    )
+    if int(target_page)<=1:
+        return url,html
+
+    previous_keys=_page_record_keys(parse_ryerson_results(html))
+    _click_pagination_control(int(target_page))
+    return _wait_for_distinct_surname_page(
+        surname,
+        previous_keys,
+        timeout_seconds=timeout_seconds,
+        poll_seconds=poll_seconds,
+    )
+
+
 def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, poll_seconds=1.0):
     """Harvest one surname with page identity verification."""
     progress=surname_progress(db,surname)
@@ -317,11 +453,28 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
     existing=int(progress["existing_rows"]) if progress else 0
 
     if progress and progress["current_url"] and not progress["is_complete"]:
-        _safari_open(progress["current_url"])
-        url,html=_wait_for_results(expected_surname=surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
         page_no=max(1,int(progress["current_page"] or 1))
+        current_url=progress["current_url"] or ""
+        if current_url.endswith("#") or current_url=="#":
+            url,html=_resume_paged_surname(
+                surname,
+                page_no,
+                timeout_seconds=timeout_seconds,
+                poll_seconds=poll_seconds,
+            )
+        else:
+            _safari_open(current_url)
+            url,html=_wait_for_results(
+                expected_surname=surname,
+                timeout_seconds=timeout_seconds,
+                poll_seconds=poll_seconds,
+            )
     else:
-        url,html=submit_surname_search(surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
+        url,html=submit_surname_search(
+            surname,
+            timeout_seconds=timeout_seconds,
+            poll_seconds=poll_seconds,
+        )
         page_no=1
 
     visited=set()
@@ -404,8 +557,23 @@ def harvest_surname(db, surname: str, *, max_pages=50, timeout_seconds=45.0, pol
                            rows_seen=rows_total,inserted_rows=inserted,existing_rows=existing,is_complete=False)
             raise BootstrapPaused(f"Surname bootstrap paused during {surname}")
 
-        _safari_open(next_url)
-        url,html=_wait_for_results(expected_surname=surname,timeout_seconds=timeout_seconds,poll_seconds=poll_seconds)
+        previous_keys=_page_record_keys(rows)
+        if next_url.endswith("#") or next_url=="#":
+            _click_pagination_control(next_page)
+            url,html=_wait_for_distinct_surname_page(
+                surname,
+                previous_keys,
+                timeout_seconds=timeout_seconds,
+                poll_seconds=poll_seconds,
+            )
+        else:
+            _safari_open(next_url)
+            url,html=_wait_for_distinct_surname_page(
+                surname,
+                previous_keys,
+                timeout_seconds=timeout_seconds,
+                poll_seconds=poll_seconds,
+            )
         page_no=next_page
 
     _save_progress(db,surname,current_page=page_no,current_url=url,pages_completed=pages_completed,
@@ -468,6 +636,28 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
             "surname":row["surname"],
             "next_retry_at":_iso(retry),
         }
+    except SourceSearchError as exc:
+        progress=surname_progress(db,row["surname"])
+        if progress and not progress["is_complete"] and int(progress["pages_completed"] or 0)>0:
+            _set_queue(
+                db,row["id"],
+                status="queued",
+                attempts=attempts,
+                result_count=_unique_cached_count(db,row["surname"]),
+                last_error=str(exc),
+            )
+            return {
+                "status":"incomplete",
+                "surname":row["surname"],
+                "error":str(exc),
+            }
+        _set_queue(
+            db,row["id"],
+            status="failed",
+            attempts=attempts,
+            last_error=str(exc),
+        )
+        return {"status":"failed","surname":row["surname"],"error":str(exc)}
     except Exception as exc:
         _set_queue(
             db,row["id"],
