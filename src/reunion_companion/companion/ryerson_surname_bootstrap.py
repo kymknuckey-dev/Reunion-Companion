@@ -647,10 +647,12 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
             last_error=str(exc),
             next_retry_at=_iso(retry),
         )
+        _set_bootstrap_cooldown(db,_iso(retry))
         return {
             "status":"retry_wait",
             "surname":row["surname"],
             "next_retry_at":_iso(retry),
+            "source_cooldown":True,
         }
     except SourceSearchError as exc:
         progress=surname_progress(db,row["surname"])
@@ -665,6 +667,23 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
             return {
                 "status":"incomplete",
                 "surname":row["surname"],
+                "error":str(exc),
+            }
+        if _is_transient_transport_error(str(exc)):
+            retry=now+timedelta(seconds=backoff_seconds(attempts))
+            _set_queue(
+                db,row["id"],
+                status="retry_wait",
+                attempts=attempts,
+                last_error=str(exc),
+                next_retry_at=_iso(retry),
+            )
+            _set_bootstrap_cooldown(db,_iso(retry))
+            return {
+                "status":"retry_wait",
+                "surname":row["surname"],
+                "next_retry_at":_iso(retry),
+                "source_cooldown":True,
                 "error":str(exc),
             }
         _set_queue(
@@ -708,6 +727,7 @@ def run_one_surname(db, *, now=None, harvest_fn=harvest_surname):
         last_error="",
     )
     _clear_progress(db,row["surname"])
+    _set_bootstrap_cooldown(db,"")
     return {
         "status":"completed",
         "surname":row["surname"],
@@ -735,6 +755,7 @@ def location_learning(db, *, minimum_confidence=55, limit=100):
 
 
 META_BOOTSTRAP_ENABLED="ryerson_surname_bootstrap_enabled"
+META_BOOTSTRAP_COOLDOWN_UNTIL="ryerson_surname_bootstrap_cooldown_until"
 
 def _meta_get(db,key,default=""):
     row=db.execute("SELECT value FROM meta WHERE key=?",(key,)).fetchone()
@@ -746,6 +767,52 @@ def _meta_set(db,key,value):
 
 def bootstrap_enabled(db):
     return _meta_get(db,META_BOOTSTRAP_ENABLED,"0")=="1"
+
+def bootstrap_cooldown_until(db):
+    return _parse_iso(_meta_get(db,META_BOOTSTRAP_COOLDOWN_UNTIL,""))
+
+
+def _set_bootstrap_cooldown(db,value):
+    _meta_set(db,META_BOOTSTRAP_COOLDOWN_UNTIL,value or "")
+
+
+def bootstrap_source_waiting(db, now=None):
+    now=now or _utcnow()
+    until=bootstrap_cooldown_until(db)
+    return bool(until and until>now)
+
+
+def _is_transient_transport_error(message: str | None) -> bool:
+    low=(message or "").casefold()
+    phrases=(
+        "submit field not found",
+        "surname field not found",
+        "search form not recognised",
+        "search form not recognized",
+        "javascript from apple events",
+        "safari automation",
+        "timed out waiting for verified ryerson surname results",
+        "timed out waiting for ryerson surname results",
+    )
+    return any(p in low for p in phrases)
+
+
+def recover_transient_surname_failures(db):
+    rows=db.execute(
+        "SELECT id,last_error FROM companion_ryerson_surname_queue WHERE status='failed'"
+    ).fetchall()
+    ids=[r["id"] for r in rows if _is_transient_transport_error(r["last_error"])]
+    for qid in ids:
+        db.execute(
+            "UPDATE companion_ryerson_surname_queue "
+            "SET status='queued',attempts=0,last_error=NULL,last_attempt_at=NULL,"
+            "next_retry_at=NULL,completed_at=NULL,updated_at=CURRENT_TIMESTAMP "
+            "WHERE id=?",
+            (qid,),
+        )
+    db.commit()
+    return len(ids)
+
 
 def reconcile_cached_surnames(db):
     """Complete cached surnames only when no incomplete page checkpoint exists."""
@@ -820,10 +887,12 @@ def reconcile_cached_surnames_detail(db):
 
 def start_bootstrap(db):
     added=enqueue_unique_surnames(db)
+    recovered=recover_transient_surname_failures(db)
     reconciled=reconcile_cached_surnames(db)
     _meta_set(db,META_BOOTSTRAP_ENABLED,"1")
     out=bootstrap_status(db)
     out["newly_queued"]=added
+    out["recovered_transient"]=recovered
     out["reconciled_cached"]=reconciled
     return out
 
@@ -833,6 +902,7 @@ def pause_bootstrap(db):
 
 def bootstrap_status(db):
     summary=surname_queue_summary(db)
+    until=bootstrap_cooldown_until(db)
     return {
         "enabled":bootstrap_enabled(db),
         "total":summary["total"],
@@ -840,11 +910,20 @@ def bootstrap_status(db):
         "retry_wait":summary["retry_wait"],
         "completed":summary["completed"],
         "failed":summary["failed"],
+        "source_waiting":bootstrap_source_waiting(db),
+        "cooldown_until":until.isoformat() if until else None,
     }
 
 def bootstrap_tick(db, *, now=None, harvest_fn=harvest_surname):
+    now=now or _utcnow()
     if not bootstrap_enabled(db):
         return {"status":"paused"}
+    if bootstrap_source_waiting(db,now):
+        until=bootstrap_cooldown_until(db)
+        return {
+            "status":"source_wait",
+            "next_retry_at":until.isoformat() if until else None,
+        }
     return run_one_surname(db,now=now,harvest_fn=harvest_fn)
 
 def start_background_surname_bootstrap(db_path, *, interval_seconds=120, poll_seconds=10):
