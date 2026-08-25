@@ -107,9 +107,11 @@ def _form_fill_javascript(query: RyersonQuery) -> str:
     return true;
   }}
 
-  const surnameEl=findControl(['surname','last name','family name']);
-  const givenEl=findControl(['given names','given name','first name','forename']);
-  const stateEl=findControl(['state']);
+  // RC1.0.14.6.2.2: confirmed live Ryerson field names from Safari DOM.
+  // Prefer these exact controls; retain semantic discovery as a fallback.
+  const surnameEl=document.querySelector('[name="search_sn"]') || findControl(['surname','last name','family name']);
+  const givenEl=document.querySelector('[name="search_gn"]') || findControl(['given names','given name','first name','forename']);
+  const stateEl=document.querySelector('[name="search_st"]') || findControl(['state']);
 
   const okSurname=setValue(surnameEl,{surname});
   const okGiven=setValue(givenEl,{given});
@@ -122,9 +124,10 @@ def _form_fill_javascript(query: RyersonQuery) -> str:
   const form=(surnameEl && surnameEl.form) || document.querySelector('form');
   if (!form) return JSON.stringify({{status:'form_not_recognised',reason:'search form not found'}});
 
-  const submit=[...form.querySelectorAll('button,input[type=submit]')].find(el =>
-    norm(el.innerText || el.value || el.name || '').includes('search')
-  );
+  const submit=form.querySelector('[name="search"][type="submit"]') ||
+    [...form.querySelectorAll('button,input[type=submit]')].find(el =>
+      norm(el.innerText || el.value || el.name || '').includes('search')
+    );
 
   if (submit) submit.click();
   else if (form.requestSubmit) form.requestSubmit();
