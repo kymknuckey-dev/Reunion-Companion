@@ -613,6 +613,12 @@ def cross_match_surname(db, surname: str, *, minimum_score=55):
 
 
 def _progress_can_finalize_locally(db, surname: str) -> bool:
+    """Return True when the saved harvest is internally complete enough to finalise.
+
+    rows_seen counts every parsed row.  inserted_rows counts rows newly cached
+    during the harvest, while existing_rows counts rows already present in the
+    cache.  Therefore unique cached rows need not equal rows_seen.
+    """
     progress=surname_progress(db,surname)
     if not progress:
         return False
@@ -620,9 +626,18 @@ def _progress_can_finalize_locally(db, surname: str) -> bool:
         return False
     if int(progress["is_complete"] or 0):
         return True
+
     cached=_unique_cached_count(db,surname)
     rows_seen=int(progress["rows_seen"] or 0)
-    return cached>0 and cached==rows_seen
+    inserted=int(progress["inserted_rows"] or 0)
+    existing=int(progress["existing_rows"] or 0)
+
+    return (
+        cached>0
+        and rows_seen>0
+        and inserted+existing==rows_seen
+        and cached==inserted
+    )
 
 
 def _finalize_cached_surname(db, queue_row, now):
@@ -648,9 +663,9 @@ def _finalize_cached_surname(db, queue_row, now):
             current_page=int(progress["current_page"] or 0),
             current_url=progress["current_url"],
             pages_completed=int(progress["pages_completed"] or 0),
-            rows_seen=cached,
-            inserted_rows=cached,
-            existing_rows=0,
+            rows_seen=int(progress["rows_seen"] or 0),
+            inserted_rows=int(progress["inserted_rows"] or 0),
+            existing_rows=int(progress["existing_rows"] or 0),
             is_complete=True,
         )
 
@@ -1031,6 +1046,8 @@ def start_background_surname_bootstrap(db_path, *, interval_seconds=120, poll_se
                         db.close()
                     next_allowed=time.monotonic()+interval_seconds
             except Exception:
+                import traceback
+                traceback.print_exc()
                 next_allowed=time.monotonic()+interval_seconds
             time.sleep(poll_seconds)
     thread=threading.Thread(target=worker,name="ReunionCompanion-RyersonSurnameBootstrap",daemon=True)
