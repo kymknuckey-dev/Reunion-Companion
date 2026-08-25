@@ -54,6 +54,32 @@ CREATE TABLE IF NOT EXISTS companion_external_scan_queue(
 
 CREATE INDEX IF NOT EXISTS idx_companion_external_scan_status
 ON companion_external_scan_queue(source_name,status,next_retry_at);
+
+CREATE TABLE IF NOT EXISTS companion_external_notice_cache(
+    id INTEGER PRIMARY KEY,
+    source_name TEXT NOT NULL,
+    record_key TEXT NOT NULL,
+    harvest_kind TEXT NOT NULL,
+    harvest_value TEXT NOT NULL,
+    harvest_year INTEGER NOT NULL,
+    page_number INTEGER NOT NULL DEFAULT 1,
+    evidence_type TEXT,
+    source_record_name TEXT,
+    event_type TEXT,
+    event_date TEXT,
+    publication TEXT,
+    publication_date TEXT,
+    details TEXT,
+    birth_date_claim TEXT,
+    place_claim TEXT,
+    normalized_json TEXT NOT NULL,
+    first_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source_name,record_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_companion_external_notice_harvest
+ON companion_external_notice_cache(source_name,harvest_kind,harvest_value,harvest_year);
 """
 
 VALID_STATUSES = {"new", "reviewed", "accepted", "rejected"}
