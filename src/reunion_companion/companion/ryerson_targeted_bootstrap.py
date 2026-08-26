@@ -453,7 +453,7 @@ def start_background_targeted_bootstrap(
 def live_targeted_search(db, descriptor):
     """Run one targeted search through the verified Safari harvester."""
     from . import ryerson_surname_bootstrap as broad
-    from .external_evidence_matcher import cross_match_cached_notices
+    from .ryerson_harvest import cross_match_cached_notices
 
     surname=_clean(descriptor["surname"])
     given=_clean(descriptor.get("given_name") or "")

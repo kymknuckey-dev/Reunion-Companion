@@ -134,13 +134,23 @@ def pagination_links() -> list[dict]:
     current=data.get("current","")
     out=[]
     seen=set()
+
     for item in data.get("links",[]):
         href=urljoin(current,item.get("href") or "")
         text=(item.get("text") or "").strip()
-        if not href or href==current or href in seen:
+        if not text or not href or href==current:
             continue
-        seen.add(href)
+
+        if href.endswith("#"):
+            identity=("control",text.casefold())
+        else:
+            identity=("href",href)
+
+        if identity in seen:
+            continue
+        seen.add(identity)
         out.append({"text":text,"href":href})
+
     return out
 
 

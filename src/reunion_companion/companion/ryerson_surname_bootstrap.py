@@ -447,21 +447,46 @@ def _resume_paged_surname(
 
 
 def _select_forward_pagination_link(links, current_page: int, visited=None):
-    """Return the first genuine forward page link, never a completed/backward page."""
+    """Return the next genuine forward Ryerson page control.
+
+    Ryerson commonly gives every pager control the same search.php# href and
+    performs navigation through JavaScript forms. Numeric visible text is
+    therefore authoritative. A Next control represents current_page + 1.
+    """
     visited=visited or set()
     candidates=[]
-    for i,item in enumerate(links,2):
+    has_next=False
+    next_href=""
+
+    for item in links:
         href=item["href"]
-        if href in visited:
+        text=(item.get("text") or "").strip()
+
+        if re.search(r"next|[>»›]",text,re.I):
+            has_next=True
+            next_href=href
             continue
-        pn=_page_number_from_link(item["text"],href,i)
-        if int(pn) <= int(current_page):
+
+        if not text.isdigit():
             continue
-        candidates.append((int(pn),href))
-    if not candidates:
-        return None
-    candidates.sort(key=lambda x:x[0])
-    return candidates[0]
+
+        pn=int(text)
+        if pn <= int(current_page):
+            continue
+
+        if not href.endswith("#") and href in visited:
+            continue
+
+        candidates.append((pn,href))
+
+    if candidates:
+        candidates.sort(key=lambda x:x[0])
+        return candidates[0]
+
+    if has_next:
+        return (int(current_page)+1,next_href)
+
+    return None
 
 
 def harvest_surname(
