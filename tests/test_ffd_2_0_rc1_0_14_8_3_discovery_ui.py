@@ -15,7 +15,7 @@ def test_empty_ui_explains_no_assembled_discoveries(tmp_path):
     db=connect(tmp_path/"x.db")
     html=render_discovery_review_section(db)
     assert "External Evidence Review" in html
-    assert "No person-level discoveries have been assembled yet" in html
+    assert "No new person-level discoveries currently need review." in html
 
 
 def test_new_discovery_renders_person_and_review_actions(tmp_path):
@@ -24,11 +24,9 @@ def test_new_discovery_renders_person_and_review_actions(tmp_path):
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="notice:rigg",proposed_fact_key="death:2021-01-02")
     html=render_discovery_review_section(db)
     assert "Peter Rigg" in html
-    assert "death:2021-01-02" in html
-    assert "Accept for Reunion" in html
-    assert "Already Known" in html
-    assert "Not This Person" in html
-    assert "Decide Later" in html
+    assert "Peter Rigg" in html
+    assert "1 candidate" in html
+    assert "Review New Discoveries" in html
 
 
 def test_waiting_discovery_has_no_repeat_review_buttons(tmp_path):
@@ -38,7 +36,7 @@ def test_waiting_discovery_has_no_repeat_review_buttons(tmp_path):
     set_discovery_state(db,row["id"],"waiting_for_reunion")
     html=render_discovery_review_section(db)
     assert "Waiting for Reunion" in html
-    assert "Accepted. Waiting for a future GEDCOM refresh" in html
+    assert "Waiting for Reunion: 1" in html
 
 
 def test_groups_keep_states_separate(tmp_path):

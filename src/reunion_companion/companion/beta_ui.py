@@ -1110,6 +1110,14 @@ def render_get(db,path,query=None):
         return quality_items_page(db,query.get("kind",""))
     if path=="/research":
         return research_page(db)
+    if path=="/research/discoveries":
+        from .ryerson_discovery_ui import render_discovery_workspace
+        try: page_no=int(query.get("page","1") or 1)
+        except Exception: page_no=1
+        try: person_id=int(query.get("person","0") or 0) or None
+        except Exception: person_id=None
+        state=query.get("state","new")
+        return layout("External Evidence Review",render_discovery_workspace(db,state=state,page=page_no,page_size=20,person_id=person_id),active="priorities")
     if path=="/places":
         return places_page(db)
     if path=="/sources":
@@ -1407,7 +1415,13 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                             state=state_map.get(action)
                             if discovery_id and state:
                                 set_discovery_state(db,discovery_id,state)
-                                self.send_html(research_page(db))
+                                return_to=form.get("return") or "/research"
+                                parsed=urlparse(return_to)
+                                if parsed.path=="/research/discoveries":
+                                    q={k:v[0] for k,v in parse_qs(parsed.query).items()}
+                                    self.send_html(render_get(db,parsed.path,q))
+                                else:
+                                    self.send_html(research_page(db))
                                 return
 
                     if u.path in ("/research/ryerson/targeted/start","/research/ryerson/targeted/pause"):
