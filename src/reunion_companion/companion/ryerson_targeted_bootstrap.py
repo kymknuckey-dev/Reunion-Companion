@@ -492,13 +492,91 @@ def live_targeted_search(db, descriptor):
     }
 
 
-def run_selected_targeted_search(db, search_key_value: str):
-    """Run exactly one targeted queue item for deliberate live QA."""
+def run_selected_targeted_search(db, search_key_value: str, *, now=None):
+    """Run exactly one selected queue item through the normal queue state machine."""
     ensure_targeted_schema(db)
+    now=now or _utcnow()
+
     row=db.execute(
         "SELECT * FROM companion_ryerson_targeted_queue WHERE search_key=?",
         (search_key_value,),
     ).fetchone()
     if row is None:
         raise ValueError(f"Targeted Ryerson search not found: {search_key_value}")
-    return live_targeted_search(db,targeted_search_descriptor(row))
+
+    attempts=int(row["attempts"] or 0)+1
+    _set_targeted_queue(
+        db,row["id"],
+        status="searching",
+        attempts=attempts,
+        last_attempt_at=_iso(now),
+        last_error="",
+        next_retry_at=None,
+    )
+
+    try:
+        result=live_targeted_search(db,targeted_search_descriptor(row))
+    except SourceBusyError as exc:
+        retry=now+timedelta(seconds=targeted_overload_backoff_seconds(attempts))
+        _set_targeted_queue(
+            db,row["id"],
+            status="retry_wait",
+            attempts=attempts,
+            last_error=str(exc),
+            next_retry_at=_iso(retry),
+        )
+        _set_targeted_cooldown(db,_iso(retry))
+        return {
+            "status":"retry_wait",
+            "search_key":row["search_key"],
+            "next_retry_at":_iso(retry),
+            "source_cooldown":True,
+        }
+    except SourceSearchError as exc:
+        retry=now+timedelta(seconds=targeted_overload_backoff_seconds(attempts))
+        _set_targeted_queue(
+            db,row["id"],
+            status="retry_wait",
+            attempts=attempts,
+            last_error=str(exc),
+            next_retry_at=_iso(retry),
+        )
+        return {
+            "status":"retry_wait",
+            "search_key":row["search_key"],
+            "next_retry_at":_iso(retry),
+            "error":str(exc),
+        }
+    except Exception as exc:
+        _set_targeted_queue(
+            db,row["id"],
+            status="failed",
+            attempts=attempts,
+            last_error=f"{type(exc).__name__}: {exc}",
+        )
+        return {
+            "status":"failed",
+            "search_key":row["search_key"],
+            "error":f"{type(exc).__name__}: {exc}",
+        }
+
+    result=result or {}
+    _set_targeted_queue(
+        db,row["id"],
+        status="completed",
+        attempts=attempts,
+        completed_at=_iso(now),
+        result_count=int(result.get("result_count",0)),
+        match_count=int(result.get("match_count",0)),
+        last_error="",
+        next_retry_at=None,
+    )
+    _set_targeted_cooldown(db,"")
+
+    return {
+        "status":"completed",
+        "search_key":row["search_key"],
+        "result_count":int(result.get("result_count",0)),
+        "match_count":int(result.get("match_count",0)),
+        "harvest":result.get("harvest"),
+    }
