@@ -268,6 +268,13 @@ def targeted_overload_backoff_seconds(attempts: int) -> int:
     return schedule[min(attempts-1,len(schedule)-1)]
 
 
+TARGETED_SEARCH_MAX_ATTEMPTS=3
+
+
+def targeted_search_retry_exhausted(attempts: int) -> bool:
+    return int(attempts) >= TARGETED_SEARCH_MAX_ATTEMPTS
+
+
 def next_targeted_search(db, now=None):
     ensure_targeted_schema(db)
     now=now or _utcnow()
@@ -360,6 +367,22 @@ def run_one_targeted(db, *, now=None, search_fn):
             "source_cooldown":True,
         }
     except SourceSearchError as exc:
+        if targeted_search_retry_exhausted(attempts):
+            _set_targeted_queue(
+                db,row["id"],
+                status="failed",
+                attempts=attempts,
+                last_error=str(exc),
+                next_retry_at=None,
+            )
+            return {
+                "status":"failed",
+                "search_key":row["search_key"],
+                "attempts":attempts,
+                "error":str(exc),
+                "retry_exhausted":True,
+            }
+
         retry=now+timedelta(seconds=targeted_overload_backoff_seconds(attempts))
         _set_targeted_queue(
             db,row["id"],
@@ -543,6 +566,22 @@ def run_selected_targeted_search(db, search_key_value: str, *, now=None):
             "source_cooldown":True,
         }
     except SourceSearchError as exc:
+        if targeted_search_retry_exhausted(attempts):
+            _set_targeted_queue(
+                db,row["id"],
+                status="failed",
+                attempts=attempts,
+                last_error=str(exc),
+                next_retry_at=None,
+            )
+            return {
+                "status":"failed",
+                "search_key":row["search_key"],
+                "attempts":attempts,
+                "error":str(exc),
+                "retry_exhausted":True,
+            }
+
         retry=now+timedelta(seconds=targeted_overload_backoff_seconds(attempts))
         _set_targeted_queue(
             db,row["id"],
