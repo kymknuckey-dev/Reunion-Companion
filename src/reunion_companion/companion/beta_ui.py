@@ -946,11 +946,11 @@ def research_page(db):
     from .external_evidence_matcher import ryerson_death_candidates
     from .external_evidence import external_evidence_for_person
     from .external_research_runner import runner_status
-    from .ryerson_surname_bootstrap import bootstrap_status
+    from .ryerson_targeted_bootstrap import targeted_status
 
     death_rows=ryerson_death_candidates(db)
     run=runner_status(db)
-    surname_run=bootstrap_status(db)
+    surname_run=targeted_status(db)
     sql=("SELECT p.id,p.display_name, "
          "SUM(CASE WHEN e.id IS NOT NULL "
          "AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id) "
@@ -971,11 +971,12 @@ def research_page(db):
         body+="<form method=\'post\' action=\'/research/ryerson/runner/start\'><button type=\'submit\'>Start Ryerson Research</button></form>"
     body+="</div>"
     surname_state="Running" if surname_run["enabled"] else "Paused"
-    body+=f"""<div class='card'><h2>Ryerson Surname Bootstrap Runner</h2><p class='meta'>One-time catch-up harvest across unique Reunion surnames. Completed surnames are retained and are not repeated on restart. Ryerson overloads are retried later.</p><div class='topic'><strong>{surname_state}</strong><div class='small'>Completed: {surname_run["completed"]} · Queued: {surname_run["queued"]} · Waiting: {surname_run["retry_wait"]} · Errors: {surname_run["failed"]} · Total: {surname_run["total"]}</div></div>"""
+    core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
+    body+=f"""<div class='card'><h2>Ryerson Targeted Bootstrap Runner</h2><p class='meta'>Hybrid catch-up research: configured core surnames are searched broadly; other people are grouped by surname plus first given name. Completed searches are retained and are not repeated. Ryerson overloads use the bounded source-wide cooldown.</p><div class='topic'><strong>{surname_state}</strong><div class='small'>Completed: {surname_run["completed"]} · Queued: {surname_run["queued"]} · Waiting: {surname_run["retry_wait"]} · Searching: {surname_run["searching"]} · Errors: {surname_run["failed"]} · Total: {surname_run["total"]}</div><div class='small'>Broad core surname(s): {esc(core_names)}</div></div>"""
     if surname_run["enabled"]:
-        body+="<form method='post' action='/research/ryerson/surnames/pause'><button type='submit'>Pause Surname Bootstrap</button></form>"
+        body+="<form method='post' action='/research/ryerson/targeted/pause'><button type='submit'>Pause Targeted Bootstrap</button></form>"
     else:
-        body+="<form method='post' action='/research/ryerson/surnames/start'><button type='submit'>Start Surname Bootstrap</button></form>"
+        body+="<form method='post' action='/research/ryerson/targeted/start'><button type='submit'>Start Targeted Bootstrap</button></form>"
     body+="</div>"
     body+="<div class='card'><h2>Ryerson Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
     if death_rows:
@@ -1375,12 +1376,12 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             db=connect(db_path)
             try:
                 try:
-                    if u.path in ("/research/ryerson/surnames/start","/research/ryerson/surnames/pause"):
-                        from .ryerson_surname_bootstrap import start_bootstrap,pause_bootstrap
+                    if u.path in ("/research/ryerson/targeted/start","/research/ryerson/targeted/pause"):
+                        from .ryerson_targeted_bootstrap import start_targeted_bootstrap,pause_targeted_bootstrap
                         if u.path.endswith("/start"):
-                            start_bootstrap(db)
+                            start_targeted_bootstrap(db)
                         else:
-                            pause_bootstrap(db)
+                            pause_targeted_bootstrap(db)
                         self.send_html(research_page(db))
                         return
 
@@ -1488,9 +1489,15 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             pass
 
     from .external_research_runner import start_background_runner
-    from .ryerson_surname_bootstrap import start_background_surname_bootstrap
+    from .ryerson_targeted_bootstrap import (
+        live_targeted_search,
+        start_background_targeted_bootstrap,
+    )
     start_background_runner(db_path)
-    start_background_surname_bootstrap(db_path)
+    start_background_targeted_bootstrap(
+        db_path,
+        search_fn=live_targeted_search,
+    )
     server=ThreadingHTTPServer((host,port),Handler)
     url=f"http://{host}:{port}/"
     print(APP_DISPLAY_NAME)
