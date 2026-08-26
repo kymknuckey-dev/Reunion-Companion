@@ -454,7 +454,7 @@ def start_background_targeted_bootstrap(
 def live_targeted_search(db, descriptor):
     """Run one targeted search through the verified Safari harvester."""
     from . import ryerson_surname_bootstrap as broad
-    from .ryerson_harvest import cross_match_cached_notices
+    from .ryerson_harvest import cross_match_cached_notices, harvest_membership_count
 
     surname=_clean(descriptor["surname"])
     given=_clean(descriptor.get("given_name") or "")
@@ -484,8 +484,17 @@ def live_targeted_search(db, descriptor):
         harvest_value=identity["harvest_value"],
         minimum_score=55,
     )
+    result_count=(
+        harvest_membership_count(
+            db,
+            harvest_kind=identity["harvest_kind"],
+            harvest_value=identity["harvest_value"],
+        )
+        if identity["harvest_kind"]=="surname_given"
+        else int(result.get("unique_cached",0))
+    )
     return {
-        "result_count":int(result.get("unique_cached",0)),
+        "result_count":int(result_count),
         "match_count":int(matches.get("findings",0)),
         "harvest":result,
         "matches":matches,

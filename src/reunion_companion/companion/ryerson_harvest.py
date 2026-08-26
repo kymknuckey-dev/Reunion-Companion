@@ -213,3 +213,91 @@ def cross_match_cached_notices(db, *, year: int | None = None,
         "created_findings":created,
         "matches":rows,
     }
+
+
+# RC1.0.14.7.4.7 — multi-harvest notice membership.
+_CACHE_HARVEST_ROWS_WITHOUT_MEMBERSHIP = cache_harvest_rows
+
+HARVEST_MEMBERSHIP_SCHEMA = """
+CREATE TABLE IF NOT EXISTS companion_external_notice_harvest_membership(
+    source_name TEXT NOT NULL,
+    record_key TEXT NOT NULL,
+    harvest_kind TEXT NOT NULL,
+    harvest_value TEXT NOT NULL,
+    page_number INTEGER NOT NULL DEFAULT 0,
+    first_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(source_name,record_key,harvest_kind,harvest_value)
+);
+CREATE INDEX IF NOT EXISTS idx_companion_external_notice_membership_search
+ON companion_external_notice_harvest_membership(
+    source_name,harvest_kind,harvest_value
+);
+"""
+
+
+def ensure_harvest_membership(db):
+    db.executescript(HARVEST_MEMBERSHIP_SCHEMA)
+    db.commit()
+
+
+def harvest_membership_count(db, *, source_name="Ryerson", harvest_kind, harvest_value):
+    ensure_harvest_membership(db)
+    return int(db.execute(
+        """
+        SELECT COUNT(*)
+        FROM companion_external_notice_harvest_membership
+        WHERE source_name=?
+          AND harvest_kind=?
+          AND lower(trim(harvest_value))=lower(trim(?))
+        """,
+        (source_name,harvest_kind,harvest_value),
+    ).fetchone()[0])
+
+
+def cache_harvest_rows(
+    db,
+    rows,
+    *,
+    harvest_kind,
+    harvest_value,
+    harvest_year,
+    page_number=0,
+):
+    """Cache each source notice once and always record search membership."""
+    ensure_harvest_membership(db)
+
+    result=_CACHE_HARVEST_ROWS_WITHOUT_MEMBERSHIP(
+        db,
+        rows,
+        harvest_kind=harvest_kind,
+        harvest_value=harvest_value,
+        harvest_year=harvest_year,
+        page_number=page_number,
+    )
+
+    for row in rows:
+        record_key=harvest_record_key(row)
+        db.execute(
+            """
+            INSERT INTO companion_external_notice_harvest_membership(
+                source_name,record_key,harvest_kind,harvest_value,page_number,
+                first_seen_at,last_seen_at
+            ) VALUES('Ryerson',?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+            ON CONFLICT(source_name,record_key,harvest_kind,harvest_value)
+            DO UPDATE SET
+                page_number=excluded.page_number,
+                last_seen_at=CURRENT_TIMESTAMP
+            """,
+            (record_key,harvest_kind,harvest_value,int(page_number or 0)),
+        )
+
+    db.commit()
+    result=dict(result)
+    result["memberships"]=len(rows)
+    result["membership_count"]=harvest_membership_count(
+        db,
+        harvest_kind=harvest_kind,
+        harvest_value=harvest_value,
+    )
+    return result

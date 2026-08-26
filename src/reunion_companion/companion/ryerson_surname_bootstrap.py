@@ -14,7 +14,7 @@ import time
 
 from .external_evidence_scan import SourceBusyError, SourceSearchError, backoff_seconds
 from .ryerson_adapter import parse_ryerson_results
-from .ryerson_harvest import cache_harvest_rows, cross_match_cached_notices, harvest_record_key
+from .ryerson_harvest import cache_harvest_rows, cross_match_cached_notices, harvest_record_key, harvest_membership_count
 from .ryerson_safari_transport import (
     BrowserTransportUnavailable,
     RYERSON_SEARCH_URL,
@@ -512,6 +512,12 @@ def harvest_surname(
         enabled_fn=bootstrap_enabled
 
     def unique_cached_count():
+        if harvest_kind=="surname_given":
+            return harvest_membership_count(
+                db,
+                harvest_kind=harvest_kind,
+                harvest_value=identity_value,
+            )
         return db.execute(
             "SELECT COUNT(*) FROM companion_external_notice_cache "
             "WHERE source_name='Ryerson' AND harvest_kind=? "
