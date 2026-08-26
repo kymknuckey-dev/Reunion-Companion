@@ -947,6 +947,7 @@ def research_page(db):
     from .external_evidence import external_evidence_for_person
     from .external_research_runner import runner_status
     from .ryerson_targeted_bootstrap import targeted_status
+    from .ryerson_discovery_ui import render_discovery_review_section
 
     death_rows=ryerson_death_candidates(db)
     run=runner_status(db)
@@ -970,6 +971,8 @@ def research_page(db):
     else:
         body+="<form method=\'post\' action=\'/research/ryerson/runner/start\'><button type=\'submit\'>Start Ryerson Research</button></form>"
     body+="</div>"
+    body+=render_discovery_review_section(db)
+
     surname_state="Running" if surname_run["enabled"] else "Paused"
     core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
     body+=f"""<div class='card'><h2>Ryerson Targeted Bootstrap Runner</h2><p class='meta'>Hybrid catch-up research: configured core surnames are searched broadly; other people are grouped by surname plus first given name. Completed searches are retained and are not repeated. Ryerson overloads use the bounded source-wide cooldown.</p><div class='topic'><strong>{surname_state}</strong><div class='small'>Completed: {surname_run["completed"]} · Queued: {surname_run["queued"]} · Waiting: {surname_run["retry_wait"]} · Searching: {surname_run["searching"]} · Errors: {surname_run["failed"]} · Total: {surname_run["total"]}</div><div class='small'>Broad core surname(s): {esc(core_names)}</div></div>"""
@@ -1376,6 +1379,27 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
             db=connect(db_path)
             try:
                 try:
+                    if u.path.startswith("/research/discovery/"):
+                        from .ryerson_discovery_review import set_discovery_state
+                        parts=[p for p in u.path.split("/") if p]
+                        if len(parts)==4 and parts[0]=="research" and parts[1]=="discovery":
+                            try:
+                                discovery_id=int(parts[2])
+                            except ValueError:
+                                discovery_id=0
+                            action=parts[3]
+                            state_map={
+                                "waiting":"waiting_for_reunion",
+                                "known":"already_known",
+                                "reject":"rejected",
+                                "defer":"deferred",
+                            }
+                            state=state_map.get(action)
+                            if discovery_id and state:
+                                set_discovery_state(db,discovery_id,state)
+                                self.send_html(research_page(db))
+                                return
+
                     if u.path in ("/research/ryerson/targeted/start","/research/ryerson/targeted/pause"):
                         from .ryerson_targeted_bootstrap import start_targeted_bootstrap,pause_targeted_bootstrap
                         if u.path.endswith("/start"):
