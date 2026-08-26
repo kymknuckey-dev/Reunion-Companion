@@ -253,6 +253,11 @@ def _rows_correspond_to_surname(rows, surname: str) -> bool:
     return matching / len(observed) >= 0.90
 
 
+
+def _page_is_new_for_session(page_keys, session_seen_keys):
+    """True when a result page contributes a record not seen in this traversal."""
+    return bool(set(page_keys)-set(session_seen_keys))
+
 def _page_record_keys(rows):
     return {harvest_record_key(r) for r in rows}
 
@@ -557,17 +562,11 @@ def harvest_surname(
         page_no=1
 
     visited=set()
-    seen_record_keys=set()
-    for row in db.execute(
-        "SELECT normalized_json FROM companion_external_notice_cache "
-        "WHERE source_name='Ryerson' AND harvest_kind=? "
-        "AND lower(trim(harvest_value))=lower(trim(?))",
-        (harvest_kind,identity_value),
-    ).fetchall():
-        try:
-            seen_record_keys.add(harvest_record_key(json.loads(row["normalized_json"])))
-        except Exception:
-            pass
+
+    # Pagination identity is session-local. Historical cache contents are
+    # deliberately excluded: an already-cached notice can still belong to a
+    # genuinely new page in a fresh traversal.
+    session_seen_record_keys=set()
 
     while pages_completed < max_pages:
         if not enabled_fn(db):
@@ -597,8 +596,9 @@ def harvest_surname(
             raise SourceSearchError(f"Unverified surname result page for {surname}")
 
         page_keys=_page_record_keys(rows)
-        new_keys=page_keys-seen_record_keys
-        if page_no > 1 and rows and not new_keys:
+        if page_no > 1 and rows and not _page_is_new_for_session(
+            page_keys,session_seen_record_keys
+        ):
             _save_progress(
                 db,progress_name,
                 current_page=page_no,current_url=url,pages_completed=pages_completed,
@@ -624,7 +624,7 @@ def harvest_surname(
         rows_total+=len(rows)
         inserted+=cached["inserted"]
         existing+=cached["existing"]
-        seen_record_keys.update(page_keys)
+        session_seen_record_keys.update(page_keys)
 
         _save_progress(
             db,progress_name,
