@@ -964,11 +964,22 @@ def research_page(db):
          "ORDER BY unsourced DESC,p.display_name LIMIT 100")
     rows=db.execute(sql).fetchall()
 
+    from .research_priority import resolve_focus_person, sort_rows_by_focus, death_research_semantics
+    research_focus=resolve_focus_person(db)
+    if research_focus:
+        death_rows,_death_relationships=sort_rows_by_focus(db,research_focus["id"],death_rows,"person_id")
+        rows,_quality_relationships=sort_rows_by_focus(db,research_focus["id"],rows,"id")
+    else:
+        _death_relationships={}
+        _quality_relationships={}
+
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
+    if research_focus:
+        body+=f"<div class='card'><strong>Research focus: {esc(research_focus['display_name'])}</strong><div class='small'>External evidence, research needs and data quality are prioritised outward through this person's recorded family network.</div></div>"
 
     materialize_existing_ryerson_discoveries(db)
     materialize_person_level_ryerson_findings(db)
-    body+=render_discovery_review_section(db)
+    body+=render_discovery_review_section(db,focus_id=research_focus["id"] if research_focus else None)
 
     state=("Paused" if not run["enabled"] else ("Waiting for Ryerson" if run.get("source_waiting") else "Running"))
     surname_state="Running" if surname_run["enabled"] else "Paused"
@@ -993,11 +1004,10 @@ def research_page(db):
     body+="<div class='card'><h2>Research Needed</h2>"
     body+=f"<div class='topic'><strong>Death research</strong><span class='badge warn' style='float:right'>{death_count}</span><div class='small'>People with a missing or incomplete Death event.</div>"
     for r in death_rows[:8]:
-        if r["death_state"]=="incomplete":
-            badge="<span class='badge warn' style='float:right'>Death incomplete</span>"
-        else:
-            badge="<span class='badge warn' style='float:right'>Death missing</span>"
-        body+=f"<a class='result' href='/person/{r['person_id']}?tab=research'><strong>{esc(r['display_name'])}</strong>{badge}"
+        semantics=death_research_semantics(db,r["person_id"])
+        badge=f"<span class='badge warn' style='float:right'>{esc(semantics['label'])}</span>"
+        relation=_death_relationships.get(int(r["person_id"]),{"label":"Relationship not established"})["label"]
+        body+=f"<a class='result' href='/person/{r['person_id']}?tab=research'><strong>{esc(r['display_name'])}</strong>{badge}<span class='meta' style='display:block'>{esc(relation)}</span>"
         if r["death_state"]=="incomplete" and r["death_note_text"]:
             body+="<span class='meta' style='display:block'>Existing Death event note available</span>"
         body+="</a>"
@@ -1012,7 +1022,8 @@ def research_page(db):
     body+="<div class='card'><h2>Data Quality</h2>"
     body+=f"<div class='topic'><strong>Unsourced Events</strong><span class='badge warn' style='float:right'>{unsourced_total} events</span><div class='small'>{unsourced_people} people currently have events or facts without linked source or media evidence.</div>"
     for r in rows[:8]:
-        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
+        relation=_quality_relationships.get(int(r["id"]),{"label":"Relationship not established"})["label"]
+        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span><span class='meta' style='display:block'>{esc(relation)}</span></a>"
     if unsourced_people>8:
         body+=f"<div class='small'>Showing 8 of {unsourced_people} people.</div>"
     if not rows:
@@ -1117,7 +1128,7 @@ def render_get(db,path,query=None):
         try: person_id=int(query.get("person","0") or 0) or None
         except Exception: person_id=None
         state=query.get("state","new")
-        return layout("External Evidence Review",render_discovery_workspace(db,state=state,page=page_no,page_size=20,person_id=person_id),active="priorities")
+        return layout("External Evidence Review",render_discovery_workspace(db,state=state,page=page_no,page_size=20,person_id=person_id,focus_id=query.get("focus")),active="priorities")
     if path=="/places":
         return places_page(db)
     if path=="/sources":
