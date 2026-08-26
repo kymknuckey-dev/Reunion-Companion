@@ -948,6 +948,7 @@ def research_page(db):
     from .external_research_runner import runner_status
     from .ryerson_targeted_bootstrap import targeted_status
     from .ryerson_discovery_ui import render_discovery_review_section
+    from .ryerson_discovery_materialize import materialize_existing_ryerson_discoveries
 
     death_rows=ryerson_death_candidates(db)
     run=runner_status(db)
@@ -964,23 +965,9 @@ def research_page(db):
 
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
 
-    state=("Paused" if not run["enabled"] else ("Waiting for Ryerson" if run.get("source_waiting") else "Running"))
-    body+=f"""<div class='card'><h2>Ryerson Research Runner</h2><p class='meta'>Unattended research uses the normal Safari session at a deliberately slow rate. If Ryerson is overloaded, Companion pauses the source and retries later.</p><div class='topic'><strong>{state}</strong><div class='small'>Queued: {run["queued"]} · Waiting for Ryerson: {run["retry_wait"]} · Findings: {run["findings"]} · No finding: {run["no_match"]} · Errors: {run["failed"]}</div></div>"""
-    if run["enabled"]:
-        body+="<form method=\'post\' action=\'/research/ryerson/runner/pause\'><button type=\'submit\'>Pause Ryerson Research</button></form>"
-    else:
-        body+="<form method=\'post\' action=\'/research/ryerson/runner/start\'><button type=\'submit\'>Start Ryerson Research</button></form>"
-    body+="</div>"
+    materialize_existing_ryerson_discoveries(db)
     body+=render_discovery_review_section(db)
 
-    surname_state="Running" if surname_run["enabled"] else "Paused"
-    core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
-    body+=f"""<div class='card'><h2>Ryerson Targeted Bootstrap Runner</h2><p class='meta'>Hybrid catch-up research: configured core surnames are searched broadly; other people are grouped by surname plus first given name. Completed searches are retained and are not repeated. Ryerson overloads use the bounded source-wide cooldown.</p><div class='topic'><strong>{surname_state}</strong><div class='small'>Completed: {surname_run["completed"]} · Queued: {surname_run["queued"]} · Waiting: {surname_run["retry_wait"]} · Searching: {surname_run["searching"]} · Errors: {surname_run["failed"]} · Total: {surname_run["total"]}</div><div class='small'>Broad core surname(s): {esc(core_names)}</div></div>"""
-    if surname_run["enabled"]:
-        body+="<form method='post' action='/research/ryerson/targeted/pause'><button type='submit'>Pause Targeted Bootstrap</button></form>"
-    else:
-        body+="<form method='post' action='/research/ryerson/targeted/start'><button type='submit'>Start Targeted Bootstrap</button></form>"
-    body+="</div>"
     body+="<div class='card'><h2>Ryerson Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
     if death_rows:
         for r in death_rows[:100]:
@@ -1009,6 +996,28 @@ def research_page(db):
         body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
     if not rows:
         body+="<p>No unsourced event priorities detected.</p>"
+    body+="</div>"
+
+    state=("Paused" if not run["enabled"] else ("Waiting for Ryerson" if run.get("source_waiting") else "Running"))
+    surname_state="Running" if surname_run["enabled"] else "Paused"
+    core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
+
+    body+="<details class='card'><summary><strong>Background Research</strong> <span class='small'>Ryerson collection status and controls</span></summary>"
+
+    body+=f"<div class='topic'><h3>Ryerson Research Runner</h3><p class='meta'>Unattended person research using the normal Safari session.</p><strong>{state}</strong><div class='small'>Queued: {run['queued']} · Waiting for Ryerson: {run['retry_wait']} · Findings: {run['findings']} · No finding: {run['no_match']} · Errors: {run['failed']}</div>"
+    if run["enabled"]:
+        body+="<form method='post' action='/research/ryerson/runner/pause'><button type='submit'>Pause Ryerson Research</button></form>"
+    else:
+        body+="<form method='post' action='/research/ryerson/runner/start'><button type='submit'>Start Ryerson Research</button></form>"
+    body+="</div>"
+
+    body+=f"<div class='topic'><h3>Ryerson Targeted Bootstrap Runner</h3><p class='meta'>Hybrid catch-up collection across core surnames and surname plus first-name groups.</p><strong>{surname_state}</strong><div class='small'>Completed: {surname_run['completed']} · Queued: {surname_run['queued']} · Waiting: {surname_run['retry_wait']} · Searching: {surname_run['searching']} · Errors: {surname_run['failed']} · Total: {surname_run['total']}</div><div class='small'>Broad core surname(s): {esc(core_names)}</div>"
+    if surname_run["enabled"]:
+        body+="<form method='post' action='/research/ryerson/targeted/pause'><button type='submit'>Pause Targeted Bootstrap</button></form>"
+    else:
+        body+="<form method='post' action='/research/ryerson/targeted/start'><button type='submit'>Start Targeted Bootstrap</button></form>"
+    body+="</div></details>"
+
     return layout("Research",body+"</div>",active="priorities")
 
 def places_page(db):
