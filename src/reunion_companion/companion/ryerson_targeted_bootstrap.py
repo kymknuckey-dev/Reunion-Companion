@@ -278,6 +278,7 @@ def next_targeted_search(db, now=None):
         WHERE status IN ('queued','retry_wait')
         ORDER BY
           CASE status WHEN 'retry_wait' THEN 0 ELSE 1 END,
+          CASE search_kind WHEN 'name' THEN 0 ELSE 1 END,
           people_count DESC,
           lower(surname),
           lower(given_name)
