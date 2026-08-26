@@ -3,6 +3,8 @@ from __future__ import annotations
 from html import escape
 from urllib.parse import quote
 
+from .research_priority import resolve_focus_person, sort_grouped_people, relationship_priority
+
 STATE_LABELS = {
     "new": "New",
     "deferred": "Decide Later",
@@ -145,9 +147,10 @@ def _decision_forms(row, return_path):
     return "".join(parts)
 
 
-def render_discovery_review_section(db, *, preview_people=5):
+def render_discovery_review_section(db, *, preview_people=5, focus_id=None):
     from .ryerson_discovery_review import discovery_counts
     counts=discovery_counts(db)
+    focus=resolve_focus_person(db,focus_id)
 
     out=[
         "<div class='card'>",
@@ -170,17 +173,24 @@ def render_discovery_review_section(db, *, preview_people=5):
     else:
         rows=discovery_review_rows(db,state="new")
         people=_group_people(rows)
+        rels={}
+        if focus:
+            people,rels=sort_grouped_people(db,focus["id"],people)
         out.append(
             f"<p><a class='button' href='/research/discoveries?state=new&page=1'>Review New Discoveries</a> "
             f"<span class='small'>{counts['new']} discoveries across {len(people)} people</span></p>"
         )
+        if focus:
+            out.append(f"<div class='topic'><strong>Research focus: {escape(focus['display_name'])}</strong><div class='small'>Prioritised outward through the recorded family network.</div></div>")
         out.append("<h3>Next people to review</h3>")
         for person_id,candidates in people[:preview_people]:
             name=_person_name(candidates[0])
+            relation=rels.get(int(person_id),{"label":"Relationship not established"})["label"]
             out.append(
                 f"<a class='result' href='/research/discoveries?state=new&person={person_id}'>"
                 f"<strong>{escape(name)}</strong>"
                 f"<span class='badge warn' style='float:right'>{len(candidates)} candidate{'s' if len(candidates)!=1 else ''}</span>"
+                f"<span class='meta' style='display:block'>{escape(relation)}</span>"
                 "</a>"
             )
         if len(people)>preview_people:
@@ -190,7 +200,7 @@ def render_discovery_review_section(db, *, preview_people=5):
     return "".join(out)
 
 
-def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_id=None):
+def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_id=None, focus_id=None):
     from .ryerson_discovery_review import discovery_counts
 
     if state not in STATE_ORDER:
@@ -200,6 +210,10 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
 
     rows=discovery_review_rows(db,state=state)
     people=_group_people(rows)
+    focus=resolve_focus_person(db,focus_id)
+    rels={}
+    if focus:
+        people,rels=sort_grouped_people(db,focus["id"],people)
 
     if person_id is not None:
         people=[item for item in people if int(item[0])==int(person_id)]
@@ -226,6 +240,8 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
         )
     out.append(" · ".join(links))
     out.append("</div></div>")
+    if focus:
+        out.append(f"<div class='topic'><strong>Research focus: {escape(focus['display_name'])}</strong><div class='small'>Closest recorded family relationships are shown first.</div></div>")
     out.append(
         f"<p><a href='/research'>← Research Priorities</a> · "
         f"Showing {len(shown)} of {total_people} people · Page {page} of {total_pages}</p>"
@@ -240,11 +256,13 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
 
     for pid,candidates in shown:
         context=person_reunion_context(db,pid)
+        relation=rels.get(int(pid),relationship_priority(db,focus["id"],pid) if focus else {"label":"Relationship not established"})
         out.append("<div class='card'>")
         out.append(
             f"<h2><a href='/person/{pid}?tab=research'>{escape(context['name'])}</a> "
             f"<span class='small'>({len(candidates)} Ryerson candidate{'s' if len(candidates)!=1 else ''})</span></h2>"
         )
+        out.append(f"<div class='meta'>{escape(relation['label'])}</div>")
         out.append(
             "<div class='grid'>"
             "<div class='topic'><strong>Reunion record</strong>"

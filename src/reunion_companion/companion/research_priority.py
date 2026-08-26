@@ -25,12 +25,12 @@ def resolve_focus_person(db, focus_id=None):
     return default_focus_person(db)
 
 
-def relationship_priority(db, focus_id, person_id, max_depth=12):
+def relationship_priority(db, focus_id, person_id, max_depth=12, adj=None):
     focus_id=int(focus_id); person_id=int(person_id)
-    path=relationship_path(db,focus_id,person_id,max_depth)
+    path=relationship_path(db,focus_id,person_id,max_depth,adj=adj)
     if path is None:
         return {"distance":None,"label":"Relationship not established","confidence":"none"}
-    rr=interpret_relationship(db,focus_id,person_id,max_depth)
+    rr=interpret_relationship(db,focus_id,person_id,max_depth,adj=adj)
     label=rr.reciprocal if focus_id!=person_id else "same person"
     return {"distance":len(path),"label":label,"confidence":rr.confidence}
 
@@ -71,7 +71,9 @@ def priority_map(db, focus_id, person_ids, max_depth=12):
     }
 
 
-def enrich_priority_labels(db, focus_id, rels, person_ids, max_depth=12):
+def enrich_priority_labels(db, focus_id, rels, person_ids, max_depth=12, adj=None):
+    from .knowledge_graph import adjacency
+    adj=adj if adj is not None else adjacency(db)
     for raw_pid in person_ids:
         pid=int(raw_pid)
         if pid not in rels or rels[pid]["distance"] is None:
@@ -79,7 +81,7 @@ def enrich_priority_labels(db, focus_id, rels, person_ids, max_depth=12):
         if pid==int(focus_id):
             rels[pid]={"distance":0,"label":"same person","confidence":"high"}
             continue
-        rels[pid]=relationship_priority(db,focus_id,pid,max_depth)
+        rels[pid]=relationship_priority(db,focus_id,pid,max_depth,adj=adj)
     return rels
 
 

@@ -5,6 +5,23 @@ from reunion_companion.companion import beta_ui
 def test_compact_death_research_retains_missing_vs_incomplete(monkeypatch,tmp_path):
     db=connect(tmp_path/"x.db")
 
+    # Materialise the database state represented by the mocked candidate rows.
+    # Missing Person genuinely has no Death event. Incomplete Person has a
+    # Death event, but only note text: the structured death details are absent.
+    db.execute(
+        "INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) "
+        "VALUES(1,'@I1@',1,'Missing','Person','Missing Person','U','Missing Person')"
+    )
+    db.execute(
+        "INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) "
+        "VALUES(2,'@I2@',2,'Incomplete','Person','Incomplete Person','U','Incomplete Person')"
+    )
+    db.execute(
+        "INSERT INTO events(person_id,event_type,date_text,place_text,note_text) "
+        "VALUES(2,'Death',NULL,NULL,'note')"
+    )
+    db.commit()
+
     import reunion_companion.companion.external_evidence_matcher as matcher
     import reunion_companion.companion.external_research_runner as runner
     import reunion_companion.companion.ryerson_targeted_bootstrap as targeted
@@ -35,4 +52,4 @@ def test_compact_death_research_retains_missing_vs_incomplete(monkeypatch,tmp_pa
     html=beta_ui.research_page(db)
     assert "Research Needed" in html
     assert "Death missing" in html
-    assert "Death incomplete" in html
+    assert "Death details incomplete" in html

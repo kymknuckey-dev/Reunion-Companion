@@ -37,7 +37,7 @@ def test_workspace_groups_multiple_candidates_by_person(tmp_path):
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="a",proposed_fact_key="death:1957-06-28")
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="b",proposed_fact_key="death:1950-08-26")
     html=render_discovery_workspace(db,state="new",page=1)
-    assert html.count("Ada Mitchell")==1
+    assert html.count("<h2><a href='/person/1?tab=research'>Ada Mitchell</a>")==1
     assert "2 Ryerson candidates" in html
     assert "death:1957-06-28" in html
     assert "death:1950-08-26" in html

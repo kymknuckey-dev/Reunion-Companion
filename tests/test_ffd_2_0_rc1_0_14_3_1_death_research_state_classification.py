@@ -72,5 +72,5 @@ def test_priorities_distinguish_missing_and_incomplete(tmp_path):
     assert "Missing Person" in html
     assert "Death missing" in html
     assert "Peter Stanley Rigg" in html
-    assert "Death incomplete" in html
+    assert "Death details incomplete" in html
     assert "Existing Death event note available" in html

@@ -44,17 +44,18 @@ def person_edges(db):
 
 def adjacency(db):
     adj=defaultdict(list)
+    names={r["id"]:(r["display_name"] or "") for r in db.execute("SELECT id,display_name FROM people")}
     for e in person_edges(db):
         adj[e.left].append(e)
     for pid in adj:
-        adj[pid].sort(key=lambda e:(_name(db,e.right),e.relation,e.family_id or 0))
+        adj[pid].sort(key=lambda e:(names.get(e.right,f"Person {e.right}"),e.relation,e.family_id or 0))
     return adj
 
 
-def relationship_path(db,start_id,end_id,max_depth=12):
+def relationship_path(db,start_id,end_id,max_depth=12,adj=None):
     """Shortest structural relationship path between two people."""
     if start_id==end_id:return []
-    adj=adjacency(db); q=deque([(start_id,[])]) ; seen={start_id}
+    adj=adj if adj is not None else adjacency(db); q=deque([(start_id,[])]) ; seen={start_id}
     while q:
         node,path=q.popleft()
         if len(path)>=max_depth: continue

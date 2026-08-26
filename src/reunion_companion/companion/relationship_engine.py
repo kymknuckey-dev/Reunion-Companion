@@ -35,7 +35,7 @@ def _great_prefix(n):
     if n==2:return "great-"
     return f"{n-1}× great-"
 
-def _direct_label(db,start,end,rels):
+def _direct_label(db,start,end,rels,adj=None):
     sx=_sex(db,start)
     ex=_sex(db,end)
     if not rels:
@@ -77,7 +77,7 @@ def _direct_label(db,start,end,rels):
     # Aunt/uncle: start sibling of an ancestor of end.
     if rels[0]=="sibling" and all(r=="parent" for r in rels[1:]):
         n=len(rels)-1
-        middle=relationship_path(db,start,end)[0].right if len(rels)>1 else None
+        middle=relationship_path(db,start,end,adj=adj)[0].right if len(rels)>1 else None
         branch=_sex(db,middle)
         side="maternal " if branch=="F" and n==1 else "paternal " if branch=="M" and n==1 else ""
         kin=_gendered(sx,"uncle","aunt","aunt/uncle")
@@ -107,12 +107,12 @@ def _direct_label(db,start,end,rels):
 
     return f"relative ({len(rels)} steps)",f"relative ({len(rels)} steps)"
 
-def interpret_relationship(db,start_id,end_id,max_depth=12):
-    path=relationship_path(db,start_id,end_id,max_depth)
+def interpret_relationship(db,start_id,end_id,max_depth=12,adj=None):
+    path=relationship_path(db,start_id,end_id,max_depth,adj=adj)
     if path is None:
         return RelationshipResult(start_id,end_id,"no relationship path found","no relationship path found","none",[])
     rels=[e.relation for e in path]
-    label,reciprocal=_direct_label(db,start_id,end_id,rels)
+    label,reciprocal=_direct_label(db,start_id,end_id,rels,adj=adj)
     confidence="high" if label not in ("no relationship path found",) and not label.startswith("relative (") else "structural"
     return RelationshipResult(start_id,end_id,label,reciprocal,confidence,path)
 
