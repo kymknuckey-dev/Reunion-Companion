@@ -13,7 +13,7 @@ def test_missing_death_visible(tmp_path):
     db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Rodney Thomas","Howie"); event(db,1,"Birth","07 Oct 1940","Adelaide"); db.commit()
     assert "Missing death information" in person_page(db,1,"research",presentation_override=False)
     h=research_page(db)
-    assert "Death Research" in h
+    assert "Research Needed" in h
     assert "Rodney Thomas Howie" in h
     assert "/person/1?tab=research" in h
 

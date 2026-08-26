@@ -68,7 +68,7 @@ def test_priorities_distinguish_missing_and_incomplete(tmp_path):
     event(db,2,"Death",None,None,"Death notice information in note")
     db.commit()
     html=research_page(db)
-    assert "Death Research" in html
+    assert "Research Needed" in html
     assert "Missing Person" in html
     assert "Death missing" in html
     assert "Peter Stanley Rigg" in html

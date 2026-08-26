@@ -949,6 +949,7 @@ def research_page(db):
     from .ryerson_targeted_bootstrap import targeted_status
     from .ryerson_discovery_ui import render_discovery_review_section
     from .ryerson_discovery_materialize import materialize_existing_ryerson_discoveries
+    from .ryerson_person_finding_bridge import materialize_person_level_ryerson_findings
 
     death_rows=ryerson_death_candidates(db)
     run=runner_status(db)
@@ -966,57 +967,57 @@ def research_page(db):
     body="<h1>Research Priorities</h1><p class='meta'>Research prompts from the current Reunion snapshot and Companion-held external evidence.</p>"
 
     materialize_existing_ryerson_discoveries(db)
+    materialize_person_level_ryerson_findings(db)
     body+=render_discovery_review_section(db)
-
-    body+="<div class='card'><h2>Ryerson Death Research</h2><p class='meta'>A missing or incomplete Death event is a research prompt, not evidence that the person has died.</p>"
-    if death_rows:
-        for r in death_rows[:100]:
-            findings=external_evidence_for_person(db,r["gedcom_xref"]) if r["gedcom_xref"] else []
-            accepted=sum(1 for f in findings if f["review_status"]=="accepted")
-            if accepted:
-                badge=f"<span class='badge good' style='float:right'>{accepted} accepted finding{'s' if accepted!=1 else ''}</span>"
-            elif findings:
-                badge=f"<span class='badge warn' style='float:right'>{len(findings)} finding{'s' if len(findings)!=1 else ''}</span>"
-            elif r["death_state"]=="incomplete":
-                badge="<span class='badge warn' style='float:right'>Death incomplete</span>"
-            else:
-                badge="<span class='badge warn' style='float:right'>Death missing</span>"
-            birth=" · ".join(x for x in (r["birth_date"],r["birth_place"]) if x)
-            body+=f"<a class='result' href='/person/{r['person_id']}?tab=research'><strong>{esc(r['display_name'])}</strong>{badge}"
-            if birth: body+=f"<span class='meta' style='display:block'>{esc(birth)}</span>"
-            if r["death_state"]=="incomplete" and r["death_note_text"]:
-                body+="<span class='meta' style='display:block'>Existing Death event note available</span>"
-            body+="</a>"
-    else:
-        body+="<p>No current missing or incomplete Death research items.</p>"
-    body+="</div>"
-
-    body+="<div class='card'><h2>Unsourced Events</h2><p class='meta'>People with events or facts that currently have no linked source or media evidence.</p>"
-    for r in rows:
-        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
-    if not rows:
-        body+="<p>No unsourced event priorities detected.</p>"
-    body+="</div>"
 
     state=("Paused" if not run["enabled"] else ("Waiting for Ryerson" if run.get("source_waiting") else "Running"))
     surname_state="Running" if surname_run["enabled"] else "Paused"
     core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
 
     body+="<details class='card'><summary><strong>Background Research</strong> <span class='small'>Ryerson collection status and controls</span></summary>"
-
-    body+=f"<div class='topic'><h3>Ryerson Research Runner</h3><p class='meta'>Unattended person research using the normal Safari session.</p><strong>{state}</strong><div class='small'>Queued: {run['queued']} · Waiting for Ryerson: {run['retry_wait']} · Findings: {run['findings']} · No finding: {run['no_match']} · Errors: {run['failed']}</div>"
+    body+=f"<div class='topic'><strong>Ryerson Research Runner — {state}</strong><div class='small'>Queued: {run['queued']} · Waiting: {run['retry_wait']} · Findings: {run['findings']} · No finding: {run['no_match']} · Errors: {run['failed']}</div>"
     if run["enabled"]:
         body+="<form method='post' action='/research/ryerson/runner/pause'><button type='submit'>Pause Ryerson Research</button></form>"
     else:
         body+="<form method='post' action='/research/ryerson/runner/start'><button type='submit'>Start Ryerson Research</button></form>"
     body+="</div>"
 
-    body+=f"<div class='topic'><h3>Ryerson Targeted Bootstrap Runner</h3><p class='meta'>Hybrid catch-up collection across core surnames and surname plus first-name groups.</p><strong>{surname_state}</strong><div class='small'>Completed: {surname_run['completed']} · Queued: {surname_run['queued']} · Waiting: {surname_run['retry_wait']} · Searching: {surname_run['searching']} · Errors: {surname_run['failed']} · Total: {surname_run['total']}</div><div class='small'>Broad core surname(s): {esc(core_names)}</div>"
+    body+=f"<div class='topic'><strong>Targeted Bootstrap — {surname_state}</strong><div class='small'>Completed: {surname_run['completed']} · Queued: {surname_run['queued']} · Waiting: {surname_run['retry_wait']} · Searching: {surname_run['searching']} · Errors: {surname_run['failed']} · Total: {surname_run['total']} · Core: {esc(core_names)}</div>"
     if surname_run["enabled"]:
         body+="<form method='post' action='/research/ryerson/targeted/pause'><button type='submit'>Pause Targeted Bootstrap</button></form>"
     else:
         body+="<form method='post' action='/research/ryerson/targeted/start'><button type='submit'>Start Targeted Bootstrap</button></form>"
     body+="</div></details>"
+
+    death_count=len(death_rows)
+    body+="<div class='card'><h2>Research Needed</h2>"
+    body+=f"<div class='topic'><strong>Death research</strong><span class='badge warn' style='float:right'>{death_count}</span><div class='small'>People with a missing or incomplete Death event.</div>"
+    for r in death_rows[:8]:
+        if r["death_state"]=="incomplete":
+            badge="<span class='badge warn' style='float:right'>Death incomplete</span>"
+        else:
+            badge="<span class='badge warn' style='float:right'>Death missing</span>"
+        body+=f"<a class='result' href='/person/{r['person_id']}?tab=research'><strong>{esc(r['display_name'])}</strong>{badge}"
+        if r["death_state"]=="incomplete" and r["death_note_text"]:
+            body+="<span class='meta' style='display:block'>Existing Death event note available</span>"
+        body+="</a>"
+    if death_count>8:
+        body+=f"<div class='small'>Showing 8 of {death_count}. Open a person to continue research.</div>"
+    if not death_rows:
+        body+="<p>No current missing or incomplete Death research items.</p>"
+    body+="</div></div>"
+
+    unsourced_people=len(rows)
+    unsourced_total=sum(int(r["unsourced"] or 0) for r in rows)
+    body+="<div class='card'><h2>Data Quality</h2>"
+    body+=f"<div class='topic'><strong>Unsourced Events</strong><span class='badge warn' style='float:right'>{unsourced_total} events</span><div class='small'>{unsourced_people} people currently have events or facts without linked source or media evidence.</div>"
+    for r in rows[:8]:
+        body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span></a>"
+    if unsourced_people>8:
+        body+=f"<div class='small'>Showing 8 of {unsourced_people} people.</div>"
+    if not rows:
+        body+="<p>No unsourced event priorities detected.</p>"
+    body+="</div></div>"
 
     return layout("Research",body+"</div>",active="priorities")
 

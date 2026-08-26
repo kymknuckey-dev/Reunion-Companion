@@ -51,6 +51,6 @@ def test_research_page_ryerson_section_excludes_surnameless(tmp_path):
     person(db,1,"@I1@","Ada",None,"Ada"); person(db,2,"@I2@","Peter Stanly","Rigg","Peter Stanly Rigg")
     event(db,2,"Birth","21 May 1944","Brighton Community Hospital"); db.commit()
     html=research_page(db)
-    section=html.split("Ryerson Death Research",1)[1].split("Unsourced Events",1)[0]
+    section=html.split("Research Needed",1)[1].split("Unsourced Events",1)[0]
     assert "Peter Stanly Rigg" in section
     assert ">Ada<" not in section
