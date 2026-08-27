@@ -66,6 +66,19 @@ button,.button{background:var(--accent);color:#fff;border-color:var(--accent);te
 .descendant-report-actions button{min-width:180px}
 @media(max-width:760px){.publish-actions{grid-template-columns:1fr}.publish-action-form.wide{grid-column:auto}.publish-family-card{grid-template-columns:1fr}.publish-family-action{white-space:normal}}
 .result{display:block;padding:10px 0;border-bottom:1px solid #eee;color:var(--text);text-decoration:none}
+ .rc-evidence-list{display:grid;gap:14px;margin-top:14px}
+.rc-evidence-candidate{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:var(--card)}
+.rc-evidence-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.rc-evidence-head h3{margin:4px 0 0;font-size:18px}
+.rc-evidence-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;margin-top:12px}
+.rc-evidence-facts div{display:flex;flex-direction:column;gap:2px}
+.rc-evidence-facts span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rc-evidence-details{margin-top:12px;line-height:1.45}
+.rc-evidence-match{margin-top:8px}
+.rc-evidence-actions{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.rc-evidence-actions form{display:inline-block;margin:0 6px 6px 0}
+.rc-evidence-actions button{padding:8px 11px}
+.rc-evidence-unlinked{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .meta,.small{color:var(--muted)}
 .small{font-size:12px;overflow-wrap:anywhere}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
@@ -739,6 +752,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
     elif tab=="research":
         from .external_evidence import external_evidence_for_person
         from .external_evidence_matcher import death_research_state
+        from .ryerson_discovery_ui import render_person_discovery_decisions, render_external_evidence_candidate, sort_external_findings_recent_first
         r=person_research_model(db,pid);body="<div class='card'><h2>Research</h2>"
         for a in r["anomalies"]:body+=f"<div class='topic'><span class='badge {'warn' if a['severity']=='warning' else 'info'}'>{esc(a['kind'])}</span> {esc(a['message'])}</div>"
         if not r["anomalies"]:body+="<p>No deterministic review flags.</p>"
@@ -760,23 +774,23 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
             else:
                 body+="<div class='topic'><span class='badge good'>Resolved in Reunion</span> Structured death information and linked evidence are present in the current Reunion snapshot.</div>"
             if findings:
-                for f in findings:
-                    status=f["review_status"] or "new"
-                    badge_class="good" if status=="accepted" else "warn" if status in ("new","reviewed") else "info"
-                    score=f["match_confidence"]
-                    confidence=f" · Match {score}%" if score is not None else ""
-                    heading=f["source_record_name"] or f["event_type"] or f["evidence_type"]
-                    meta=[]
-                    if f["event_type"] or f["event_date"]: meta.append(" ".join(x for x in (f["event_type"],f["event_date"]) if x))
-                    if f["publication"]: meta.append(f["publication"])
-                    if f["publication_date"]: meta.append("published "+f["publication_date"])
-                    body+=f"<div class='topic'><strong>{esc(heading)}</strong> <span class='badge {badge_class}'>{esc(status.replace('_',' ').title())}</span><div class='small'>{esc(f['source_name'])}{esc(confidence)}</div>"
-                    if meta: body+=f"<div>{esc(' · '.join(meta))}</div>"
-                    if f["details"]: body+=f"<div>{esc(f['details'])}</div>"
-                    if f["match_reason"]: body+=f"<div class='small'>Match basis: {esc(f['match_reason'])}</div>"
-                    body+="</div>"
+                rendered=[]
+                for f in sort_external_findings_recent_first(findings):
+                    card=render_external_evidence_candidate(db,pid,f,return_path=f"/person/{pid}?tab=research")
+                    if card:
+                        rendered.append(card)
+                if rendered:
+                    body+="<div class='rc-evidence-list'>"+"".join(rendered)+"</div>"
+                else:
+                    body+="<p>No plausible external evidence candidates remain after chronology checks.</p>"
             else:
                 body+="<p>No external evidence findings recorded yet.</p>"
+            if not findings:
+                decision_html=render_person_discovery_decisions(
+                    db,pid,return_path=f"/person/{pid}?tab=research"
+                )
+                if decision_html:
+                    body+=decision_html
             body+="</div>"
         if death_state["state"] in ("missing","incomplete"):
             from .ryerson_browser_assist import build_browser_search_plan,RYERSON_SEARCH_URL
@@ -1431,6 +1445,16 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                                 if parsed.path=="/research/discoveries":
                                     q={k:v[0] for k,v in parse_qs(parsed.query).items()}
                                     self.send_html(render_get(db,parsed.path,q))
+                                elif parsed.path.startswith("/person/"):
+                                    try:
+                                        return_pid=int(parsed.path.rsplit("/",1)[1])
+                                    except Exception:
+                                        return_pid=0
+                                    q={k:v[0] for k,v in parse_qs(parsed.query).items()}
+                                    if return_pid and q.get("tab")=="research":
+                                        self.send_html(render_get(db,parsed.path,q))
+                                    else:
+                                        self.send_html(research_page(db))
                                 else:
                                     self.send_html(research_page(db))
                                 return

@@ -147,6 +147,175 @@ def _decision_forms(row, return_path):
     return "".join(parts)
 
 
+def _norm_candidate_value(value):
+    return ''.join(str(value or '').strip().casefold().split())
+
+
+def review_row_for_finding(db, person_id, finding):
+    """Map stored external evidence deterministically to its review row."""
+    from .ryerson_discovery_review import discoveries_for_person
+    rows=list(discoveries_for_person(db,int(person_id)))
+    if not rows:
+        return None
+
+    keys=set(finding.keys())
+    evidence_id=finding["id"] if "id" in keys else None
+    if evidence_id not in (None,""):
+        wanted=f"ryerson:{evidence_id}"
+        exact=[r for r in rows if str(r["external_record_key"] or "")==wanted]
+        if len(exact)==1:
+            return exact[0]
+
+    event_date=str(finding["event_date"] or "").strip() if "event_date" in keys else ""
+    pub_date=str(finding["publication_date"] or "").strip() if "publication_date" in keys else ""
+    publication=str(finding["publication"] or "").strip() if "publication" in keys else ""
+    event_type=str(finding["event_type"] or "").strip() if "event_type" in keys else ""
+    event_n=_norm_candidate_value(event_date)
+    pubdate_n=_norm_candidate_value(pub_date)
+    publication_n=_norm_candidate_value(publication)
+    type_n=_norm_candidate_value(event_type)
+
+    scored=[]
+    for row in rows:
+        score=0
+        fact=str(row["proposed_fact_key"] or "")
+        fact_date=fact.split(":",1)[1] if ":" in fact else ""
+        if event_n and _norm_candidate_value(fact_date)==event_n: score+=8
+        record=_norm_candidate_value(row["external_record_key"])
+        if event_n and event_n in record: score+=6
+        if pubdate_n and pubdate_n in record: score+=5
+        if publication_n and publication_n in record: score+=4
+        if type_n and type_n in record: score+=2
+        source_n=_norm_candidate_value(row["source_name"])
+        finding_source=_norm_candidate_value(finding["source_name"] if "source_name" in keys else "")
+        if finding_source and source_n==finding_source: score+=1
+        scored.append((score,row))
+    scored.sort(key=lambda x:(-x[0],x[1]["id"]))
+    if scored and scored[0][0] > 0 and (len(scored)==1 or scored[0][0] > scored[1][0]):
+        return scored[0][1]
+
+    actionable=[r for r in rows if r["state"] in ("new","deferred")]
+    if len(actionable)==1:
+        return actionable[0]
+    return None
+def finding_impossible_for_person(db, person_id, finding):
+    from .ryerson_discovery_assembly import _definite_date
+    birth=_first_event(db,int(person_id),'Birth')
+    birth_text=_row_value(birth,'date_text','event_date','date','date_value')
+    keys=set(finding.keys())
+    event_text=''
+    for name in ('event_date','death_date','funeral_date'):
+        if name in keys and finding[name]:
+            event_text=str(finding[name]).strip()
+            break
+    birth_date=_definite_date(birth_text)
+    event_date=_definite_date(event_text)
+    return bool(birth_date and event_date and event_date < birth_date)
+
+
+def render_finding_decision_controls(db, person_id, finding, return_path=None):
+    row=review_row_for_finding(db,person_id,finding)
+    if row is None:
+        return ""
+    return _decision_forms(row,return_path or f"/person/{int(person_id)}?tab=research")
+
+def _candidate_date_value(finding):
+    from .ryerson_discovery_assembly import _definite_date
+    keys=set(finding.keys())
+    for name in ("event_date","death_date","funeral_date"):
+        if name in keys and finding[name]:
+            parsed=_definite_date(finding[name])
+            if parsed:
+                return parsed
+    return None
+
+
+def sort_external_findings_recent_first(findings):
+    def key(finding):
+        d=_candidate_date_value(finding)
+        return (d is None, -(d.toordinal()) if d else 0, -int(finding["id"] or 0))
+    return sorted(list(findings or []),key=key)
+
+
+def render_external_evidence_candidate(db, person_id, finding, return_path=None):
+    return_path=return_path or f"/person/{int(person_id)}?tab=research"
+    if finding_impossible_for_person(db,person_id,finding):
+        return ""
+
+    keys=set(finding.keys())
+    source=str(finding["source_name"] or "Ryerson") if "source_name" in keys else "Ryerson"
+    heading=(finding["source_record_name"] if "source_record_name" in keys else None) or (finding["event_type"] if "event_type" in keys else None) or (finding["evidence_type"] if "evidence_type" in keys else None) or "Ryerson candidate"
+    event_type=str(finding["event_type"] or "") if "event_type" in keys else ""
+    event_date=str(finding["event_date"] or "") if "event_date" in keys else ""
+    publication=str(finding["publication"] or "") if "publication" in keys else ""
+    publication_date=str(finding["publication_date"] or "") if "publication_date" in keys else ""
+    details=str(finding["details"] or "") if "details" in keys else ""
+    place_claim=str(finding["place_claim"] or "") if "place_claim" in keys else ""
+    birth_claim=str(finding["birth_date_claim"] or "") if "birth_date_claim" in keys else ""
+    reason=str(finding["match_reason"] or "") if "match_reason" in keys else ""
+    score=finding["match_confidence"] if "match_confidence" in keys else None
+
+    review=review_row_for_finding(db,person_id,finding)
+    evidence_status=str(finding["review_status"] or "new") if "review_status" in keys else "new"
+    out=["<div class='rc-evidence-candidate'><div class='rc-evidence-head'><div>"]
+    out.append(f"<div class='small'>{escape(source)}{f' · Match {score}%' if score is not None else ''}</div>")
+    out.append(f"<h3>{escape(str(heading))}</h3></div>")
+    if review is not None:
+        state=review["state"]
+        label=STATE_LABELS.get(state,state)
+        cls="good" if state in ("waiting_for_reunion","already_known","confirmed_complete") else "info" if state=="rejected" else "warn"
+        out.append(f"<span class='badge {cls}'>{escape(label)}</span>")
+    else:
+        label=evidence_status.replace("_"," ").title()
+        cls="good" if evidence_status=="accepted" else "info" if evidence_status=="rejected" else "warn"
+        out.append(f"<span class='badge {cls}'>{escape(label)}</span>")
+    out.append("</div>")
+
+    facts=[]
+    if event_type or event_date: facts.append(("Event"," ".join(x for x in (event_type,event_date) if x)))
+    if publication: facts.append(("Publication",publication))
+    if publication_date: facts.append(("Published",publication_date))
+    if birth_claim: facts.append(("Birth claim",birth_claim))
+    if place_claim: facts.append(("Place",place_claim))
+    if facts:
+        out.append("<div class='rc-evidence-facts'>")
+        for label,value in facts:
+            out.append(f"<div><span>{escape(label)}</span><strong>{escape(str(value))}</strong></div>")
+        out.append("</div>")
+    if details: out.append(f"<div class='rc-evidence-details'>{escape(details)}</div>")
+    if reason: out.append(f"<div class='small rc-evidence-match'>Match basis: {escape(reason)}</div>")
+    if review is not None:
+        out.append("<div class='rc-evidence-actions'>"+_decision_forms(review,return_path)+"</div>")
+    else:
+        out.append("<div class='small rc-evidence-unlinked'>Review controls unavailable for this stored finding.</div>")
+    out.append("</div>")
+    return "".join(out)
+
+
+def render_person_discovery_decisions(db, person_id, return_path=None):
+    from .ryerson_discovery_review import discoveries_for_person
+    rows=discoveries_for_person(db,int(person_id))
+    if not rows:
+        return ""
+    return_path=return_path or f"/person/{int(person_id)}?tab=research"
+    out=[
+        "<div class='topic'><strong>Discovery decisions</strong>"
+        "<div class='small'>Assess each candidate here. Decisions are saved by Companion and do not alter Reunion automatically.</div></div>"
+    ]
+    for row in rows:
+        fact=row["proposed_fact_key"] or "Evidence candidate"
+        state=row["state"]
+        badge_class="good" if state in ("waiting_for_reunion","already_known","confirmed_complete") else "info" if state=="rejected" else "warn"
+        out.append("<div class='result'>")
+        out.append(f"<strong>{escape(fact)}</strong> <span class='badge {badge_class}'>{escape(STATE_LABELS.get(state,state))}</span>")
+        out.append(f"<div class='small'>{escape(row['source_name'])}</div>")
+        if row["decision_note"]:
+            out.append(f"<div class='small'>{escape(row['decision_note'])}</div>")
+        out.append(_decision_forms(row,return_path))
+        out.append("</div>")
+    return "".join(out)
+
+
 def render_discovery_review_section(db, *, preview_people=5, focus_id=None):
     from .ryerson_discovery_review import discovery_counts
     counts=discovery_counts(db)
@@ -187,7 +356,7 @@ def render_discovery_review_section(db, *, preview_people=5, focus_id=None):
             name=_person_name(candidates[0])
             relation=rels.get(int(person_id),{"label":"Relationship not established"})["label"]
             out.append(
-                f"<a class='result' href='/research/discoveries?state=new&person={person_id}'>"
+                f"<a class='result' href='/person/{person_id}?tab=research'>"
                 f"<strong>{escape(name)}</strong>"
                 f"<span class='badge warn' style='float:right'>{len(candidates)} candidate{'s' if len(candidates)!=1 else ''}</span>"
                 f"<span class='meta' style='display:block'>{escape(relation)}</span>"

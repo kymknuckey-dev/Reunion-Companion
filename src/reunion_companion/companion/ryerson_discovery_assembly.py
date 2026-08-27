@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
+import re
 from typing import Iterable, Mapping, Any
 
 from .ryerson_discovery_review import remember_discovery
@@ -76,10 +78,54 @@ def proposed_fact_key(row: Mapping[str, Any]) -> str:
     return ""
 
 
+_MONTHS = {
+    "jan":1,"january":1,"feb":2,"february":2,"mar":3,"march":3,
+    "apr":4,"april":4,"may":5,"jun":6,"june":6,"jul":7,"july":7,
+    "aug":8,"august":8,"sep":9,"sept":9,"september":9,
+    "oct":10,"october":10,"nov":11,"november":11,"dec":12,"december":12,
+}
+
+def _definite_date(value):
+    text=str(value or '').strip()
+    if not text:
+        return None
+    low=text.casefold()
+    if any(token in low for token in ('abt','about','circa','bef','before','aft','after','between','from','to','?')):
+        return None
+    compact=re.sub(r'\s+','',text).upper()
+    m=re.fullmatch(r'(\d{4})-(\d{1,2})-(\d{1,2})',text)
+    if m:
+        try:
+            return date(int(m.group(1)),int(m.group(2)),int(m.group(3)))
+        except ValueError:
+            return None
+    m=re.fullmatch(r'(\d{1,2})([A-Z]{3,9})(\d{4})',compact)
+    if m:
+        month=_MONTHS.get(m.group(2).casefold())
+        if month:
+            try:
+                return date(int(m.group(3)),month,int(m.group(1)))
+            except ValueError:
+                return None
+    m=re.fullmatch(r'(\d{1,2})[./-](\d{1,2})[./-](\d{4})',text)
+    if m:
+        try:
+            return date(int(m.group(3)),int(m.group(2)),int(m.group(1)))
+        except ValueError:
+            return None
+    return None
+def impossible_death_before_birth(row: Mapping[str, Any]) -> bool:
+    birth=_definite_date(_value(row,"birth_date","reunion_birth_date","birth_date_claim"))
+    event=_definite_date(_value(row,"death_date","funeral_date","event_date"))
+    return bool(birth and event and event < birth)
+
 def candidate_is_reviewable(row: Mapping[str, Any]) -> bool:
     """Only assemble rows already associated with one concrete Reunion person."""
     person_id = _value(row, "person_id", "reunion_person_id", default=None)
     if person_id in (None, ""):
+        return False
+
+    if impossible_death_before_birth(row):
         return False
 
     status = _norm(_value(row, "match_status", "status"))
