@@ -66,19 +66,73 @@ button,.button{background:var(--accent);color:#fff;border-color:var(--accent);te
 .descendant-report-actions button{min-width:180px}
 @media(max-width:760px){.publish-actions{grid-template-columns:1fr}.publish-action-form.wide{grid-column:auto}.publish-family-card{grid-template-columns:1fr}.publish-family-action{white-space:normal}}
 .result{display:block;padding:10px 0;border-bottom:1px solid #eee;color:var(--text);text-decoration:none}
- .rc-evidence-list{display:grid;gap:14px;margin-top:14px}
-.rc-evidence-candidate{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:var(--card)}
-.rc-evidence-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
-.rc-evidence-head h3{margin:4px 0 0;font-size:18px}
-.rc-evidence-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;margin-top:12px}
-.rc-evidence-facts div{display:flex;flex-direction:column;gap:2px}
-.rc-evidence-facts span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-.rc-evidence-details{margin-top:12px;line-height:1.45}
-.rc-evidence-match{margin-top:8px}
-.rc-evidence-actions{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
-.rc-evidence-actions form{display:inline-block;margin:0 6px 6px 0}
-.rc-evidence-actions button{padding:8px 11px}
-.rc-evidence-unlinked{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+ .rc-evidence-review-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin:18px 0 12px}
+.rc-evidence-review-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rc-evidence-review-title h3{font-size:21px;margin:0}
+.rc-evidence-count{background:#fff0d8;color:var(--warn);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700}
+.rc-evidence-review-copy{font-size:14px;color:var(--muted);margin-top:5px}
+.rc-evidence-sort{white-space:nowrap;border:1px solid var(--accent);border-radius:8px;padding:9px 12px;background:#fff;color:var(--brand-navy);font-size:13px;font-weight:700}
+.rc-evidence-list{display:grid;gap:9px;margin-top:10px}
+.rc-evidence-candidate{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(220px,.78fr) minmax(360px,1.55fr);border:1px solid var(--line);border-radius:11px;padding:14px 16px;background:#fff;align-items:stretch}
+.rc-evidence-primary{padding-right:18px}
+.rc-evidence-context{padding:2px 18px;border-left:1px solid #ecece8;border-right:1px solid #ecece8}
+.rc-evidence-decision{padding-left:18px;display:flex;flex-direction:column;align-items:flex-start}
+.rc-evidence-source{font-size:12px;color:var(--muted);margin-bottom:7px}
+.rc-evidence-record-name{font-size:16px;font-weight:750;margin-bottom:3px}
+.rc-evidence-summary{font-size:16px;line-height:1.25;font-weight:750}
+.rc-evidence-details{margin-top:3px;font-size:15px;line-height:1.3}
+.rc-evidence-match{margin-top:4px;color:var(--muted);font-size:12px}
+.rc-evidence-context-row{display:flex;gap:9px;align-items:flex-start;margin:2px 0 11px;font-size:14px;line-height:1.3}
+.rc-evidence-icon{width:18px;height:18px;flex:0 0 18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rc-evidence-event-type{color:var(--muted);font-size:13px;margin-top:2px}
+.rc-evidence-event-type strong{color:var(--text);font-weight:600}
+.rc-chronology-ok{display:inline-block;background:#e5f2e8;color:var(--good);border-radius:6px;padding:7px 10px;font-size:13px;font-weight:750;margin-bottom:10px}
+.rc-evidence-state{margin-bottom:9px}
+.rc-evidence-actions{width:100%;margin-top:auto}
+.rc-evidence-actions form{display:inline-block;margin:0 6px 6px 0!important}
+.rc-evidence-actions button{padding:9px 12px;font-size:14px;font-weight:650}
+.rc-evidence-actions .small{font-size:13px;color:var(--muted)}
+.rc-evidence-unlinked{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* RC1.0.14.8.6.7 compact evidence controls — final override */
+.rc-evidence-candidate .rc-evidence-actions{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:4px!important;
+  align-items:center!important;
+}
+
+.rc-evidence-candidate .rc-evidence-actions form{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+  flex:0 0 auto!important;
+}
+
+.rc-evidence-candidate .rc-evidence-actions button,
+.presentation .rc-evidence-candidate .rc-evidence-actions button{
+  font-size:13px!important;
+  line-height:1!important;
+  padding:5px 6px!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  border-radius:5px!important;
+  white-space:nowrap!important;
+}
+
+@media(max-width:1050px){
+  .rc-evidence-candidate{grid-template-columns:minmax(0,1fr) minmax(220px,.8fr)}
+  .rc-evidence-decision{grid-column:1/-1;border-top:1px solid #ecece8;padding:13px 0 0;margin-top:12px}
+  .rc-evidence-context{border-right:0}
+}
+@media(max-width:720px){
+  .rc-evidence-review-head{display:block}
+  .rc-evidence-sort{display:inline-block;margin-top:10px}
+  .rc-evidence-candidate{grid-template-columns:1fr}
+  .rc-evidence-primary,.rc-evidence-context,.rc-evidence-decision{padding:0;border:0}
+  .rc-evidence-context,.rc-evidence-decision{border-top:1px solid #ecece8;margin-top:12px;padding-top:12px}
+}
 .meta,.small{color:var(--muted)}
 .small{font-size:12px;overflow-wrap:anywhere}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
@@ -780,7 +834,18 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
                     if card:
                         rendered.append(card)
                 if rendered:
-                    body+="<div class='rc-evidence-list'>"+"".join(rendered)+"</div>"
+                    count=len(rendered)
+                    body+=(
+                        "<div class='rc-evidence-review-head'>"
+                        "<div>"
+                        "<div class='rc-evidence-review-title'><h3>External Evidence Candidates</h3>"
+                        f"<span class='rc-evidence-count'>{count} candidate{'s' if count!=1 else ''}</span></div>"
+                        "<div class='rc-evidence-review-copy'>Review each Ryerson candidate below and decide whether it belongs to this person in Reunion.</div>"
+                        "</div>"
+                        "<div class='rc-evidence-sort'>Sort by: &nbsp;Most Recent Event Date ▾</div>"
+                        "</div>"
+                        "<div class='rc-evidence-list'>"+"".join(rendered)+"</div>"
+                    )
                 else:
                     body+="<p>No plausible external evidence candidates remain after chronology checks.</p>"
             else:

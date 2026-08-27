@@ -136,8 +136,8 @@ def _decision_forms(row, return_path):
     rid=row["id"]
     hidden=f"<input type='hidden' name='return' value='{escape(return_path)}'>"
     parts=[
-        f"<form method='post' action='/research/discovery/{rid}/waiting' style='display:inline-block;margin-right:.4rem'>{hidden}<button type='submit'>Accept for Reunion</button></form>",
-        f"<form method='post' action='/research/discovery/{rid}/known' style='display:inline-block;margin-right:.4rem'>{hidden}<button type='submit'>Already Known</button></form>",
+        f"<form method='post' action='/research/discovery/{rid}/waiting' style='display:inline-block;margin-right:.4rem'>{hidden}<button type='submit'>Accept</button></form>",
+        f"<form method='post' action='/research/discovery/{rid}/known' style='display:inline-block;margin-right:.4rem'>{hidden}<button type='submit'>Known</button></form>",
         f"<form method='post' action='/research/discovery/{rid}/reject' style='display:inline-block;margin-right:.4rem'>{hidden}<button type='submit'>Not This Person</button></form>",
     ]
     if row["state"]=="new":
@@ -237,6 +237,29 @@ def sort_external_findings_recent_first(findings):
     return sorted(list(findings or []),key=key)
 
 
+def _evidence_icon(kind):
+    if kind=="date":
+        return "<svg class='rc-evidence-icon' viewBox='0 0 24 24' aria-hidden='true'><rect x='3.5' y='5.5' width='17' height='15' rx='2'/><path d='M7 3.5v4M17 3.5v4M3.5 9.5h17'/></svg>"
+    if kind=="place":
+        return "<svg class='rc-evidence-icon' viewBox='0 0 24 24' aria-hidden='true'><path d='M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z'/><circle cx='12' cy='10' r='2.2'/></svg>"
+    return ""
+
+
+def _candidate_summary(finding):
+    keys=set(finding.keys())
+    event_type=str(finding["event_type"] or "") if "event_type" in keys else ""
+    event_date=str(finding["event_date"] or "") if "event_date" in keys else ""
+    publication=str(finding["publication"] or "") if "publication" in keys else ""
+    publication_date=str(finding["publication_date"] or "") if "publication_date" in keys else ""
+    primary=" ".join(x for x in (event_type,event_date) if x).strip()
+    bits=[primary] if primary else []
+    if publication:
+        bits.append(publication)
+    if publication_date:
+        bits.append("published "+publication_date)
+    return " · ".join(bits) or "Ryerson candidate"
+
+
 def render_external_evidence_candidate(db, person_id, finding, return_path=None):
     return_path=return_path or f"/person/{int(person_id)}?tab=research"
     if finding_impossible_for_person(db,person_id,finding):
@@ -244,53 +267,59 @@ def render_external_evidence_candidate(db, person_id, finding, return_path=None)
 
     keys=set(finding.keys())
     source=str(finding["source_name"] or "Ryerson") if "source_name" in keys else "Ryerson"
-    heading=(finding["source_record_name"] if "source_record_name" in keys else None) or (finding["event_type"] if "event_type" in keys else None) or (finding["evidence_type"] if "evidence_type" in keys else None) or "Ryerson candidate"
+    record_name=str(finding["source_record_name"] or "") if "source_record_name" in keys else ""
     event_type=str(finding["event_type"] or "") if "event_type" in keys else ""
     event_date=str(finding["event_date"] or "") if "event_date" in keys else ""
-    publication=str(finding["publication"] or "") if "publication" in keys else ""
-    publication_date=str(finding["publication_date"] or "") if "publication_date" in keys else ""
     details=str(finding["details"] or "") if "details" in keys else ""
     place_claim=str(finding["place_claim"] or "") if "place_claim" in keys else ""
-    birth_claim=str(finding["birth_date_claim"] or "") if "birth_date_claim" in keys else ""
     reason=str(finding["match_reason"] or "") if "match_reason" in keys else ""
     score=finding["match_confidence"] if "match_confidence" in keys else None
+    summary=_candidate_summary(finding)
 
     review=review_row_for_finding(db,person_id,finding)
     evidence_status=str(finding["review_status"] or "new") if "review_status" in keys else "new"
-    out=["<div class='rc-evidence-candidate'><div class='rc-evidence-head'><div>"]
-    out.append(f"<div class='small'>{escape(source)}{f' · Match {score}%' if score is not None else ''}</div>")
-    out.append(f"<h3>{escape(str(heading))}</h3></div>")
+
+    out=["<article class='rc-evidence-candidate'>"]
+
+    out.append("<section class='rc-evidence-primary'>")
+    out.append(f"<div class='rc-evidence-source'>{escape(source)}{f' · Match {score}%' if score is not None else ''}</div>")
+    if record_name:
+        out.append(f"<div class='rc-evidence-record-name'>{escape(record_name)}</div>")
+    out.append(f"<div class='rc-evidence-summary'>{escape(summary)}</div>")
+    if details:
+        out.append(f"<div class='rc-evidence-details'>{escape(details)}</div>")
+    if reason:
+        out.append(f"<div class='rc-evidence-match'>Match basis: {escape(reason)}</div>")
+    out.append("</section>")
+
+    out.append("<section class='rc-evidence-context'>")
+    if event_date:
+        out.append("<div class='rc-evidence-context-row'>"+_evidence_icon("date")+f"<span>{escape(event_date)}</span></div>")
+    if place_claim:
+        out.append("<div class='rc-evidence-context-row'>"+_evidence_icon("place")+f"<span>{escape(place_claim)}</span></div>")
+    if event_type:
+        out.append(f"<div class='rc-evidence-event-type'>Event type: <strong>{escape(event_type)}</strong></div>")
+    out.append("</section>")
+
+    out.append("<section class='rc-evidence-decision'>")
+    out.append("<div class='rc-chronology-ok'>✓ Chronology OK</div>")
+
     if review is not None:
         state=review["state"]
-        label=STATE_LABELS.get(state,state)
-        cls="good" if state in ("waiting_for_reunion","already_known","confirmed_complete") else "info" if state=="rejected" else "warn"
-        out.append(f"<span class='badge {cls}'>{escape(label)}</span>")
+        if state not in ("new","deferred"):
+            label=STATE_LABELS.get(state,state)
+            cls="good" if state in ("waiting_for_reunion","already_known","confirmed_complete") else "info" if state=="rejected" else "warn"
+            out.append(f"<div class='rc-evidence-state'><span class='badge {cls}'>{escape(label)}</span></div>")
+        out.append("<div class='rc-evidence-actions'>"+_decision_forms(review,return_path)+"</div>")
     else:
         label=evidence_status.replace("_"," ").title()
         cls="good" if evidence_status=="accepted" else "info" if evidence_status=="rejected" else "warn"
-        out.append(f"<span class='badge {cls}'>{escape(label)}</span>")
-    out.append("</div>")
+        out.append(f"<div class='rc-evidence-state'><span class='badge {cls}'>{escape(label)}</span></div>")
+        out.append("<div class='rc-evidence-unlinked'>Review controls unavailable for this stored finding.</div>")
 
-    facts=[]
-    if event_type or event_date: facts.append(("Event"," ".join(x for x in (event_type,event_date) if x)))
-    if publication: facts.append(("Publication",publication))
-    if publication_date: facts.append(("Published",publication_date))
-    if birth_claim: facts.append(("Birth claim",birth_claim))
-    if place_claim: facts.append(("Place",place_claim))
-    if facts:
-        out.append("<div class='rc-evidence-facts'>")
-        for label,value in facts:
-            out.append(f"<div><span>{escape(label)}</span><strong>{escape(str(value))}</strong></div>")
-        out.append("</div>")
-    if details: out.append(f"<div class='rc-evidence-details'>{escape(details)}</div>")
-    if reason: out.append(f"<div class='small rc-evidence-match'>Match basis: {escape(reason)}</div>")
-    if review is not None:
-        out.append("<div class='rc-evidence-actions'>"+_decision_forms(review,return_path)+"</div>")
-    else:
-        out.append("<div class='small rc-evidence-unlinked'>Review controls unavailable for this stored finding.</div>")
-    out.append("</div>")
+    out.append("</section>")
+    out.append("</article>")
     return "".join(out)
-
 
 def render_person_discovery_decisions(db, person_id, return_path=None):
     from .ryerson_discovery_review import discoveries_for_person
