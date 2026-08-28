@@ -1136,16 +1136,16 @@ def _priority_recent_event_keys(db,person_ids):
         s=str(value or "").upper().strip()
         if not s:
             return (0,0,0)
-        years=re.findall(r"(?<!\d)(\d{4})(?!\d)",s)
+        years=re.findall(r"(?<!\\d)(\\d{4})(?!\\d)",s)
         if not years:
             return (0,0,0)
         year=max(int(y) for y in years)
         month=0
         for name,num in months.items():
-            if re.search(rf"\b{name}\b",s):
+            if re.search(rf"\\b{name}\\b",s):
                 month=num
                 break
-        m=re.search(r"(?<!\d)(\d{1,2})\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b",s)
+        m=re.search(r"(?<!\\d)(\\d{1,2})\\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\\b",s)
         day=int(m.group(1)) if m else 0
         return (year,month,day)
 

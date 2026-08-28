@@ -1048,26 +1048,17 @@ def book_scope_page(db,start_pid,query=None,msg=""):
 def _research_needed_recent_identity_context(db,person_id):
     """Return compact identity context for a recent-first Research Needed row."""
     parts=[]
-    try:
-        event_cols={r["name"] for r in db.execute("PRAGMA table_info(events)").fetchall()}
-        date_col=next((c for c in ("date_value","date_text","date","event_date") if c in event_cols),None)
-        place_col=next((c for c in ("place","place_text","place_value") if c in event_cols),None)
-        type_col=next((c for c in ("event_type","type","event_name") if c in event_cols),None)
-        if date_col and type_col:
-            cols=[date_col]+([place_col] if place_col else [])
-            birth=db.execute(
-                f"SELECT {','.join(cols)} FROM events WHERE person_id=? AND {type_col}='Birth' ORDER BY id LIMIT 1",
-                (person_id,),
-            ).fetchone()
-            if birth:
-                date=(birth[date_col] or "").strip()
-                place=(birth[place_col] or "").strip() if place_col else ""
-                if date:
-                    parts.append("Born "+date)
-                if place:
-                    parts.append(place)
-    except Exception:
-        pass
+    birth=db.execute(
+        "SELECT date_value,place FROM events WHERE person_id=? AND event_type='Birth' ORDER BY id LIMIT 1",
+        (person_id,),
+    ).fetchone()
+    if birth:
+        date=(birth["date_value"] or "").strip()
+        place=(birth["place"] or "").strip()
+        if date:
+            parts.append("Born "+date)
+        if place:
+            parts.append(place)
 
     parent_names=[]
     spouse_names=[]
@@ -1106,69 +1097,6 @@ def _research_needed_row_html(db,row,semantics,sort_mode,relationships):
     if row["death_state"]=="incomplete" and row["death_note_text"]:
         out+="<span class='meta' style='display:block'>Existing Death event note available</span>"
     return out+"</a>"
-
-
-
-def _priority_recent_event_keys(db,person_ids):
-    # Return sortable most-recent recorded event keys without N+1 queries.
-    ids=[int(x) for x in person_ids if x is not None]
-    if not ids:
-        return {}
-    try:
-        cols={r["name"] for r in db.execute("PRAGMA table_info(events)").fetchall()}
-        date_col=next((c for c in ("date_text","date_value","date","event_date") if c in cols),None)
-        if not date_col:
-            return {}
-        placeholders=",".join("?" for _ in ids)
-        event_rows=db.execute(
-            f"SELECT person_id,{date_col} AS priority_date FROM events WHERE person_id IN ({placeholders})",
-            ids,
-        ).fetchall()
-    except Exception:
-        return {}
-
-    months={
-        "JAN":1,"FEB":2,"MAR":3,"APR":4,"MAY":5,"JUN":6,
-        "JUL":7,"AUG":8,"SEP":9,"OCT":10,"NOV":11,"DEC":12,
-    }
-
-    def parse_key(value):
-        s=str(value or "").upper().strip()
-        if not s:
-            return (0,0,0)
-        years=re.findall(r"(?<!\d)(\d{4})(?!\d)",s)
-        if not years:
-            return (0,0,0)
-        year=max(int(y) for y in years)
-        month=0
-        for name,num in months.items():
-            if re.search(rf"\b{name}\b",s):
-                month=num
-                break
-        m=re.search(r"(?<!\d)(\d{1,2})\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b",s)
-        day=int(m.group(1)) if m else 0
-        return (year,month,day)
-
-    result={}
-    for row in event_rows:
-        pid=int(row["person_id"])
-        candidate=parse_key(row["priority_date"])
-        if candidate>result.get(pid,(0,0,0)):
-            result[pid]=candidate
-    return result
-
-
-def _priority_sort_choice_html(sort_mode,focus,section):
-    recent_active=" active" if sort_mode=="recent" else ""
-    relationship_active=" active" if sort_mode=="relationship" else ""
-    focus_suffix=f"&focus={focus['id']}" if focus else ""
-    return (
-        f"<div class='rc-review-sortbar rc-priority-sortbar' data-section='{esc(section)}'>"
-        "<div class='rc-review-sortchoices'>"
-        f"<a class='rc-review-sortchoice{recent_active}' href='/research?sort=recent'>Most Recent</a>"
-        f"<a class='rc-review-sortchoice{relationship_active}' href='/research?sort=relationship{focus_suffix}'>Relationship</a>"
-        "</div></div>"
-    )
 
 
 def research_page(db,query=None):
@@ -1234,26 +1162,6 @@ def research_page(db,query=None):
     else:
         _death_relationships={}
         _quality_relationships={}
-        death_recent=_priority_recent_event_keys(db,[r["person_id"] for r in death_rows])
-        quality_recent=_priority_recent_event_keys(db,[r["id"] for r in rows])
-        death_rows=sorted(
-            death_rows,
-            key=lambda r: (
-                -death_recent.get(int(r["person_id"]),(0,0,0))[0],
-                -death_recent.get(int(r["person_id"]),(0,0,0))[1],
-                -death_recent.get(int(r["person_id"]),(0,0,0))[2],
-                str(r["display_name"] or "").casefold(),
-            ),
-        )
-        rows=sorted(
-            rows,
-            key=lambda r: (
-                -quality_recent.get(int(r["id"]),(0,0,0))[0],
-                -quality_recent.get(int(r["id"]),(0,0,0))[1],
-                -quality_recent.get(int(r["id"]),(0,0,0))[2],
-                str(r["display_name"] or "").casefold(),
-            ),
-        )
     death_page_rows,death_page,death_pages,death_total=_page_slice(death_rows,"research_page")
     quality_page_rows,quality_page,quality_pages,quality_total=_page_slice(rows,"quality_page")
 
@@ -1284,7 +1192,6 @@ def research_page(db,query=None):
 
     death_count=len(death_rows)
     body+="<div class='card'><h2>Research Needed</h2>"
-    body+=_priority_sort_choice_html(sort_mode,research_focus,"research-needed")
     body+=f"<div class='topic'><strong>Death research</strong><span class='badge warn' style='float:right'>{death_count}</span><div class='small'>People with a missing or incomplete Death event.</div>"
     for r in death_page_rows:
         semantics=death_research_semantics(db,r["person_id"])
@@ -1297,7 +1204,6 @@ def research_page(db,query=None):
     unsourced_people=len(rows)
     unsourced_total=sum(int(r["unsourced"] or 0) for r in rows)
     body+="<div class='card'><h2>Data Quality</h2>"
-    body+=_priority_sort_choice_html(sort_mode,research_focus,"data-quality")
     body+=f"<div class='topic'><strong>Unsourced Events</strong><span class='badge warn' style='float:right'>{unsourced_total} events</span><div class='small'>{unsourced_people} people currently have events or facts without linked source or media evidence.</div>"
     for r in quality_page_rows:
         relation=_quality_relationships.get(int(r["id"]),{"label":"Relationship not established"})["label"]
