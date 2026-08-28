@@ -15,6 +15,7 @@ def add_person(db,pid,name,xref):
         "VALUES(?,?,?,?,?,?,?,?)",
         (pid,xref,pid,name.split()[0],name.split()[-1],name,"U",name),
     )
+    db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(?,?,?,?,?)",(pid,"Birth","1 JAN 1950",None,None))
     db.commit()
 
 
@@ -40,7 +41,7 @@ def test_bridge_uses_existing_person_level_evidence_api(monkeypatch,tmp_path):
 
     def fake(db,xref):
         if xref=="@I1@":
-            return [{"source_name":"Ryerson","id":"richard-1","death_date":"1920-01-02","review_status":"candidate"}]
+            return [{"source_name":"Ryerson","id":"richard-1","death_date":"2020-01-02","review_status":"candidate"}]
         return []
 
     monkeypatch.setattr(evidence,"external_evidence_for_person",fake)
@@ -50,7 +51,7 @@ def test_bridge_uses_existing_person_level_evidence_api(monkeypatch,tmp_path):
     assert result["ryerson_findings"]==1
     rows=discoveries_for_person(db,1)
     assert len(rows)==1
-    assert rows[0]["proposed_fact_key"]=="death:1920-01-02"
+    assert rows[0]["proposed_fact_key"]=="death:2020-01-02"
 
 
 def test_bridge_is_idempotent_and_preserves_decision(monkeypatch,tmp_path):

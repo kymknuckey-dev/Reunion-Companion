@@ -51,8 +51,8 @@ def test_finding_gets_decision_controls_beside_details(tmp_path):
     )
     finding={"event_date":"02 JAN 2021","source_name":"Ryerson"}
     html=render_finding_decision_controls(db,1,finding)
-    assert "Accept for Reunion" in html
-    assert "Already Known" in html
+    assert ">Accept</button>" in html
+    assert ">Known</button>" in html
     assert "Not This Person" in html
     assert "Decide Later" in html
     assert "/person/1?tab=research" in html

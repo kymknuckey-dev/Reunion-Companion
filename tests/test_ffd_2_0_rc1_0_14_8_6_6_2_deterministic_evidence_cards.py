@@ -8,6 +8,7 @@ from reunion_companion.companion.ryerson_discovery_ui import review_row_for_find
 def add_person(db,pid,name="Ellen Clark",xref="@I1@"):
     bits=name.split()
     db.execute("INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) VALUES(?,?,?,?,?,?,?,?)",(pid,xref,pid," ".join(bits[:-1]),bits[-1],name,"F",name))
+    db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(?,?,?,?,?)",(pid,"Birth","1 JAN 1930",None,None))
     db.commit()
 
 
@@ -32,8 +33,8 @@ def test_every_actionable_finding_has_all_buttons(tmp_path):
     materialize_person_level_ryerson_findings(db)
     for finding in external_evidence_for_person(db,"@I1@"):
         html=render_external_evidence_candidate(db,1,finding)
-        assert "Accept for Reunion" in html
-        assert "Already Known" in html
+        assert ">Accept</button>" in html
+        assert ">Known</button>" in html
         assert "Not This Person" in html
         assert "Decide Later" in html
 
@@ -47,7 +48,7 @@ def test_existing_decision_is_preserved(tmp_path):
     set_discovery_state(db,row["id"],"already_known")
     html=render_external_evidence_candidate(db,1,finding)
     assert "Already Known" in html
-    assert "Accept for Reunion" not in html
+    assert ">Accept</button>" not in html
 
 
 def test_recent_event_date_orders_first(tmp_path):

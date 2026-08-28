@@ -5,6 +5,7 @@ from reunion_companion.companion.ryerson_discovery_ui import render_external_evi
 
 def person(db):
     db.execute("INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) VALUES(1,'@I1@',1,'Ellen','Clark','Ellen Clark','F','Ellen Clark')")
+    db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(?,?,?,?,?)",(1,"Birth","1 JAN 1930",None,None))
     db.commit()
 
 def test_candidate_card_matches_review_presentation_contract(tmp_path):
@@ -35,7 +36,7 @@ def test_candidate_card_matches_review_presentation_contract(tmp_path):
     assert "Katoomba, New South Wales" in html
     assert "Event type:" in html
     assert "Chronology OK" in html
-    assert "Accept for Reunion" in html
-    assert "Already Known" in html
-    assert "Not This Person" in html
-    assert "Decide Later" in html
+    assert ">Accept</button>" in html
+    assert ">Known</button>" in html
+    assert ">Not This Person</button>" in html
+    assert ">Decide Later</button>" in html

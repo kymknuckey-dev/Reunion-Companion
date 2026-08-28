@@ -280,11 +280,8 @@ def render_external_evidence_candidate(db, person_id, finding, return_path=None)
 
     review=review_row_for_finding(db,person_id,finding)
     evidence_status=str(finding["review_status"] or "new") if "review_status" in keys else "new"
-    from .ryerson_discovery_assembly import _definite_date
-    sort_date=_definite_date(event_date)
-    sort_value=sort_date.toordinal() if sort_date else 0
 
-    out=[f"<article class='rc-evidence-candidate' data-event-sort='{sort_value}'>"]
+    out=["<article class='rc-evidence-candidate'>"]
 
     out.append("<section class='rc-evidence-primary'>")
     out.append(f"<div class='rc-evidence-source'>{escape(source)}{f' · Match {score}%' if score is not None else ''}</div>")
@@ -458,8 +455,6 @@ def render_discovery_review_section(db, *, preview_people=12, focus_id=None, sor
             context=(rels.get(int(person_id),{"label":"Relationship not established"})["label"] if sort_mode=="relationship" else "Most recent candidate: "+_format_review_date(_group_recent_date(candidates)))
             out.append(f"<a class='result' href='/person/{person_id}?tab=research'><strong>{escape(name)}</strong><span class='badge warn' style='float:right'>{len(candidates)} candidate{'s' if len(candidates)!=1 else ''}</span><span class='meta' style='display:block'>{escape(context)}</span></a>")
         if total_pages>1:
-            shown=min(preview_people,total_people-start)
-            out.append(f"<div class='small'>Showing {shown} of {total_people} people with new discoveries.</div>")
             suffix=f"&sort={sort_mode}"+(f"&focus={focus['id']}" if focus else "")
             nav=[]
             if page>1:

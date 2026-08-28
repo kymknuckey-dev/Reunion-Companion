@@ -6,25 +6,31 @@ def person(db,pid,xref,given,surname):
     db.execute("INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) VALUES(?,?,?,?,?,?,?,?)",
                (pid,xref,pid,given,surname,f"{given} {surname}","M",f"{given} /{surname}/"))
 
+def event(db,pid,kind,date=None):
+    db.execute(
+        "INSERT INTO events(person_id,event_type,date_text) VALUES(?,?,?)",
+        (pid,kind,date),
+    )
+
 def test_start_persists_and_queues(tmp_path):
-    path=tmp_path/"x.db"; db=connect(path); person(db,1,"@I1@","Peter","Rigg"); db.commit()
+    path=tmp_path/"x.db"; db=connect(path); person(db,1,"@I1@","Peter","Rigg"); event(db,1,"Birth","21 May 1944"); db.commit()
     r=start_runner(db); assert r["enabled"] and r["newly_queued"]==1; db.close()
     db=connect(path); assert runner_enabled(db); assert len(queue_rows(db))==1
 
 def test_pause_persists(tmp_path):
-    path=tmp_path/"x.db"; db=connect(path); person(db,1,"@I1@","Peter","Rigg"); db.commit(); start_runner(db)
+    path=tmp_path/"x.db"; db=connect(path); person(db,1,"@I1@","Peter","Rigg"); event(db,1,"Birth","21 May 1944"); db.commit(); start_runner(db)
     assert pause_runner(db)["enabled"] is False; db.close(); db=connect(path); assert not runner_enabled(db)
 
 def test_paused_tick_does_not_call_transport(tmp_path):
     db=connect(tmp_path/"x.db"); calls=[]; assert runner_tick(db,lambda p:calls.append(p))["status"]=="paused"; assert calls==[]
 
 def test_enabled_tick_processes_one(tmp_path):
-    db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Alpha","One"); person(db,2,"@I2@","Beta","Two"); db.commit(); start_runner(db)
+    db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Alpha","One"); event(db,1,"Birth","01 Jan 1950"); person(db,2,"@I2@","Beta","Two"); event(db,2,"Birth","01 Jan 1960"); db.commit(); start_runner(db)
     calls=[]; r=runner_tick(db,lambda p:calls.append(p["display_name"]) or [])
     assert r["status"]=="succeeded_no_match" and len(calls)==1
     st=runner_status(db); assert st["no_match"]==1 and st["queued"]==1
 
 def test_busy_waits_without_disabling_runner(tmp_path):
-    db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Peter","Rigg"); db.commit(); start_runner(db)
+    db=connect(tmp_path/"x.db"); person(db,1,"@I1@","Peter","Rigg"); event(db,1,"Birth","21 May 1944"); db.commit(); start_runner(db)
     def busy(profile): raise SourceBusyError("server busy")
     r=runner_tick(db,busy); assert r["status"]=="retry_wait"; assert runner_enabled(db); assert runner_status(db)["retry_wait"]==1

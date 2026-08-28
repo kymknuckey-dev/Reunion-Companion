@@ -3,6 +3,12 @@ from reunion_companion.companion.ryerson_discovery_materialize import materializ
 from reunion_companion.companion.ryerson_discovery_review import discoveries_for_person, set_discovery_state
 
 
+
+def eligible_person(db,pid,birth="1 JAN 1950"):
+    db.execute("INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) VALUES(?,?,?,?,?,?,?,?)",(pid,f"@I{pid}@",pid,"Test",f"Person{pid}",f"Test Person{pid}","U",f"Test /Person{pid}/"))
+    db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(?,?,?,?,?)",(pid,"Birth",birth,None,None))
+    db.commit()
+
 def test_raw_queue_counts_never_materialise_discoveries(tmp_path):
     db=connect(tmp_path/"x.db")
     db.execute("""
@@ -21,6 +27,7 @@ def test_raw_queue_counts_never_materialise_discoveries(tmp_path):
 
 def test_concrete_person_notice_relationship_materialises(tmp_path):
     db=connect(tmp_path/"x.db")
+    eligible_person(db,42)
     db.execute("""
         CREATE TABLE companion_external_notice_membership (
             person_id INTEGER,
@@ -45,6 +52,7 @@ def test_concrete_person_notice_relationship_materialises(tmp_path):
 
 def test_repeated_materialisation_preserves_review_state(tmp_path):
     db=connect(tmp_path/"x.db")
+    eligible_person(db,9)
     db.execute("""
         CREATE TABLE ryerson_candidate_evidence (
             reunion_person_id INTEGER,
@@ -68,6 +76,7 @@ def test_repeated_materialisation_preserves_review_state(tmp_path):
 
 def test_duplicate_relationship_across_tables_is_materialised_once(tmp_path):
     db=connect(tmp_path/"x.db")
+    eligible_person(db,5)
     for table in ("ryerson_candidate_match","ryerson_notice_membership"):
         db.execute(f"""
             CREATE TABLE {table} (

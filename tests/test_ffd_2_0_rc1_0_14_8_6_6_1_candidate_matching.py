@@ -36,4 +36,4 @@ def test_duplicate_same_date_uses_publication_to_match(tmp_path):
     row=review_row_for_finding(db,1,finding)
     assert row['id']==b['id']
     html=render_finding_decision_controls(db,1,finding)
-    assert 'Accept for Reunion' in html and 'Already Known' in html and 'Not This Person' in html and 'Decide Later' in html
+    assert '>Accept</button>' in html and '>Known</button>' in html and 'Not This Person' in html and 'Decide Later' in html

@@ -854,20 +854,9 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
                         f"<span class='rc-evidence-count'>{count} candidate{'s' if count!=1 else ''}</span></div>"
                         "<div class='rc-evidence-review-copy'>Review each Ryerson candidate below and decide whether it belongs to this person in Reunion.</div>"
                         "</div>"
-                        "<button type='button' class='rc-evidence-sort' id='rc-evidence-date-sort' aria-label='Toggle candidate event date order'>Sort by: &nbsp;Most Recent Event Date ▾</button>"
+                        "<div class='rc-evidence-sort'>Sort by: &nbsp;Most Recent Event Date ▾</div>"
                         "</div>"
                         "<div class='rc-evidence-list'>"+"".join(rendered)+"</div>"
-                        "<script>(function(){"
-                        "var list=document.querySelector('.rc-evidence-list'),btn=document.getElementById('rc-evidence-date-sort');"
-                        "if(!list||!btn)return;"
-                        "var order=localStorage.getItem('rcCandidateOrder')||'recent';"
-                        "function apply(){var cards=Array.from(list.querySelectorAll('.rc-evidence-candidate'));"
-                        "cards.sort(function(a,b){var av=parseInt(a.dataset.eventSort||'0',10),bv=parseInt(b.dataset.eventSort||'0',10);"
-                        "if(av===bv)return 0;if(av===0)return 1;if(bv===0)return -1;return order==='oldest'?av-bv:bv-av;});"
-                        "cards.forEach(function(c){list.appendChild(c);});"
-                        "btn.innerHTML='Sort by: &nbsp;'+(order==='oldest'?'Oldest Event Date':'Most Recent Event Date')+' ▾';}"
-                        "btn.addEventListener('click',function(){order=order==='recent'?'oldest':'recent';"
-                        "localStorage.setItem('rcCandidateOrder',order);apply();});apply();})();</script>"
                     )
                 else:
                     body+="<p>No plausible external evidence candidates remain after chronology checks.</p>"
@@ -1061,6 +1050,8 @@ def research_page(db,query=None):
         return items[start:start+page_size],page,pages,total
 
     def _priority_pager(name,page,pages,total):
+        if pages<=1:
+            return ""
         keep=[]
         for key in ("sort","focus","evidence_page","research_page","quality_page"):
             if key!=name and query.get(key):
@@ -1138,7 +1129,7 @@ def research_page(db,query=None):
     death_count=len(death_rows)
     body+="<div class='card'><h2>Research Needed</h2>"
     body+=f"<div class='topic'><strong>Death research</strong><span class='badge warn' style='float:right'>{death_count}</span><div class='small'>People with a missing or incomplete Death event.</div>"
-    for r in death_page_rows:
+    for r in death_rows[:8]:
         semantics=death_research_semantics(db,r["person_id"])
         badge=f"<span class='badge warn' style='float:right'>{esc(semantics['label'])}</span>"
         relation=_death_relationships.get(int(r["person_id"]),{"label":"Relationship not established"})["label"]
@@ -1146,21 +1137,23 @@ def research_page(db,query=None):
         if r["death_state"]=="incomplete" and r["death_note_text"]:
             body+="<span class='meta' style='display:block'>Existing Death event note available</span>"
         body+="</a>"
+    if death_count>8:
+        body+=f"<div class='small'>Showing 8 of {death_count}. Open a person to continue research.</div>"
     if not death_rows:
         body+="<p>No current missing or incomplete Death research items.</p>"
-    body+=_priority_pager("research_page",death_page,death_pages,death_total)
     body+="</div></div>"
 
     unsourced_people=len(rows)
     unsourced_total=sum(int(r["unsourced"] or 0) for r in rows)
     body+="<div class='card'><h2>Data Quality</h2>"
     body+=f"<div class='topic'><strong>Unsourced Events</strong><span class='badge warn' style='float:right'>{unsourced_total} events</span><div class='small'>{unsourced_people} people currently have events or facts without linked source or media evidence.</div>"
-    for r in quality_page_rows:
+    for r in rows[:8]:
         relation=_quality_relationships.get(int(r["id"]),{"label":"Relationship not established"})["label"]
         body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span><span class='meta' style='display:block'>{esc(relation)}</span></a>"
+    if unsourced_people>8:
+        body+=f"<div class='small'>Showing 8 of {unsourced_people} people.</div>"
     if not rows:
         body+="<p>No unsourced event priorities detected.</p>"
-    body+=_priority_pager("quality_page",quality_page,quality_pages,quality_total)
     body+="</div></div>"
 
     return layout("Research",body+"</div>",active="priorities")

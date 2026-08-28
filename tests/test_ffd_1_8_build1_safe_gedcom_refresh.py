@@ -89,3 +89,188 @@ def test_companion_owned_tables_survive_refresh(tmp_path):
     db=connect(dbp)
     try: assert db.execute("SELECT value FROM local_demo_state WHERE key='keep'").fetchone()[0]=='yes'
     finally: db.close()
+
+
+def test_successful_refresh_reconciles_external_discovery_state(tmp_path):
+    from reunion_companion.companion.ryerson_discovery_review import (
+        remember_discovery,
+        set_discovery_state,
+    )
+
+    dbp = tmp_path / "companion.sqlite3"
+
+    first = tmp_path / "first-discovery.ged"
+    first.write_text(
+        """0 HEAD
+1 SOUR Reunion
+0 @I1@ INDI
+1 NAME John /Smith/
+1 SEX M
+1 BIRT
+2 DATE 1 JAN 1950
+0 @I2@ INDI
+1 NAME Peter /Rigg/
+1 SEX M
+1 BIRT
+2 DATE 21 MAY 1944
+0 TRLR
+"""
+    )
+
+    db = connect(dbp)
+    import_gedcom(db, first)
+
+    john = db.execute(
+        "SELECT id FROM people WHERE gedcom_xref='@I1@'"
+    ).fetchone()["id"]
+    peter = db.execute(
+        "SELECT id FROM people WHERE gedcom_xref='@I2@'"
+    ).fetchone()["id"]
+
+    stale = remember_discovery(
+        db,
+        person_id=john,
+        source_name="Ryerson",
+        external_record_key="notice:stale-after-refresh",
+        proposed_fact_key="death:2021-01-01",
+    )
+
+    accepted = remember_discovery(
+        db,
+        person_id=peter,
+        source_name="Ryerson",
+        external_record_key="notice:accepted-after-refresh",
+        proposed_fact_key="death:2021-01-02",
+    )
+    set_discovery_state(
+        db,
+        accepted["id"],
+        "waiting_for_reunion",
+        note="Accepted; add death date to Reunion",
+    )
+    db.close()
+
+    second = tmp_path / "second-discovery.ged"
+    second.write_text(
+        """0 HEAD
+1 SOUR Reunion
+0 @I1@ INDI
+1 NAME John /Smith/
+1 SEX M
+0 @I2@ INDI
+1 NAME Peter /Rigg/
+1 SEX M
+1 BIRT
+2 DATE 21 MAY 1944
+1 DEAT
+2 DATE 2 JAN 2021
+0 TRLR
+"""
+    )
+
+    result = safe_refresh(dbp, second)
+
+    assert result["promoted"] is True
+    assert result["discovery_reconciliation"]["retired_ineligible"] == 1
+    assert result["discovery_reconciliation"]["confirmed_after_refresh"] == 1
+
+    db = connect(dbp)
+    try:
+        stale_after = db.execute(
+            """
+            SELECT state,decision_note
+            FROM companion_external_discovery_review
+            WHERE id=?
+            """,
+            (stale["id"],),
+        ).fetchone()
+
+        accepted_after = db.execute(
+            """
+            SELECT state,decision_note,confirmed_at
+            FROM companion_external_discovery_review
+            WHERE id=?
+            """,
+            (accepted["id"],),
+        ).fetchone()
+
+        assert stale_after["state"] == "ineligible"
+        assert (
+            stale_after["decision_note"]
+            == "Person no longer meets current external research eligibility rules"
+        )
+
+        assert accepted_after["state"] == "confirmed_complete"
+        assert accepted_after["decision_note"] == "Accepted; add death date to Reunion"
+        assert accepted_after["confirmed_at"] is not None
+    finally:
+        db.close()
+
+
+def test_dry_run_does_not_reconcile_external_discovery_state(tmp_path):
+    from reunion_companion.companion.ryerson_discovery_review import (
+        remember_discovery,
+    )
+
+    dbp = tmp_path / "companion.sqlite3"
+
+    first = tmp_path / "first-dry-discovery.ged"
+    first.write_text(
+        """0 HEAD
+1 SOUR Reunion
+0 @I1@ INDI
+1 NAME John /Smith/
+1 SEX M
+1 BIRT
+2 DATE 1 JAN 1950
+0 TRLR
+"""
+    )
+
+    db = connect(dbp)
+    import_gedcom(db, first)
+
+    john = db.execute(
+        "SELECT id FROM people WHERE gedcom_xref='@I1@'"
+    ).fetchone()["id"]
+
+    row = remember_discovery(
+        db,
+        person_id=john,
+        source_name="Ryerson",
+        external_record_key="notice:dry-run",
+        proposed_fact_key="death:2021-01-01",
+    )
+    db.close()
+
+    second = tmp_path / "second-dry-discovery.ged"
+    second.write_text(
+        """0 HEAD
+1 SOUR Reunion
+0 @I1@ INDI
+1 NAME John /Smith/
+1 SEX M
+0 TRLR
+"""
+    )
+
+    result = safe_refresh(dbp, second, dry_run=True)
+
+    assert result["promoted"] is False
+    assert "discovery_reconciliation" not in result
+
+    db = connect(dbp)
+    try:
+        after = db.execute(
+            """
+            SELECT state,decision_note
+            FROM companion_external_discovery_review
+            WHERE id=?
+            """,
+            (row["id"],),
+        ).fetchone()
+
+        assert after["state"] == "new"
+        assert after["decision_note"] == ""
+    finally:
+        db.close()

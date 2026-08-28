@@ -10,6 +10,17 @@ from reunion_companion.companion.ryerson_discovery_review import (
     set_discovery_state,
 )
 
+def eligible_person(db, pid, birth="1 JAN 1950"):
+    db.execute(
+        "INSERT INTO people(id,gedcom_xref,reunion_person_id,given_names,surname,display_name,sex,raw_name) VALUES(?,?,?,?,?,?,?,?)",
+        (pid, f"@I{pid}@", pid, "Test", f"Person{pid}", f"Test Person{pid}", "U", f"Test /Person{pid}/"),
+    )
+    db.execute(
+        "INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(?,?,?,?,?)",
+        (pid, "Birth", birth, None, None),
+    )
+    db.commit()
+
 
 def test_stable_notice_identity_does_not_depend_on_search(tmp_path):
     row = {
@@ -61,6 +72,7 @@ def test_fact_key_is_evidence_specific_not_forced_change():
 
 def test_assembly_is_idempotent_and_preserves_review_decision(tmp_path):
     db = connect(tmp_path / "x.db")
+    eligible_person(db, 42, "21 MAY 1944")
     candidates = [{
         "person_id": 42,
         "notice_id": "rigg-2021",
@@ -91,6 +103,8 @@ def test_assembly_is_idempotent_and_preserves_review_decision(tmp_path):
 
 def test_same_notice_can_be_reviewed_against_different_people(tmp_path):
     db = connect(tmp_path / "x.db")
+    eligible_person(db, 1)
+    eligible_person(db, 2)
     candidates = [
         {"person_id": 1, "notice_id": "shared", "match_status": "candidate"},
         {"person_id": 2, "notice_id": "shared", "match_status": "candidate"},
@@ -104,6 +118,7 @@ def test_same_notice_can_be_reviewed_against_different_people(tmp_path):
 
 def test_unassociated_and_ambiguous_rows_are_skipped(tmp_path):
     db = connect(tmp_path / "x.db")
+    eligible_person(db, 4)
     result = assemble_discoveries(db, [
         {"notice_id": "a"},
         {"person_id": 3, "notice_id": "b", "match_status": "ambiguous"},

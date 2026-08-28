@@ -37,7 +37,7 @@ def test_dashboard_stays_summary_only_while_workspace_has_actions(tmp_path):
     assert "Accept for Reunion" not in dashboard
 
     assert "death:2021-01-02" in workspace
-    assert "Accept for Reunion" in workspace
+    assert ">Accept</button>" in workspace
     assert "Already Known" in workspace
     assert "Not This Person" in workspace
     assert "Decide Later" in workspace

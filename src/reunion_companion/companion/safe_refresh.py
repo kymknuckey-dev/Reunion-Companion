@@ -293,6 +293,45 @@ def safe_refresh(db_path: str | Path, gedcom_path: str | Path, *, dry_run: bool 
         stage = None
         result["backup_path"] = str(backup)
         result["promoted"] = True
+
+        # Reconcile Companion-held external discovery state against the newly
+        # promoted Reunion snapshot. This happens only after a successful
+        # promotion; dry runs and failed refreshes must never mutate discovery
+        # decisions.
+        refreshed = connect(db_path)
+        try:
+            from .external_evidence_matcher import ryerson_death_candidates
+            from .ryerson_discovery_review import (
+                discovery_fact_present_in_reunion,
+                reconcile_discovery_eligibility,
+                reconcile_waiting_discoveries,
+            )
+
+            eligible_person_ids = {
+                int(row["person_id"])
+                for row in ryerson_death_candidates(refreshed)
+            }
+
+            retired = reconcile_discovery_eligibility(
+                refreshed,
+                eligible_person_ids,
+            )
+
+            confirmed = reconcile_waiting_discoveries(
+                refreshed,
+                lambda discovery: discovery_fact_present_in_reunion(
+                    refreshed,
+                    discovery,
+                ),
+            )
+
+            result["discovery_reconciliation"] = {
+                "retired_ineligible": retired,
+                "confirmed_after_refresh": len(confirmed),
+            }
+        finally:
+            refreshed.close()
+
         return result
     finally:
         if stage is not None and stage.exists():

@@ -10,7 +10,7 @@ def test_compact_incomplete_death_retains_note_indicator(monkeypatch,tmp_path):
     import reunion_companion.companion.ryerson_targeted_bootstrap as targeted
     import reunion_companion.companion.ryerson_person_finding_bridge as bridge
 
-    monkeypatch.setattr(matcher,"ryerson_death_candidates",lambda db:[{
+    monkeypatch.setattr(matcher,"missing_death_candidates",lambda db:[{
         "person_id":2,
         "display_name":"Incomplete Person",
         "gedcom_xref":"@I2@",

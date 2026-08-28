@@ -137,3 +137,86 @@ def test_invalid_state_is_rejected(tmp_path):
         assert "unsupported discovery state" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_discovery_fact_present_requires_same_person_event_and_date(tmp_path):
+    from reunion_companion.companion.ryerson_discovery_review import (
+        discovery_fact_present_in_reunion,
+    )
+
+    db = connect(tmp_path / "x.db")
+
+    db.execute(
+        """
+        INSERT INTO people(
+            id,gedcom_xref,reunion_person_id,given_names,surname,
+            display_name,sex,raw_name
+        ) VALUES(?,?,?,?,?,?,?,?)
+        """,
+        (42, "@I42@", 42, "Peter", "Rigg", "Peter Rigg", "M", "Peter /Rigg/"),
+    )
+
+    db.execute(
+        """
+        INSERT INTO events(person_id,event_type,date_text,place_text,note_text)
+        VALUES(?,?,?,?,?)
+        """,
+        (42, "Death", "2 JAN 2021", None, None),
+    )
+    db.commit()
+
+    matching = remember_discovery(
+        db,
+        person_id=42,
+        source_name="Ryerson",
+        external_record_key="notice:matching",
+        proposed_fact_key="death:2021-01-02",
+    )
+
+    wrong_date = remember_discovery(
+        db,
+        person_id=42,
+        source_name="Ryerson",
+        external_record_key="notice:wrong-date",
+        proposed_fact_key="death:2021-01-03",
+    )
+
+    assert discovery_fact_present_in_reunion(db, matching)
+    assert not discovery_fact_present_in_reunion(db, wrong_date)
+
+
+def test_discovery_fact_present_does_not_confirm_indefinite_fact(tmp_path):
+    from reunion_companion.companion.ryerson_discovery_review import (
+        discovery_fact_present_in_reunion,
+    )
+
+    db = connect(tmp_path / "x.db")
+
+    db.execute(
+        """
+        INSERT INTO people(
+            id,gedcom_xref,reunion_person_id,given_names,surname,
+            display_name,sex,raw_name
+        ) VALUES(?,?,?,?,?,?,?,?)
+        """,
+        (42, "@I42@", 42, "Peter", "Rigg", "Peter Rigg", "M", "Peter /Rigg/"),
+    )
+
+    db.execute(
+        """
+        INSERT INTO events(person_id,event_type,date_text,place_text,note_text)
+        VALUES(?,?,?,?,?)
+        """,
+        (42, "Death", "ABT 2021", None, None),
+    )
+    db.commit()
+
+    row = remember_discovery(
+        db,
+        person_id=42,
+        source_name="Ryerson",
+        external_record_key="notice:indefinite",
+        proposed_fact_key="death:ABT 2021",
+    )
+
+    assert not discovery_fact_present_in_reunion(db, row)

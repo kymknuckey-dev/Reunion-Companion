@@ -44,6 +44,7 @@ def test_queue_is_persistent_and_deduplicated(tmp_path):
 def test_server_busy_becomes_retry_wait_not_no_match(tmp_path):
     db=connect(tmp_path/"x.db")
     person(db,1,"@I1@","Peter Stanly","Rigg")
+    event(db,1,"Birth","21 May 1944")
     db.commit()
     enqueue_death_research_candidates(db)
     def busy(profile):
@@ -67,6 +68,7 @@ def test_backoff_increases_and_is_capped():
 def test_successful_no_result_is_distinct_from_busy(tmp_path):
     db=connect(tmp_path/"x.db")
     person(db,1,"@I1@","Nobody","Example")
+    event(db,1,"Birth","01 Jan 1950")
     db.commit()
     enqueue_death_research_candidates(db)
     result=run_one_scan(db,lambda profile: [],now=NOW)
@@ -125,7 +127,9 @@ def test_rejected_candidate_is_not_stored(tmp_path):
 def test_summary_preserves_checkpoint_states(tmp_path):
     db=connect(tmp_path/"x.db")
     person(db,1,"@I1@","Alpha","One")
+    event(db,1,"Birth","01 Jan 1950")
     person(db,2,"@I2@","Beta","Two")
+    event(db,2,"Birth","01 Jan 1960")
     db.commit()
     enqueue_death_research_candidates(db)
     run_one_scan(db,lambda profile: [],now=NOW)

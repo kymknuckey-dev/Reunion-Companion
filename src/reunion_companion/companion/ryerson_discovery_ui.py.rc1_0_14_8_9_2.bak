@@ -280,11 +280,8 @@ def render_external_evidence_candidate(db, person_id, finding, return_path=None)
 
     review=review_row_for_finding(db,person_id,finding)
     evidence_status=str(finding["review_status"] or "new") if "review_status" in keys else "new"
-    from .ryerson_discovery_assembly import _definite_date
-    sort_date=_definite_date(event_date)
-    sort_value=sort_date.toordinal() if sort_date else 0
 
-    out=[f"<article class='rc-evidence-candidate' data-event-sort='{sort_value}'>"]
+    out=["<article class='rc-evidence-candidate'>"]
 
     out.append("<section class='rc-evidence-primary'>")
     out.append(f"<div class='rc-evidence-source'>{escape(source)}{f' · Match {score}%' if score is not None else ''}</div>")

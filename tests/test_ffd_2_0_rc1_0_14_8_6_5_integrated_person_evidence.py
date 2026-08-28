@@ -17,8 +17,8 @@ def test_person_workspace_renders_actions_for_new_candidate(tmp_path):
     person(db,1,"Graham Shearer")
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="g1",proposed_fact_key="death:2020-01-01")
     html=render_person_discovery_decisions(db,1)
-    assert "Accept for Reunion" in html
-    assert "Already Known" in html
+    assert ">Accept</button>" in html
+    assert ">Known</button>" in html
     assert "Not This Person" in html
     assert "Decide Later" in html
     assert "/person/1?tab=research" in html

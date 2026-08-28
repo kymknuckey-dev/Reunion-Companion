@@ -167,12 +167,41 @@ def assemble_candidate(row: Mapping[str, Any]) -> AssembledDiscovery | None:
 
 
 def assemble_discoveries(db, candidates: Iterable[Mapping[str, Any]]):
-    """Persist person-level Ryerson candidates without resetting prior decisions.
+    """Persist only currently eligible, chronologically plausible discoveries.
 
-    The review table's unique identity makes this idempotent.  Re-running the
-    assembler can rediscover a candidate, but remember_discovery() will return
-    the existing review record and preserve its state and decision note.
+    The review table's unique identity makes this idempotent. Re-running the
+    assembler can rediscover a candidate, but remember_discovery() returns the
+    existing review record and preserves its state and decision note.
+
+    Ryerson eligibility is enforced here as well as at research-queue creation
+    because persisted historical person/notice relationships may outlive the
+    Reunion data that originally made a person eligible.
     """
+    from .external_evidence_matcher import ryerson_death_candidates
+
+    eligible_person_ids = {
+        int(row["person_id"])
+        for row in ryerson_death_candidates(db)
+    }
+
+    birth_rows = db.execute(
+        """
+        SELECT person_id,date_text
+        FROM events
+        WHERE lower(event_type)='birth'
+        ORDER BY person_id,id
+        """
+    ).fetchall()
+
+    birth_dates = {}
+    for row in birth_rows:
+        pid = int(row["person_id"])
+        if pid in birth_dates:
+            continue
+        parsed = _definite_date(row["date_text"])
+        if parsed is not None:
+            birth_dates[pid] = parsed
+
     assembled = []
     skipped = 0
 
@@ -181,6 +210,24 @@ def assemble_discoveries(db, candidates: Iterable[Mapping[str, Any]]):
         if discovery is None:
             skipped += 1
             continue
+
+        if discovery.person_id not in eligible_person_ids:
+            skipped += 1
+            continue
+
+        fact = str(discovery.proposed_fact_key or "").strip()
+        if ":" in fact:
+            kind, raw_date = fact.split(":", 1)
+            if kind.casefold() == "death":
+                birth_date = birth_dates.get(discovery.person_id)
+                death_date = _definite_date(raw_date)
+                if (
+                    birth_date is not None
+                    and death_date is not None
+                    and death_date < birth_date
+                ):
+                    skipped += 1
+                    continue
 
         review = remember_discovery(
             db,

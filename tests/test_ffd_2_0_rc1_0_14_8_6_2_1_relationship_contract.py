@@ -19,9 +19,9 @@ def test_focus_banner_does_not_split_person_candidate_group(tmp_path):
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="a",proposed_fact_key="death:1957-06-28")
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="b",proposed_fact_key="death:1950-08-26")
 
-    html=render_discovery_workspace(db,state="new",page=1,focus_id=1)
+    html=render_discovery_workspace(db,state="new",page=1,focus_id=1,sort_mode="relationship")
 
-    assert "Research focus: Ada Mitchell" in html
+    assert "Relationship anchor: Ada Mitchell" in html
     assert html.count("<h2><a href='/person/1?tab=research'>Ada Mitchell</a>")==1
     assert "2 Ryerson candidates" in html
 
