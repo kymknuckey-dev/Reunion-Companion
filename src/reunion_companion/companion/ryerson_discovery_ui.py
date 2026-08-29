@@ -504,72 +504,61 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
 
     out=[
         "<h1>External Evidence Review</h1>",
-        "<p class='meta'>Review Ryerson discoveries against the Reunion person. Decisions are saved immediately and can be resumed later.</p>",
+        "<p class='meta'>Browse Ryerson discoveries by review state. Open a person to review candidates with the full Reunion and external-evidence context.</p>",
         "<div class='card'>",
-        "<div class='topic'><strong>Review state</strong><div class='small'>",
+        "<div class='topic'><strong>Review state</strong>",
     ]
     counts=discovery_counts(db)
     links=[]
     for key in STATE_ORDER:
+        if key=="ineligible":
+            continue
         href=f"/research/discoveries?state={quote(key)}&page=1&sort={quote(sort_mode)}"+(f"&focus={focus['id']}" if focus else "")
-        links.append(f"<a href='{href}'>{escape(STATE_LABELS[key])} ({counts[key]})</a>")
-    out.append(" · ".join(links))
-    out.append("</div></div>")
+        active=" active" if key==state else ""
+        links.append(f"<a class='rc-review-statechoice{active}' href='{href}'>{escape(STATE_LABELS[key])} <span>{counts[key]}</span></a>")
+    out.append("<div class='rc-review-statebar'>"+"".join(links)+"</div></div>")
     out.append(_review_sort_controls(people,sort_mode=sort_mode,focus=focus))
     if sort_mode=="relationship" and focus:
         out.append(f"<div class='topic'><strong>Relationship anchor: {escape(focus['display_name'])}</strong><div class='small'>Closest recorded family relationships are shown first.</div></div>")
     else:
         out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>People are ordered by the newest candidate event date. Undated candidates appear last.</div></div>")
-    out.append(
-        f"<p><a href='/research'>← Research Priorities</a> · "
-        f"Showing {len(shown)} of {total_people} people · Page {page} of {total_pages}</p>"
-    )
+    out.append(f"<div class='small rc-review-page-summary'>Showing {len(shown)} of {total_people} people · Page {page} of {total_pages}</div>")
     out.append("</div>")
 
     if not shown:
         out.append("<div class='card'><p>No discoveries in this review state.</p></div>")
         return "".join(out)
 
-    return_path=f"/research/discoveries?state={quote(state)}&page={page}&sort={quote(sort_mode)}"+(f"&focus={focus['id']}" if focus else "")
-
+    out.append("<div class='card rc-review-person-list'>")
     for pid,candidates in shown:
         context=person_reunion_context(db,pid)
         relation=(rels.get(int(pid),{"label":"Relationship not established"}) if sort_mode=="relationship" else {"label":"Most recent candidate: "+_format_review_date(_group_recent_date(candidates))})
-        out.append("<div class='card'>")
+        count=len(candidates)
+        bits=[]
+        if context.get("birth"):
+            bits.append(f"Birth: {context['birth']}")
+        if context.get("death"):
+            bits.append(f"Death: {context['death']}")
+        if relation.get("label"):
+            bits.append(relation["label"])
+        summary=" · ".join(bits)
         out.append(
-            f"<h2><a href='/person/{pid}?tab=research'>{escape(context['name'])}</a> "
-            f"<span class='small'>({len(candidates)} Ryerson candidate{'s' if len(candidates)!=1 else ''})</span></h2>"
+            f"<a class='result rc-review-person-summary' href='/person/{pid}?tab=research'>"
+            f"<span class='rc-review-person-main'><strong>{escape(context['name'])}</strong>"
+            f"<span class='small'>{escape(summary)}</span></span>"
+            f"<span class='badge warn'>{count} candidate{'s' if count!=1 else ''}</span>"
+            "</a>"
         )
-        out.append(f"<div class='meta'>{escape(relation['label'])}</div>")
-        out.append(
-            "<div class='grid'>"
-            "<div class='topic'><strong>Reunion record</strong>"
-            f"<div class='small'>Birth: {escape(context['birth'])}</div>"
-            f"<div class='small'>Death: {escape(context['death'])}</div>"
-            "</div>"
-            "<div class='topic'><strong>Ryerson candidates</strong>"
-        )
-
-        for row in candidates:
-            fact=row["proposed_fact_key"] or "Evidence candidate"
-            note=row["decision_note"] or ""
-            out.append("<div class='result'>")
-            out.append(f"<strong>{escape(fact)}</strong>")
-            out.append(f"<div class='small'>{escape(row['source_name'])}</div>")
-            if note:
-                out.append(f"<div class='small'>{escape(note)}</div>")
-            out.append(_decision_forms(row,return_path))
-            out.append("</div>")
-
-        out.append("</div></div></div>")
+    out.append("</div>")
 
     nav=[]
     suffix=f"&sort={quote(sort_mode)}"+(f"&focus={focus['id']}" if focus else "")
     if page>1:
         nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page-1}{suffix}'>Previous</a>")
+    nav.append(f"<span class='small'>Page {page} of {total_pages} · {total_people} people</span>")
     if page<total_pages:
         nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page+1}{suffix}'>Next</a>")
-    if nav:
-        out.append("<div class='card'>"+" ".join(nav)+"</div>")
+    if total_pages>1:
+        out.append("<div class='rc-priority-pager'>"+" ".join(nav)+"</div>")
 
     return "".join(out)

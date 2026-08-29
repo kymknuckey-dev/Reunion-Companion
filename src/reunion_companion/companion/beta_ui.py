@@ -105,6 +105,19 @@ button,.button{background:var(--accent);color:#fff;border-color:var(--accent);te
 .rc-review-loading{align-items:center;gap:7px;color:var(--muted);font-size:12px}
 @keyframes rc-review-spin{to{transform:rotate(360deg)}}
 .rc-review-spinner{display:inline-block;width:14px;height:14px;border:2px solid #c7c7c2;border-top-color:var(--brand-navy);border-radius:50%;animation:rc-review-spin .7s linear infinite}
+.rc-review-statebar{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.rc-review-statechoice{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--brand-navy);text-decoration:none;font-size:13px;font-weight:650}
+.rc-review-statechoice span{color:var(--muted);font-weight:600}
+.rc-review-statechoice:hover{border-color:#9aa8b4;background:#fafbfd}
+.rc-review-statechoice.active{background:var(--brand-navy);border-color:var(--brand-navy);color:#fff}
+.rc-review-statechoice.active span{color:#fff}
+.rc-review-page-summary{margin-top:8px}
+.rc-review-person-list{padding-top:4px;padding-bottom:4px}
+.rc-review-person-summary{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:13px 0}
+.rc-review-person-summary:last-child{border-bottom:0}
+.rc-review-person-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.rc-review-person-main strong{font-size:16px;color:var(--brand-navy)}
+.rc-review-person-summary>.badge{flex:0 0 auto}
 
 /* RC1.0.14.8.6.7 compact evidence controls — final override */
 .rc-evidence-candidate .rc-evidence-actions{
@@ -956,7 +969,10 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         from .external_evidence_matcher import death_research_state
         from .ryerson_discovery_ui import render_person_discovery_decisions, render_external_evidence_candidate, sort_external_findings_recent_first
         r=person_research_model(db,pid);body="<div class='card'><h2>Research</h2>"
-        for a in r["anomalies"]:body+=f"<div class='topic'><span class='badge {'warn' if a['severity']=='warning' else 'info'}'>{esc(a['kind'])}</span> {esc(a['message'])}</div>"
+        for a in r["anomalies"]:
+            badge_class='warn' if a['severity']=='warning' or a['kind']=='evidence' else 'info'
+            badge_label='Needs evidence' if a['kind']=='evidence' else a['kind']
+            body+=f"<div class='topic'><span class='badge {badge_class}'>{esc(badge_label)}</span> {esc(a['message'])}</div>"
         if not r["anomalies"]:body+="<p>No deterministic review flags.</p>"
         body+="</div>"
         death_state=death_research_state(db,pid)
@@ -1015,21 +1031,6 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
                 )
                 if decision_html:
                     body+=decision_html
-            body+="</div>"
-        if death_state["state"] in ("missing","incomplete"):
-            from .ryerson_browser_assist import build_browser_search_plan,RYERSON_SEARCH_URL
-            profile={"surname":w["person"].get("surname"),"given_names":w["person"].get("given_names"),"display_name":w["person"].get("display_name")}
-            plan=build_browser_search_plan(profile)
-            body+="<div class='card'><h2>Search Ryerson</h2><p class='meta'>Use Ryerson in your normal browser, then paste the matching result row back into Companion. Companion will assess and store the finding; Reunion is not changed.</p>"
-            if plan.searches:
-                body+="<div class='topic'><strong>Suggested searches</strong>"
-                for q in plan.searches:
-                    body+=f"<div class='small'>Surname: {esc(q['surname'])} · Given names: {esc(q['given_names'] or '(blank)')} · State: {esc(q['state'])}</div>"
-                body+="</div>"
-                body+=f"<p><a class='ffd-inline-link' href='{RYERSON_SEARCH_URL}' target='_blank' rel='noopener'>Search Ryerson →</a></p>"
-                body+=f"<form method='post' action='/research/ryerson/import/{pid}'><label for='ryerson-result'><strong>Paste Ryerson result</strong></label><p class='meta'>Copy the result row from Ryerson and paste it here. Tab-separated text or copied table HTML is accepted.</p><textarea id='ryerson-result' name='content' rows='7' style='width:100%' placeholder='Paste Ryerson result here'></textarea><div style='margin-top:12px'><button type='submit'>Import and assess finding</button></div></form>"
-            else:
-                body+="<p>No safe Ryerson search can be generated for this person because a usable surname is not recorded.</p>"
             body+="</div>"
     elif tab=="data-quality":
         flags=person_quality(db,pid);body="<div class='card'><h2>Data Quality</h2><p class='meta'>Suggested changes are made in Reunion, then the GEDCOM is reloaded.</p>"

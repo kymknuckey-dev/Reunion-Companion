@@ -10,18 +10,17 @@ def person(db,pid,xref,given,surname,display=None):
 def event(db,pid,kind,date=None,place=None,note=None):
     db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(?,?,?,?,?)",(pid,kind,date,place,note))
 
-def test_research_tab_shows_ryerson_search_plan_and_import_form(tmp_path):
+def test_research_tab_no_longer_shows_manual_ryerson_search_and_import_form(tmp_path):
     db=connect(tmp_path/"x.db")
     person(db,1,"@I1@","Peter Stanly","Rigg","Peter Stanly Rigg")
     event(db,1,"Birth","21 May 1944","Brighton Community Hospital")
     event(db,1,"Death",None,None,"Death notice details are in this note")
     db.commit()
     html=person_page(db,1,"research",presentation_override=False)
-    assert "Search Ryerson" in html
-    assert "Peter Stanly" in html
-    assert "State: SA" in html
-    assert "/research/ryerson/import/1" in html
-    assert "Paste Ryerson result" in html
+    assert "External Evidence" in html
+    assert "Search Ryerson" not in html
+    assert "/research/ryerson/import/1" not in html
+    assert "Paste Ryerson result" not in html
 
 def test_recorded_death_does_not_show_ryerson_search_ui(tmp_path):
     db=connect(tmp_path/"x.db")

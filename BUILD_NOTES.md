@@ -1,3 +1,19 @@
+## FFD 2.0 RC1.0.14.8.9.9.1 — External Evidence Review Presentation Consolidation
+
+- Recast External Evidence Review as a compact person-level review index rather than a second candidate decision workspace.
+- Review-state results now show one concise row per person with candidate count and Reunion context; opening the person continues to the full Person > Research evidence view.
+- Removed candidate-level decision controls and raw candidate detail from the review index.
+- Removed the redundant “Research Priorities” return link.
+- Styled review-state navigation as Companion controls and hid “No Longer Eligible” from the normal review-state bar while retaining the underlying state and records.
+- Preserved Most Recent / Relationship ordering, relationship anchoring, pagination, crawler, matching, decision-state, database, and Reunion write-back behaviour.
+
+## FFD 2.0 RC1.0.14.8.9.9 — Person Research Workflow Consolidation
+
+- Removed the obsolete person-level manual Search Ryerson / paste-result workflow now superseded by automated crawler discovery and External Evidence Candidates.
+- Retained the underlying Ryerson copied-result import/parser machinery for compatibility and regression coverage.
+- Aligned deterministic evidence flags with the Overview "Needs evidence" warning badge language and colour treatment.
+- No crawler, matching, retry, External Evidence decision, Reunion-writeback, or database behaviour changes.
+
 ## FFD 2.0 RC1.0.14.8.9.8.1 — Manage Presentation QA Correction
 
 - Added presentation spacing between the Ryerson crawler status and its Start/Pause control.

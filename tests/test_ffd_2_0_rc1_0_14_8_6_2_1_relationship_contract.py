@@ -22,8 +22,8 @@ def test_focus_banner_does_not_split_person_candidate_group(tmp_path):
     html=render_discovery_workspace(db,state="new",page=1,focus_id=1,sort_mode="relationship")
 
     assert "Relationship anchor: Ada Mitchell" in html
-    assert html.count("<h2><a href='/person/1?tab=research'>Ada Mitchell</a>")==1
-    assert "2 Ryerson candidates" in html
+    assert html.count("href='/person/1?tab=research'")==1
+    assert "2 candidates" in html
 
 
 def test_relationship_label_describes_candidate_relative_to_focus(tmp_path):

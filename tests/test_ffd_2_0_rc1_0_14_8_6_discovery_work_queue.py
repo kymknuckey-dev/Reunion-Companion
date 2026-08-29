@@ -37,10 +37,10 @@ def test_workspace_groups_multiple_candidates_by_person(tmp_path):
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="a",proposed_fact_key="death:1957-06-28")
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="b",proposed_fact_key="death:1950-08-26")
     html=render_discovery_workspace(db,state="new",page=1)
-    assert html.count("<h2><a href='/person/1?tab=research'>Ada Mitchell</a>")==1
-    assert "2 Ryerson candidates" in html
-    assert "death:1957-06-28" in html
-    assert "death:1950-08-26" in html
+    assert html.count("href='/person/1?tab=research'")==1
+    assert "2 candidates" in html
+    assert "death:1957-06-28" not in html
+    assert "death:1950-08-26" not in html
 
 
 def test_workspace_paginates_by_people_not_discoveries(tmp_path):
@@ -74,7 +74,8 @@ def test_workspace_includes_reunion_context_and_return_target(tmp_path):
     db.commit()
     remember_discovery(db,person_id=1,source_name="Ryerson",external_record_key="a",proposed_fact_key="death:1957-06-28")
     html=render_discovery_workspace(db,state="new",page=1)
-    assert "Reunion record" in html
     assert "Birth:" in html
-    assert "Ryerson candidates" in html
-    assert "name='return'" in html
+    assert "1 candidate" in html
+    assert "Ryerson candidates" not in html
+    assert "name='return'" not in html
+    assert "/person/1?tab=research" in html

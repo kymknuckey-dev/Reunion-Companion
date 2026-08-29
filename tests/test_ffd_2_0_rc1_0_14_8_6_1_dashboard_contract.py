@@ -18,7 +18,7 @@ def add_person(db,pid,name):
     db.commit()
 
 
-def test_dashboard_stays_summary_only_while_workspace_has_actions(tmp_path):
+def test_dashboard_and_workspace_are_summary_only(tmp_path):
     db=connect(tmp_path/"x.db")
     add_person(db,1,"Peter Rigg")
     remember_discovery(
@@ -36,14 +36,13 @@ def test_dashboard_stays_summary_only_while_workspace_has_actions(tmp_path):
     assert "death:2021-01-02" not in dashboard
     assert "Accept for Reunion" not in dashboard
 
-    assert "death:2021-01-02" in workspace
-    assert ">Accept</button>" in workspace
-    assert "Already Known" in workspace
-    assert "Not This Person" in workspace
-    assert "Decide Later" in workspace
+    assert "death:2021-01-02" not in workspace
+    assert ">Accept</button>" not in workspace
+    assert "1 candidate" in workspace
+    assert "/person/1?tab=research" in workspace
 
 
-def test_waiting_detail_lives_in_workspace_not_dashboard(tmp_path):
+def test_waiting_workspace_stays_summary_only(tmp_path):
     db=connect(tmp_path/"x.db")
     add_person(db,2,"John Mitchell")
     row=remember_discovery(
@@ -59,4 +58,6 @@ def test_waiting_detail_lives_in_workspace_not_dashboard(tmp_path):
     workspace=render_discovery_workspace(db,state="waiting_for_reunion",page=1)
 
     assert "Waiting for Reunion: 1" in dashboard
-    assert "Accepted. Waiting for a future GEDCOM refresh" in workspace
+    assert "Accepted. Waiting for a future GEDCOM refresh" not in workspace
+    assert "1 candidate" in workspace
+    assert "/person/2?tab=research" in workspace
