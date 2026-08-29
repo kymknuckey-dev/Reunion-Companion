@@ -500,10 +500,53 @@ def _select_ordinal(subject,label,vals,q):
  p=vals[i]
  return {"status":"ok","kind":"person","people":[p],"answer":f'{subject["display_name"]}’s {_ordinal_label(i)} {label} is {p["display_name"]}.'}
 
-def _human_path_answer(a,b,path):
+def _friendly_kinship_label(label):
+ label=(label or "").strip()
+ label=re.sub(r",\s*1 time removed\b", " once removed", label, flags=re.I)
+ label=re.sub(r",\s*2 times removed\b", " twice removed", label, flags=re.I)
+ label=re.sub(r",\s*(\d+) times removed\b", r" \1 times removed", label, flags=re.I)
+ return label
+
+def _human_path_answer(db,a,b,path):
  # relationship_path returns dictionaries: {"person": person, "edge": relation}.
- # Build wording from the same path that the UI already renders.
+ # Collapse spouse edges at either endpoint into a conversational explanation,
+ # while preserving the established direct spouse-of-child wording below.
  if not path or len(path)<2:return None
+ start_spouse=(path[1].get("edge") or "").strip().casefold()=="spouse"
+ end_spouse=(path[-1].get("edge") or "").strip().casefold()=="spouse"
+ # Both named people are connected through their spouses.  Explain the two
+ # marriage links first, then state the actual blood relationship between the
+ # spouses.  This avoids incorrectly assigning a cousin/uncle/etc. label to
+ # either non-blood spouse.
+ if start_spouse and end_spouse and len(path)>=5:
+  a_partner=path[1]["person"];b_partner=path[-2]["person"]
+  rel=blood_relationship(db,a_partner["id"],b_partner["id"])
+  if rel:
+   a_role=sexword(a_partner.get("sex"),"husband","wife","spouse")
+   b_role=sexword(b_partner.get("sex"),"husband","wife","spouse")
+   label=_friendly_kinship_label(rel.get("label"))
+   return (f'{a["display_name"]} is related to {b["display_name"]} through their spouses. '
+           f'{a["display_name"]}’s {a_role} is {a_partner["display_name"]}. '
+           f'{b["display_name"]}’s {b_role} is {b_partner["display_name"]}. '
+           f'{b_partner["display_name"]} is {a_partner["display_name"]}’s {label}.')
+ if end_spouse and len(path)>=4:
+  partner=path[-2]["person"]
+  rel=blood_relationship(db,a["id"],partner["id"])
+  if rel:
+   role=sexword(b.get("sex"),"husband","wife","spouse")
+   label=_friendly_kinship_label(rel.get("label"))
+   return f'{b["display_name"]} is the {role} of {a["display_name"]}’s {label}, {partner["display_name"]}.'
+ # Reciprocal form: the path starts with the spouse and then follows the
+ # spouse's blood line to the other named person.  Interpret the blood
+ # relationship from the other person's point of view so reversing the same
+ # question remains conversational instead of falling back to graph prose.
+ if start_spouse and len(path)>=4:
+  partner=path[1]["person"]
+  rel=blood_relationship(db,b["id"],partner["id"])
+  if rel:
+   role=sexword(partner.get("sex"),"husband","wife","spouse")
+   label=_friendly_kinship_label(rel.get("label"))
+   return f'{a["display_name"]} is related to {b["display_name"]} through {role} {partner["display_name"]}. {partner["display_name"]} is {b["display_name"]}’s {label}.'
  steps=[]
  for i in range(1,len(path)):
   prev=path[i-1]["person"];cur=path[i]["person"];edge=(path[i].get("edge") or "").strip().casefold()
@@ -841,10 +884,12 @@ def _answer_question_core(db,q,subject_id=None,selected_identity_id=None,prior_k
   if pair["status"]=="ambiguous":return _ambiguity_answer(pair["ambiguous"],db,q)
   if pair["status"]=="ok":
    a,b=pair["people"];rel=blood_relationship(db,a["id"],b["id"])
-   if rel:return {"status":"ok","kind":"relationship","answer":f'{b["display_name"]} is {a["display_name"]}’s {rel["label"]}.',"from":a,"to":b,**rel}
+   if rel:
+    rel=dict(rel);rel["label"]=_friendly_kinship_label(rel.get("label"))
+    return {"status":"ok","kind":"relationship","answer":f'{b["display_name"]} is {a["display_name"]}’s {rel["label"]}.' ,"from":a,"to":b,**rel}
    path=relationship_path(db,a["id"],b["id"],False)
    if path:
-    summary=_human_path_answer(a,b,path) or f'{a["display_name"]} and {b["display_name"]} are connected through the recorded family structure.'
+    summary=_human_path_answer(db,a,b,path) or f'{a["display_name"]} and {b["display_name"]} are connected through the recorded family structure.'
     return {"status":"ok","kind":"connection","answer":summary,"from":a,"to":b,"path":path}
    return {"status":"not-found","answer":"No recorded family connection was found between those two people."}
   return {"status":"needs-person","answer":"I could not identify both people in that relationship question. Try using both names."}

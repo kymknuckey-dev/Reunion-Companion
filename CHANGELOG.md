@@ -1,3 +1,25 @@
+## FFD 2.0 RC1.0.14.8.9.8.1 — Manage Presentation QA Correction
+
+- Added presentation spacing between the Ryerson crawler status and its Start/Pause control.
+- Added presentation spacing between the Recent crawler activity heading and its first activity row.
+- Restyled Import History Previous/Next pagination to match the established Priorities-page pager.
+- No crawler, queue, import, evidence, database, or pagination behaviour changed.
+
+## FFD 2.0 RC1.0.14.8.9.8 — Manage Import History Pagination & Ryerson Running Activity Feedback
+
+- Added a compact Recent crawler activity feed to Manage showing the three newest persisted Ryerson attempts across the internal queues.
+- Activity rows show local time, person/search identity, plain-language status, and concise result/error feedback.
+- Added Import History pagination at 10 entries per page, newest first, with Previous/Next controls.
+- Activity display is read-only and causes no additional Ryerson requests.
+- No crawler matching, queue lifecycle, retry, evidence-review, GEDCOM import, or database-schema behaviour changed.
+
+## FFD 2.0 RC1.0.14.8.9.7.1.1 — Unified Crawler Regression Contract Correction
+
+- Corrected the historical surname-bootstrap UI-route regression contract.
+- The targeted start/pause POST routes remain present internally.
+- Separate Targeted Bootstrap forms remain intentionally absent under the unified Ryerson Crawler UI.
+- No crawler queue, matching, retry, browser, evidence, or lifecycle behaviour changed.
+
 ## FFD 2.0 RC1.0.10 — Multi-page PDF Reproduction
 
 - Hardened PDF page reproduction so the rendered page set must match the source PDF page count.

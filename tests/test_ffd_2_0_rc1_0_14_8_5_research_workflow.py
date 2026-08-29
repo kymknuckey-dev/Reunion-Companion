@@ -23,8 +23,8 @@ def test_research_page_is_compact_and_background_is_near_top(monkeypatch,tmp_pat
 
     html=beta_ui.research_page(db)
 
-    assert html.index("External Evidence Review") < html.index("Background Research")
-    assert html.index("Background Research") < html.index("Research Needed")
+    assert html.index("External Evidence Review") < html.index("Research Needed")
     assert html.index("Research Needed") < html.index("Data Quality")
+    assert "Background Research" not in html
     assert "Ryerson Death Research" not in html
     assert "<h2>Unsourced Events</h2>" not in html

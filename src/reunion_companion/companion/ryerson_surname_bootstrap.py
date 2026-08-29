@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import json
+import html as html_lib
 import re
 import time
 
@@ -275,6 +276,29 @@ def _unique_cached_count(db, surname: str) -> int:
     ).fetchone()[0])
 
 
+def _ryerson_explicit_no_results(html: str | None) -> bool:
+    """Recognise only an explicit Ryerson empty-result response.
+
+    Zero parsed rows alone remain an error because they can also mean Safari
+    has not finished loading, automation failed, or the wrong page is open.
+    """
+    if not html:
+        return False
+    text=html_lib.unescape(re.sub(r"<[^>]+>", " ", html))
+    text=re.sub(r"\s+", " ", text).strip().casefold()
+    markers=(
+        "no records found",
+        "no matching records",
+        "no matches found",
+        "no results found",
+        "your search returned no records",
+        "your search returned no results",
+        "0 records found",
+        "0 results found",
+    )
+    return any(marker in text for marker in markers)
+
+
 def _wait_for_results(*, expected_surname=None, timeout_seconds=45.0, poll_seconds=1.0):
     started=time.monotonic()
     last_rows=0
@@ -293,6 +317,8 @@ def _wait_for_results(*, expected_surname=None, timeout_seconds=45.0, poll_secon
         rows=parse_ryerson_results(html)
         last_rows=len(rows)
         if _rows_correspond_to_surname(rows,expected_surname):
+            return url,html
+        if not rows and _ryerson_explicit_no_results(html):
             return url,html
 
     label=f" for {expected_surname}" if expected_surname else ""

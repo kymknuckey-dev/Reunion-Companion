@@ -38,12 +38,19 @@ def current_gedcom(db):
     r=db.execute("SELECT source_path,imported_at FROM companion_import_history WHERE status IN ('success','baseline') ORDER BY id DESC LIMIT 1").fetchone()
     return dict(r) if r else None
 
-def import_history(db,limit=30):
+def import_history(db,limit=30,offset=0):
     ensure_companion_tables(db)
     out=[]
-    for r in db.execute("SELECT * FROM companion_import_history ORDER BY id DESC LIMIT ?",(limit,)).fetchall():
+    for r in db.execute(
+        "SELECT * FROM companion_import_history ORDER BY id DESC LIMIT ? OFFSET ?",
+        (max(0,int(limit)),max(0,int(offset))),
+    ).fetchall():
         d=dict(r);d["counts"]=json.loads(d.pop("counts_json") or "{}");d["diff"]=json.loads(d.pop("diff_json") or "{}");out.append(d)
     return out
+
+def import_history_count(db):
+    ensure_companion_tables(db)
+    return int(db.execute("SELECT COUNT(*) FROM companion_import_history").fetchone()[0])
 
 def _diff(a,b):return {k:b.get(k,0)-a.get(k,0) for k in sorted(set(a)|set(b))}
 

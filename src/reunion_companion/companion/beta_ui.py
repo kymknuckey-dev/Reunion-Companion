@@ -16,7 +16,7 @@ from .ffd_family_chart import family_chart_body
 from .ffd_relationship_questions import questions_body,answer_question,interpret_question
 from .identity_discovery import is_natural_language_question
 from .person_navigation import nav_html
-from .beta3_data_manager import current_gedcom,import_history,seed_history_from_current,reload_current,staged_import,dataset_counts
+from .beta3_data_manager import current_gedcom,import_history,import_history_count,seed_history_from_current,reload_current,staged_import,dataset_counts
 from .beta3_quality import quick_wins,quality_items,person_quality
 from .family_files import (active_family_file,default_family_file,list_family_files,register_family_file,set_active_family,verify_refresh_for_workspace,record_workspace_import,
     rename_family_file,set_default_family,delete_family_file,family_report_count,preflight_family_refresh,FamilyFileMismatch,deletion_lifecycle)
@@ -560,11 +560,106 @@ def _delete_confirmation(db, workspace_id):
     parts.append('The original GEDCOM/family file is not changed.')
     return ' '.join(parts)
 
-def data_page(db,msg=""):
+def _local_activity_time(value):
+    if not value:
+        return ""
+    try:
+        from datetime import datetime, timezone
+        text=str(value).strip()
+        if text.endswith("Z"):
+            text=text[:-1]+"+00:00"
+        dt=datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt=dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone().strftime("%H:%M")
+    except Exception:
+        return str(value)[:16]
+
+def _ryerson_recent_activity(db,limit=3):
+    """Return the newest persisted crawler attempts across both Ryerson queues."""
+    items=[]
+    try:
+        from .ryerson_targeted_bootstrap import ensure_targeted_schema
+        ensure_targeted_schema(db)
+        rows=db.execute(
+            """SELECT surname,given_name,status,last_error,last_attempt_at,completed_at,
+                      result_count,match_count
+               FROM companion_ryerson_targeted_queue
+               WHERE last_attempt_at IS NOT NULL
+               ORDER BY last_attempt_at DESC LIMIT ?""",
+            (max(1,int(limit)),),
+        ).fetchall()
+        for row in rows:
+            status=row["status"] or ""
+            name=" ".join(x for x in (row["given_name"],row["surname"]) if x).strip() or row["surname"]
+            if status=="completed":
+                matches=int(row["match_count"] or 0)
+                results=int(row["result_count"] or 0)
+                outcome=(f"{matches} match{'es' if matches != 1 else ''} from {results} result{'s' if results != 1 else ''}"
+                         if matches else "No matches")
+                label="Completed"
+            elif status=="retry_wait":
+                label="Waiting"; outcome=row["last_error"] or "Waiting to retry"
+            elif status=="searching":
+                label="Searching"; outcome="Ryerson search in progress"
+            elif status=="failed":
+                label="Failed"; outcome=row["last_error"] or "Search failed"
+            else:
+                label=status.replace("_"," " ).title(); outcome=row["last_error"] or ""
+            items.append({
+                "at":row["last_attempt_at"],"time":_local_activity_time(row["last_attempt_at"]),
+                "name":name,"status":label,"outcome":outcome,"engine":"Family-wide",
+            })
+    except Exception:
+        pass
+    try:
+        rows=db.execute(
+            """SELECT person_name_snapshot,status,last_error,last_attempt_at,completed_at,result_count
+               FROM companion_external_scan_queue
+               WHERE source_name='Ryerson' AND last_attempt_at IS NOT NULL
+               ORDER BY last_attempt_at DESC LIMIT ?""",
+            (max(1,int(limit)),),
+        ).fetchall()
+        for row in rows:
+            status=row["status"] or ""
+            if status=="succeeded_with_findings":
+                n=int(row["result_count"] or 0); label="Completed"
+                outcome=f"{n} finding{'s' if n != 1 else ''}"
+            elif status=="succeeded_no_match":
+                label="Completed"; outcome="No finding"
+            elif status=="retry_wait":
+                label="Waiting"; outcome=row["last_error"] or "Waiting to retry"
+            elif status=="searching":
+                label="Searching"; outcome="Ryerson search in progress"
+            elif status=="failed":
+                label="Failed"; outcome=row["last_error"] or "Search failed"
+            else:
+                label=status.replace("_"," " ).title(); outcome=row["last_error"] or ""
+            items.append({
+                "at":row["last_attempt_at"],"time":_local_activity_time(row["last_attempt_at"]),
+                "name":row["person_name_snapshot"] or "Unknown person","status":label,
+                "outcome":outcome,"engine":"Death research",
+            })
+    except Exception:
+        pass
+    items.sort(key=lambda x:x.get("at") or "",reverse=True)
+    return items[:max(0,int(limit))]
+
+def data_page(db,msg="",import_page=1):
+    from .external_research_runner import runner_status
+    from .ryerson_targeted_bootstrap import targeted_status
+
     seed_history_from_current(db)
     cur=current_gedcom(db)
-    hist=import_history(db)
+    import_page=max(1,int(import_page or 1))
+    import_page_size=10
+    import_total=import_history_count(db)
+    import_pages=max(1,(import_total+import_page_size-1)//import_page_size)
+    import_page=min(import_page,import_pages)
+    hist=import_history(db,limit=import_page_size,offset=(import_page-1)*import_page_size)
     counts=dataset_counts(db)
+    run=runner_status(db)
+    surname_run=targeted_status(db)
     stats="".join(f"<div><strong>{esc(k.title())}</strong><div class='kpi'>{v:,}</div></div>" for k,v in counts.items())
     history=""
     for x in hist:
@@ -572,9 +667,49 @@ def data_page(db,msg=""):
         history+=f"""<div class='topic'><strong>{esc(Path(x['source_path']).name)}</strong><br>
 <span class='small'>{esc(x['imported_at'])}</span>
 <div>{esc(diff or 'Baseline / no count changes')}</div></div>"""
+    if import_total:
+        pager=[]
+        if import_page>1:
+            pager.append(f"<a class='button' href='/data?import_page={import_page-1}'>Previous</a>")
+        pager.append(f"<span class='small'>Page {import_page} of {import_pages}</span>")
+        if import_page<import_pages:
+            pager.append(f"<a class='button' href='/data?import_page={import_page+1}'>Next</a>")
+        history_pager="<div class='rc-priority-pager'>"+" ".join(pager)+"</div>"
+    else:
+        history_pager=""
     message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ""
     current=esc(cur["source_path"]) if cur else "No GEDCOM recorded"
     disabled="" if cur else "disabled"
+
+    crawler_enabled=bool(surname_run["enabled"] or run["enabled"])
+    crawler_state=("Waiting for Ryerson" if crawler_enabled and run.get("source_waiting") else ("Running" if crawler_enabled else "Paused"))
+    core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
+    crawler_html=(
+        "<div class='card'><h2>Ryerson Crawler</h2>"
+        "<p class='meta'>One control manages all background Ryerson collection. Pausing stops both internal queues without resetting progress.</p>"
+        f"<div class='topic'><strong>Ryerson Crawler — {crawler_state}</strong>"
+        f"<div class='small'>Family-wide: Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div>"
+        f"<div class='small'>Death research: Queued {run['queued']} · Waiting {run['retry_wait']} · Searching {run.get('searching',0)} · Findings {run['findings']} · No finding {run['no_match']} · Failed {run['failed']} · Total {run.get('total',0)}</div>"
+    )
+    if crawler_enabled:
+        crawler_html+="<form method='post' action='/manage/ryerson/pause' style='margin-top:10px'><button type='submit'>Pause Ryerson Crawler</button></form>"
+    else:
+        crawler_html+="<form method='post' action='/manage/ryerson/start' style='margin-top:10px'><button type='submit'>Start Ryerson Crawler</button></form>"
+    recent=_ryerson_recent_activity(db,3)
+    if recent:
+        crawler_html+="<div style='margin-top:14px'><strong>Recent crawler activity</strong>"
+        for index,item in enumerate(recent):
+            first_style=" style='margin-top:7px'" if index==0 else ""
+            crawler_html+=(
+                f"<div class='topic'{first_style}>"
+                f"<strong>{esc(item['time'])} &nbsp; {esc(item['name'])}</strong>"
+                f"<div class='small'>{esc(item['status'])} · {esc(item['outcome'])}</div>"
+                "</div>"
+            )
+        crawler_html+="</div>"
+    else:
+        crawler_html+="<p class='small' style='margin-top:14px'>No crawler activity recorded yet.</p>"
+    crawler_html+="</div></div>"
     ff=active_family_file(db); fams=list_family_files(db)
     family_rows=""
     for x in fams:
@@ -602,7 +737,8 @@ def data_page(db,msg=""):
 <p class='meta'>Enter the full path to a Reunion GEDCOM export. Companion rebuilds imported data in a staging database, validates it, backs up the working database, and only then replaces it.</p>
 <form class='search' method='post' action='/data/import'>
 <input name='path' placeholder='/Users/.../Family.ged'><button>Safe Refresh</button></form></div>
-<div class='card'><h2>Import History</h2>{history or '<p>No Companion import history yet.</p>'}</div>""",active="manage")
+{crawler_html}
+<div class='card'><h2>Import History</h2>{history or '<p>No Companion import history yet.</p>'}{history_pager}</div>""",active="manage")
 
 def quality_page(db):
     q=quick_wins(db)
@@ -1203,8 +1339,6 @@ def research_page(db,query=None):
         return "<div class='rc-priority-pager'>"+" ".join(nav)+"</div>"
     from .external_evidence_matcher import missing_death_candidates
     from .external_evidence import external_evidence_for_person
-    from .external_research_runner import runner_status
-    from .ryerson_targeted_bootstrap import targeted_status
     from .ryerson_discovery_ui import render_discovery_review_section
     from .ryerson_discovery_materialize import materialize_existing_ryerson_discoveries
     from .ryerson_person_finding_bridge import materialize_person_level_ryerson_findings
@@ -1213,8 +1347,6 @@ def research_page(db,query=None):
     # People without a usable birth date or outside the Ryerson age window
     # must still remain visible as general death-research priorities.
     death_rows=missing_death_candidates(db)
-    run=runner_status(db)
-    surname_run=targeted_status(db)
     sql=("SELECT p.id,p.display_name, "
          "SUM(CASE WHEN e.id IS NOT NULL "
          "AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id) "
@@ -1262,25 +1394,6 @@ def research_page(db,query=None):
         body+=f"<div class='card'><strong>Relationship anchor: {esc(research_focus['display_name'])}</strong><div class='small'>External evidence, research needs and data quality are prioritised outward through this person's recorded family network.</div></div>"
 
     body+=render_discovery_review_section(db,focus_id=research_focus["id"] if research_focus else None,sort_mode=sort_mode,page=_page_number("evidence_page"))
-
-    state=("Paused" if not run["enabled"] else ("Waiting for Ryerson" if run.get("source_waiting") else "Running"))
-    surname_state="Running" if surname_run["enabled"] else "Paused"
-    core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
-
-    body+="<details class='card'><summary><strong>Background Research</strong> <span class='small'>Ryerson collection status and controls</span></summary>"
-    body+=f"<div class='topic'><strong>Ryerson Research Runner — {state}</strong><div class='small'>Queued: {run['queued']} · Waiting: {run['retry_wait']} · Findings: {run['findings']} · No finding: {run['no_match']} · Errors: {run['failed']}</div>"
-    if run["enabled"]:
-        body+="<form method='post' action='/research/ryerson/runner/pause'><button type='submit'>Pause Ryerson Research</button></form>"
-    else:
-        body+="<form method='post' action='/research/ryerson/runner/start'><button type='submit'>Start Ryerson Research</button></form>"
-    body+="</div>"
-
-    body+=f"<div class='topic'><strong>Targeted Bootstrap — {surname_state}</strong><div class='small'>Completed: {surname_run['completed']} · Queued: {surname_run['queued']} · Waiting: {surname_run['retry_wait']} · Searching: {surname_run['searching']} · Errors: {surname_run['failed']} · Total: {surname_run['total']} · Core: {esc(core_names)}</div>"
-    if surname_run["enabled"]:
-        body+="<form method='post' action='/research/ryerson/targeted/pause'><button type='submit'>Pause Targeted Bootstrap</button></form>"
-    else:
-        body+="<form method='post' action='/research/ryerson/targeted/start'><button type='submit'>Start Targeted Bootstrap</button></form>"
-    body+="</div></details>"
 
     death_count=len(death_rows)
     body+="<div class='card'><h2>Research Needed</h2>"
@@ -1391,7 +1504,9 @@ def render_get(db,path,query=None):
         except Exception: selected=None
         return search_page(db,query.get("q",""),selected)
     if path=="/data":
-        return data_page(db)
+        try: import_page=int(query.get("import_page","1") or 1)
+        except Exception: import_page=1
+        return data_page(db,import_page=import_page)
     if path=="/quality":
         return quality_page(db)
     if path=="/quality/items":
@@ -1722,13 +1837,26 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                                     self.send_html(research_page(db))
                                 return
 
+                    if u.path in ("/manage/ryerson/start","/manage/ryerson/pause"):
+                        from .ryerson_targeted_bootstrap import start_targeted_bootstrap,pause_targeted_bootstrap
+                        from .external_research_runner import start_runner,pause_runner,recover_transport_failures
+                        if u.path.endswith("/start"):
+                            recover_transport_failures(db)
+                            start_targeted_bootstrap(db)
+                            start_runner(db)
+                        else:
+                            pause_targeted_bootstrap(db)
+                            pause_runner(db)
+                        self.send_html(data_page(db))
+                        return
+
                     if u.path in ("/research/ryerson/targeted/start","/research/ryerson/targeted/pause"):
                         from .ryerson_targeted_bootstrap import start_targeted_bootstrap,pause_targeted_bootstrap
                         if u.path.endswith("/start"):
                             start_targeted_bootstrap(db)
                         else:
                             pause_targeted_bootstrap(db)
-                        self.send_html(research_page(db))
+                        self.send_html(data_page(db))
                         return
 
                     if u.path in ("/research/ryerson/runner/start","/research/ryerson/runner/pause"):
@@ -1738,7 +1866,7 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                             start_runner(db)
                         else:
                             pause_runner(db)
-                        self.send_html(research_page(db))
+                        self.send_html(data_page(db))
                         return
 
                     if u.path in ("/research/ryerson/runner/start","/research/ryerson/runner/pause"):

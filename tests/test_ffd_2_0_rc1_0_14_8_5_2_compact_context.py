@@ -31,4 +31,4 @@ def test_compact_incomplete_death_retains_note_indicator(monkeypatch,tmp_path):
 
     html=beta_ui.research_page(db)
     assert "Existing Death event note available" in html
-    assert "Targeted Bootstrap" in html
+    assert "Targeted Bootstrap" not in html

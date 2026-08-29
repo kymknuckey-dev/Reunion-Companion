@@ -24,8 +24,6 @@ def test_research_page_orders_actionable_work_before_background(monkeypatch,tmp_
     review=html.index("External Evidence Review")
     death=html.index("Research Needed")
     unsourced=html.index("Data Quality")
-    background=html.index("Background Research")
-
-    assert review < background < death < unsourced
-    assert "<details" in html
-    assert "Targeted Bootstrap" in html
+    assert review < death < unsourced
+    assert "Background Research" not in html
+    assert "Targeted Bootstrap" not in html
