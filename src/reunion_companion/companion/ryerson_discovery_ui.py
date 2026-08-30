@@ -233,9 +233,17 @@ def _candidate_date_value(finding):
 
 
 def sort_external_findings_recent_first(findings):
+    """Order review candidates by confidence first, then event-date recency.
+
+    The historical function name is retained for compatibility with existing callers.
+    """
     def key(finding):
         d=_candidate_date_value(finding)
-        return (d is None, -(d.toordinal()) if d else 0, -int(finding["id"] or 0))
+        try:
+            confidence=int(finding["match_confidence"] or 0)
+        except (KeyError,TypeError,ValueError):
+            confidence=0
+        return (-confidence, d is None, -(d.toordinal()) if d else 0, -int(finding["id"] or 0))
     return sorted(list(findings or []),key=key)
 
 
@@ -284,7 +292,7 @@ def render_external_evidence_candidate(db, person_id, finding, return_path=None)
     sort_date=_definite_date(event_date)
     sort_value=sort_date.toordinal() if sort_date else 0
 
-    out=[f"<article class='rc-evidence-candidate' data-event-sort='{sort_value}'>"]
+    out=[f"<article class='rc-evidence-candidate' data-event-sort='{sort_value}' data-confidence='{int(score or 0)}'>"]
 
     out.append("<section class='rc-evidence-primary'>")
     out.append(f"<div class='rc-evidence-source'>{escape(source)}{f' · Match {score}%' if score is not None else ''}</div>")
@@ -364,10 +372,51 @@ def _group_recent_date(candidates):
     return max(dates) if dates else None
 
 
-def sort_grouped_people_recent(grouped):
+def _person_new_evidence_confidence(db, person_id):
+    """Highest confidence among this person's currently new external evidence."""
+    try:
+        row=db.execute(
+            "SELECT MAX(CAST(e.match_confidence AS INTEGER)) AS confidence "
+            "FROM companion_external_evidence e "
+            "JOIN people p ON p.gedcom_xref=e.person_gedcom_xref "
+            "WHERE p.id=? AND COALESCE(e.review_status,'new')='new'",
+            (int(person_id),),
+        ).fetchone()
+        return int(row["confidence"] or 0) if row else 0
+    except Exception:
+        return 0
+
+
+def _group_match_confidence(candidates):
+    values=[]
+    for row in candidates:
+        try:
+            value=row["match_confidence"]
+        except (KeyError, IndexError, TypeError):
+            value=None
+        if value in (None, ""):
+            continue
+        try:
+            values.append(int(float(value)))
+        except (TypeError, ValueError):
+            continue
+    return max(values) if values else None
+
+
+def sort_grouped_people_recent(grouped, db=None):
+    """Review priority: highest unresolved candidate confidence, then newest candidate.
+
+    The durable review index can lag a newly rescored external-evidence row.
+    When a database is available, compare both sources and use the strongest
+    currently unresolved candidate so a live 100%/95% match cannot sit below a
+    stale lower-confidence review-index value.
+    """
     def key(item):
         d=_group_recent_date(item[1])
-        return (d is None,-d.toordinal() if d else 0,_person_name(item[1][0]).casefold(),int(item[0]))
+        indexed_confidence=_group_match_confidence(item[1]) or 0
+        live_confidence=_person_new_evidence_confidence(db,item[0]) if db is not None else 0
+        confidence=max(indexed_confidence,live_confidence)
+        return (-confidence,d is None,-d.toordinal() if d else 0,_person_name(item[1][0]).casefold(),int(item[0]))
     return sorted(grouped,key=key)
 
 
@@ -439,27 +488,22 @@ def render_discovery_review_section(db, *, preview_people=12, focus_id=None, sor
         if sort_mode=="relationship" and focus:
             people,rels=sort_grouped_people(db,focus["id"],people)
         else:
-            people=sort_grouped_people_recent(people)
+            people=sort_grouped_people_recent(people,db)
         href=f"/research/discoveries?state=new&page=1&sort={sort_mode}"+(f"&focus={focus['id']}" if focus else "")
         out.append(f"<p><a class='button' href='{href}'>Review New Discoveries</a> <span class='small'>{counts['new']} discoveries across {len(people)} people</span></p>")
         out.append(_review_sort_controls(people,sort_mode=sort_mode,focus=focus))
         if sort_mode=="relationship" and focus:
             out.append(f"<div class='topic'><strong>Relationship anchor: {escape(focus['display_name'])}</strong><div class='small'>Closest recorded family relationships are shown first.</div></div>")
         else:
-            out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>People are ordered by the newest candidate event date. Undated candidates appear last.</div></div>")
+            out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>100% matches are shown before 75% matches; within each confidence level, the newest candidate event date appears first.</div></div>")
         out.append("<h3>Next people to review</h3>")
         total_people=len(people)
         total_pages=max(1,(total_people+preview_people-1)//preview_people)
         page=max(1,min(int(page or 1),total_pages))
         start=(page-1)*preview_people
         page_people=people[start:start+preview_people]
-        for person_id,candidates in page_people:
-            name=_person_name(candidates[0])
-            context=(rels.get(int(person_id),{"label":"Relationship not established"})["label"] if sort_mode=="relationship" else "Most recent candidate: "+_format_review_date(_group_recent_date(candidates)))
-            out.append(f"<a class='result' href='/person/{person_id}?tab=research'><strong>{escape(name)}</strong><span class='badge warn' style='float:right'>{len(candidates)} candidate{'s' if len(candidates)!=1 else ''}</span><span class='meta' style='display:block'>{escape(context)}</span></a>")
+        review_pager=""
         if total_pages>1:
-            shown=min(preview_people,total_people-start)
-            out.append(f"<div class='small'>Showing {shown} of {total_people} people with new discoveries.</div>")
             suffix=f"&sort={sort_mode}"+(f"&focus={focus['id']}" if focus else "")
             nav=[]
             if page>1:
@@ -467,7 +511,15 @@ def render_discovery_review_section(db, *, preview_people=12, focus_id=None, sor
             nav.append(f"<span class='small'>Page {page} of {total_pages} · {total_people} people</span>")
             if page<total_pages:
                 nav.append(f"<a class='button' href='/research?evidence_page={page+1}{suffix}'>Next</a>")
-            out.append("<div class='rc-priority-pager'>"+" ".join(nav)+"</div>")
+            review_pager="<div class='rc-priority-pager'>"+" ".join(nav)+"</div>"
+        for person_id,candidates in page_people:
+            name=_person_name(candidates[0])
+            context=(rels.get(int(person_id),{"label":"Relationship not established"})["label"] if sort_mode=="relationship" else "Most recent candidate: "+_format_review_date(_group_recent_date(candidates)))
+            out.append(f"<a class='result' href='/person/{person_id}?tab=research'><strong>{escape(name)}</strong><span class='badge warn' style='float:right'>{len(candidates)} candidate{'s' if len(candidates)!=1 else ''}</span><span class='meta' style='display:block'>{escape(context)}</span></a>")
+        if total_pages>1:
+            shown=min(preview_people,total_people-start)
+            out.append(f"<div class='small'>Showing {shown} of {total_people} people with new discoveries.</div>")
+            out.append(review_pager)
 
     out.append("</div>")
     return "".join(out)
@@ -489,7 +541,7 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
     if sort_mode=="relationship" and focus:
         people,rels=sort_grouped_people(db,focus["id"],people)
     else:
-        people=sort_grouped_people_recent(people)
+        people=sort_grouped_people_recent(people,db)
 
     if person_id is not None:
         people=[item for item in people if int(item[0])==int(person_id)]
@@ -521,8 +573,18 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
     if sort_mode=="relationship" and focus:
         out.append(f"<div class='topic'><strong>Relationship anchor: {escape(focus['display_name'])}</strong><div class='small'>Closest recorded family relationships are shown first.</div></div>")
     else:
-        out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>People are ordered by the newest candidate event date. Undated candidates appear last.</div></div>")
+        out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>100% matches are shown before 75% matches; within each confidence level, the newest candidate event date appears first.</div></div>")
     out.append(f"<div class='small rc-review-page-summary'>Showing {len(shown)} of {total_people} people · Page {page} of {total_pages}</div>")
+    workspace_pager=""
+    if total_pages>1:
+        nav=[]
+        suffix=f"&sort={quote(sort_mode)}"+(f"&focus={focus['id']}" if focus else "")
+        if page>1:
+            nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page-1}{suffix}'>Previous</a>")
+        nav.append(f"<span class='small'>Page {page} of {total_pages} · {total_people} people</span>")
+        if page<total_pages:
+            nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page+1}{suffix}'>Next</a>")
+        workspace_pager="<div class='rc-priority-pager'>"+" ".join(nav)+"</div>"
     out.append("</div>")
 
     if not shown:
@@ -551,14 +613,7 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
         )
     out.append("</div>")
 
-    nav=[]
-    suffix=f"&sort={quote(sort_mode)}"+(f"&focus={focus['id']}" if focus else "")
-    if page>1:
-        nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page-1}{suffix}'>Previous</a>")
-    nav.append(f"<span class='small'>Page {page} of {total_pages} · {total_people} people</span>")
-    if page<total_pages:
-        nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page+1}{suffix}'>Next</a>")
-    if total_pages>1:
-        out.append("<div class='rc-priority-pager'>"+" ".join(nav)+"</div>")
+    if workspace_pager:
+        out.append(workspace_pager)
 
     return "".join(out)

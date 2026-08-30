@@ -26,10 +26,9 @@ HTML_HEADER = """
 """
 
 
-def test_query_strategy_uses_exact_given_names_then_first_name():
+def test_query_strategy_uses_first_given_name_only():
     profile={"surname":"Rigg","given_names":"Peter Stanly"}
     assert build_ryerson_queries(profile)==[
-        RyersonQuery("Rigg","Peter Stanly","SA"),
         RyersonQuery("Rigg","Peter","SA"),
     ]
 
@@ -84,7 +83,7 @@ def test_busy_detection_covers_429_and_visible_busy_message():
     assert not response_is_busy(200,"No records found")
 
 
-def test_peter_falls_back_from_misspelt_middle_name_to_first_name():
+def test_peter_first_name_search_can_return_correct_middle_name():
     profile={
         "surname":"Rigg",
         "given_names":"Peter Stanly",
@@ -103,7 +102,7 @@ def test_peter_falls_back_from_misspelt_middle_name_to_first_name():
         return (200,no_results if q.given_names=="Peter Stanly" else peter)
     rows=search_ryerson(profile,fetch)
     assert len(rows)==1
-    assert [q.given_names for q in calls]==["Peter Stanly","Peter"]
+    assert [q.given_names for q in calls]==["Peter"]
     assert rows[0]["source_record_name"]=="Peter Stanley RIGG"
 
 

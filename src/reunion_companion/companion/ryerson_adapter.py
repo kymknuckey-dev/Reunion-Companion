@@ -30,36 +30,20 @@ def _clean(value: str | None) -> str:
 
 
 def build_ryerson_queries(profile: dict, state: str = DEFAULT_STATE) -> list[RyersonQuery]:
-    """Build conservative Ryerson searches.
+    """Build the single Ryerson retrieval query for a Reunion person.
 
-    Search the recorded ordered given names first. If there is more than one
-    given name, fall back to the first given name only. This avoids guessing a
-    correction such as Stanly -> Stanley while still allowing the Ryerson
-    result set to expose the correctly indexed middle name.
+    Retrieval intentionally uses surname plus the first recorded given name
+    only. Middle and later given names remain available to downstream candidate
+    matching, where they are useful evidence, without causing an extra Ryerson
+    request before a first-name fallback.
     """
     surname=_clean(profile.get("surname"))
     if len(surname) < 2:
         return []
 
     given=_clean(profile.get("given_names"))
-    variants=[]
-    if given:
-        variants.append(given)
-        first=given.split()[0]
-        if first.casefold()!=given.casefold():
-            variants.append(first)
-    else:
-        variants.append("")
-
-    out=[]
-    seen=set()
-    for name in variants:
-        key=(surname.casefold(),name.casefold(),state.casefold())
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(RyersonQuery(surname=surname,given_names=name,state=state))
-    return out
+    first=given.split()[0] if given else ""
+    return [RyersonQuery(surname=surname,given_names=first,state=state)]
 
 
 def logical_form_payload(query: RyersonQuery) -> dict:

@@ -1,3 +1,39 @@
+## FFD 2.0 RC1.0.14.8.9.9.4.1.2 — External Evidence Review Handoff Restoration
+- Fix: Ryerson Death research findings now appear in External Evidence Review as soon as they are stored.
+- Fix: existing stored findings are backfilled when the normal crawler starts, restoring people missed while the handoff was absent.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.1 — Ryerson CLI Control Alignment
+- Aligned `./scripts/reunion-ryerson start|pause|status|recent` with the active Death research crawler used by Manage.
+- Normal CLI start/pause now keep the older Family-wide crawler explicitly paused.
+- `status` reports Death research as the primary crawler and shows Family-wide separately as dormant state.
+- `recent` now reads recent Death research activity instead of the Family-wide targeted queue.
+- Added explicit inspection-only `family-status`, `family-recent`, and `family-populate` commands for the retained legacy queue.
+- Focused CLI and release-metadata regression: 11 passed.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1 — Ryerson Explicit No-Result & Restart Recovery Correction
+- Fixed genuine Ryerson zero-result pages being misclassified as `Waiting · Ryerson search did not complete; retry later`.
+- Added automatic recovery for interrupted Ryerson queue state after an application restart.
+- No matching, genealogy, database schema, or Family-wide crawler scope changes.
+
+## FFD 2.0 RC1.0.14.8.9.9.4 — Ryerson Timeout Overload Retry Hardening
+
+- Hardened Safari-backed Ryerson retrieval so overloaded searches that never leave the populated search form are preserved for retry.
+- Added a final timeout snapshot and transient-page classification before recording a terminal Safari result timeout.
+- No schema, matching, crawler-scope, or family-wide queue changes.
+
+## FFD 2.0 RC1.0.14.8.9.9.3 — Targeted Ryerson Crawler Control Correction
+
+- Corrected Ryerson crawler control so broad family-wide surname harvesting no longer restarts with normal crawler operation.
+- Family-wide crawling is forced paused at app startup without deleting or rewriting its existing queue or discoveries.
+- Normal crawler operation is now limited to surname + first-given-name death research.
+
+## FFD 2.0 RC1.0.14.8.9.9.2 — Ryerson First-Given-Name Search Consolidation
+
+- Consolidated the legacy/death-research Ryerson retrieval path to one surname + first-given-name query.
+- Removed the former full-given-names request followed by first-name fallback, avoiding a potential extra Safari/Ryerson search for people with multiple given names.
+- Preserved surname-only searching where no given name is recorded.
+- Full given names remain available to downstream candidate matching and evidence assessment; targeted crawler behaviour, queue state, matching, database, and UI are unchanged.
+
 ## FFD 2.0 RC1.0.14.8.9.9.1 — External Evidence Review Presentation Consolidation
 
 - Recast External Evidence Review as a compact person-level review index rather than a second candidate decision workspace.
@@ -167,3 +203,23 @@
 - Reports now inherits the normal person header when opened in person context.
 - Removed the redundant Back-to-person button from contextual Reports.
 - Global Reports remains person-neutral.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3 — External Evidence Confidence-First Recent Review
+- External Evidence Review `Most Recent` now prioritises the strongest person-level candidate confidence first.
+- 100% matches appear before 75% matches; within each confidence tier, newest candidate event date remains first.
+- Relationship sorting is unchanged.
+
+## RC1.0.14.8.9.9.4.1.3.1 — External Evidence Review Confidence Propagation Correction
+- Persist Ryerson match confidence into the discovery review index.
+- Re-materialise stored Ryerson evidence once at app startup so existing review rows receive their confidence without altering review decisions.
+- Most Recent now prioritises confidence recorded on the actual review candidates, with existing external-evidence lookup retained only as a fallback.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.2
+- External Evidence Review now ranks a person from the highest confidence of any currently unresolved candidate, preventing a live 100%/95% match from being held down by a stale lower-confidence review-index value.
+- Regression coverage locks Previous navigation on page 2 for Next People to Review, Research Needed, Data Quality, and the full External Evidence Review workspace.
+
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.3 — Candidate Confidence Ordering & Single Pager Placement
+- External Evidence Candidate cards now sort by confidence descending first, then event-date recency within the same confidence.
+- The date-order toggle preserves confidence as the primary sort key.
+- Research and External Evidence pagination is shown once at the bottom of each paginated section; Previous/Next behaviour is unchanged.

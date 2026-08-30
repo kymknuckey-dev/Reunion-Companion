@@ -25,11 +25,11 @@ def test_manage_exposes_one_unified_ryerson_control(monkeypatch,tmp_path):
     assert 'Start Death Research' not in html
     assert 'Pause Death Research' not in html
     assert 'Death-research queue —' not in html
-    assert 'Family-wide:' in html
+    assert 'Family-wide (paused):' in html
     assert 'Death research:' in html
 
 
-def test_manage_running_if_either_internal_engine_is_enabled(monkeypatch,tmp_path):
+def test_manage_running_when_death_research_engine_is_enabled(monkeypatch,tmp_path):
     db=connect(tmp_path/'x.db')
     import reunion_companion.companion.external_research_runner as runner
     import reunion_companion.companion.ryerson_targeted_bootstrap as targeted
@@ -49,11 +49,11 @@ def test_manage_running_if_either_internal_engine_is_enabled(monkeypatch,tmp_pat
     assert html.count('Pause Ryerson Crawler') == 1
 
 
-def test_unified_routes_start_and_pause_both_internal_engines():
+def test_manage_routes_control_death_research_and_force_family_wide_paused():
     source=Path('src/reunion_companion/companion/beta_ui.py').read_text()
     assert '"/manage/ryerson/start","/manage/ryerson/pause"' in source
     block=source[source.index('if u.path in ("/manage/ryerson/start"'):source.index('if u.path in ("/research/ryerson/targeted/start"')]
-    assert 'start_targeted_bootstrap(db)' in block
+    assert 'start_targeted_bootstrap(db)' not in block
     assert 'start_runner(db)' in block
     assert 'pause_targeted_bootstrap(db)' in block
     assert 'pause_runner(db)' in block

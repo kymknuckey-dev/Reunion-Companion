@@ -51,12 +51,16 @@ def test_retry_wait_still_takes_precedence_over_new_name_search(tmp_path):
     assert row["search_key"]=="name:brown|mary"
 
 
-def test_cli_status_reports_targeted_queue(tmp_path):
+def test_cli_status_reports_normal_death_research_queue(tmp_path):
     db=connect(tmp_path/"x.db")
     add_person(db,1,"Smith","John")
     add_person(db,2,"Smith","Mary")
     db.commit()
-    populate_targeted_queue(db)
+    db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(1,\'Birth\',\'1 Jan 1950\',\'Adelaide\',\'\')")
+    db.execute("INSERT INTO events(person_id,event_type,date_text,place_text,note_text) VALUES(2,\'Birth\',\'1 Jan 1950\',\'Adelaide\',\'\')")
+    db.commit()
+    from reunion_companion.companion.external_evidence_scan import enqueue_death_research_candidates
+    enqueue_death_research_candidates(db)
     db.close()
 
     out=StringIO()
@@ -67,26 +71,16 @@ def test_cli_status_reports_targeted_queue(tmp_path):
     assert rc==0
     assert "total=2" in text
     assert "queued=2" in text
-    assert "core_surnames=Knuckey" in text
+    assert "family_wide_enabled=False" in text
 
 
-def test_cli_recent_reads_targeted_rows(tmp_path):
+def test_cli_recent_reads_death_research_rows(tmp_path):
     db=connect(tmp_path/"x.db")
     add_person(db,1,"Smith","John")
-    db.commit()
-    populate_targeted_queue(db)
-
-    db.execute(
-        """
-        UPDATE companion_ryerson_targeted_queue
-        SET status='completed',result_count=12,match_count=3
-        WHERE search_key='name:smith|john'
-        """
-    )
+    db.execute("INSERT INTO companion_external_scan_queue(source_name,person_gedcom_xref,person_name_snapshot,status,last_attempt_at,result_count) VALUES('Ryerson','@I1@','John Smith','succeeded_with_findings','2026-08-30T01:00:00+00:00',3)")
     db.commit()
 
     rows=recent_rows(db,10)
     assert len(rows)==1
-    assert rows[0]["search_key"]=="name:smith|john"
-    assert rows[0]["result_count"]==12
-    assert rows[0]["match_count"]==3
+    assert rows[0]["person_name_snapshot"]=="John Smith"
+    assert rows[0]["result_count"]==3

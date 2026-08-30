@@ -34,6 +34,10 @@ def runner_enabled(db):
 
 def start_runner(db):
     added=enqueue_death_research_candidates(db,SOURCE_RYERSON)
+    # Backfill any stored findings that pre-date the live review handoff.
+    # The bridge is idempotent and preserves existing review decisions.
+    from .ryerson_person_finding_bridge import materialize_person_level_ryerson_findings
+    materialize_person_level_ryerson_findings(db)
     _meta_set(db,META_ENABLED,"1")
     out=runner_status(db); out["newly_queued"]=added; return out
 
@@ -64,6 +68,14 @@ def runner_tick(db,search_fn,now=None):
         _set_source_cooldown(db,result.get("next_retry_at"))
     elif result.get("status") in ("succeeded_no_match","succeeded_with_findings"):
         _set_source_cooldown(db,"")
+        if result.get("status")=="succeeded_with_findings":
+            row=db.execute(
+                "SELECT person_gedcom_xref FROM companion_external_scan_queue WHERE id=?",
+                (result.get("queue_id"),),
+            ).fetchone()
+            if row and row["person_gedcom_xref"]:
+                from .ryerson_person_finding_bridge import materialize_person_level_ryerson_findings
+                materialize_person_level_ryerson_findings(db,row["person_gedcom_xref"])
     return result
 
 def recover_transport_failures(db, source_name=SOURCE_RYERSON):
@@ -87,6 +99,47 @@ def recover_transport_failures(db, source_name=SOURCE_RYERSON):
     db.commit()
     return len(ids)
 
+
+def recover_interrupted_runner_state(db, source_name=SOURCE_RYERSON, now=None):
+    """Recover queue state that cannot belong to a live worker after restart.
+
+    A row left as ``searching`` belonged to the previous process and is safe to
+    return to the queue. Expired retry waits are also made immediately runnable.
+    Completed and failed evidence decisions are never changed.
+    """
+    from datetime import datetime, timezone
+    now=now or datetime.now(timezone.utc)
+
+    rows=db.execute(
+        "SELECT id,status,attempts,next_retry_at FROM companion_external_scan_queue "
+        "WHERE source_name=? AND status IN ('searching','retry_wait')",
+        (source_name,),
+    ).fetchall()
+    recovered=0
+    for row in rows:
+        should_requeue=row["status"]=="searching"
+        if row["status"]=="retry_wait":
+            due=_parse_iso(row["next_retry_at"])
+            should_requeue=due is None or due<=now
+        if not should_requeue:
+            continue
+        attempts=int(row["attempts"] or 0)
+        if row["status"]=="searching" and attempts:
+            attempts-=1
+        db.execute(
+            "UPDATE companion_external_scan_queue "
+            "SET status='queued', attempts=?, last_error=NULL, next_retry_at=NULL, "
+            "updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (attempts,row["id"]),
+        )
+        recovered+=1
+
+    until=source_cooldown_until(db)
+    if until is not None and until<=now:
+        db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES(?,?)",(META_COOLDOWN_UNTIL,""))
+    db.commit()
+    return recovered
+
 def live_ryerson_search(profile):
     from .ryerson_adapter import search_ryerson
     from .ryerson_safari_transport import safari_fetch
@@ -101,6 +154,17 @@ def start_background_runner(db_path, *, interval_seconds=90, poll_seconds=10):
 
     def worker():
         from .database import connect
+        # Refresh the review index once at app start so discoveries materialised
+        # before confidence propagation was introduced receive their stored score.
+        try:
+            db=connect(db_path)
+            try:
+                from .ryerson_person_finding_bridge import materialize_person_level_ryerson_findings
+                materialize_person_level_ryerson_findings(db)
+            finally:
+                db.close()
+        except Exception:
+            pass
         next_allowed=0.0
         while True:
             try:

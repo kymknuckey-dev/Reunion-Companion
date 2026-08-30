@@ -44,6 +44,7 @@ def _finding_to_candidate(person_id, finding):
         "notice_id":str(external_id),
         "match_status":"candidate",
         "match_reason":str(_get(finding,"match_reason","reason",default="Existing person-level Ryerson finding")),
+        "match_confidence":_get(finding,"match_confidence","confidence",default=None),
     }
 
     for target,names in {
@@ -62,14 +63,26 @@ def _finding_to_candidate(person_id, finding):
     return candidate
 
 
-def materialize_person_level_ryerson_findings(db):
+def materialize_person_level_ryerson_findings(db, person_gedcom_xref=None):
+    """Materialise stored Ryerson evidence into the person-level review index.
+
+    With an xref, bridge only that person's findings. Without one, backfill all
+    currently stored findings. The operation is idempotent and preserves prior
+    review decisions.
+    """
     from .external_evidence import external_evidence_for_person
 
-    people=db.execute(
-        "SELECT id,gedcom_xref FROM people "
-        "WHERE gedcom_xref IS NOT NULL AND trim(gedcom_xref)<>'' "
-        "ORDER BY id"
-    ).fetchall()
+    if person_gedcom_xref:
+        people=db.execute(
+            "SELECT id,gedcom_xref FROM people WHERE gedcom_xref=? ORDER BY id",
+            (person_gedcom_xref,),
+        ).fetchall()
+    else:
+        people=db.execute(
+            "SELECT id,gedcom_xref FROM people "
+            "WHERE gedcom_xref IS NOT NULL AND trim(gedcom_xref)<>'' "
+            "ORDER BY id"
+        ).fetchall()
 
     candidates=[]
     people_with_findings=0

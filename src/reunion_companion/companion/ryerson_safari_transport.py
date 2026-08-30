@@ -29,6 +29,34 @@ def _ryerson_page_is_busy(html: str | None) -> bool:
     return response_is_busy(200,html) or any(p in low for p in RYERSON_BUSY_PHRASES)
 
 
+def _ryerson_page_is_no_results(html: str | None) -> bool:
+    """Return True for Ryerson's explicit, successful zero-result response."""
+    low=(html or "").casefold()
+    return (
+        "no results found" in low
+        or "0 notices found" in low
+        or "0 notice found" in low
+    )
+
+
+def _ryerson_timeout_is_transient(html: str | None) -> bool:
+    """Return True when a timed-out Safari search still looks retryable.
+
+    Ryerson can accept the populated search form but fail to return a result
+    page while the service is overloaded. In that state Safari can remain on
+    the populated search form instead of rendering the explicit overload page.
+    Treat both the explicit overload response and a still-present search form
+    after a successful submit as transient availability, not a terminal search
+    failure.
+    """
+    low=(html or "").casefold()
+    if _ryerson_page_is_busy(html):
+        return True
+    if _ryerson_page_is_no_results(html):
+        return False
+    return "<form" in low and "surname" in low and ("given names" in low or "given name" in low)
+
+
 class BrowserTransportUnavailable(RuntimeError):
     pass
 
@@ -248,8 +276,25 @@ def safari_fetch(
         # A result may render at the same URL, so accept either navigation or a
         # page that no longer contains the obvious search form only.
         low=html.casefold()
-        if url!=before or "surname" in low and "given names" in low and "<table" in low:
+        if (
+            url!=before
+            or _ryerson_page_is_no_results(html)
+            or "surname" in low and "given names" in low and "<table" in low
+        ):
             return 200,html
+
+    # One final snapshot matters here. Under load Ryerson can leave Safari on
+    # the populated search form without ever returning a results page. A
+    # manual resubmit then commonly reveals the explicit Server Overloaded
+    # response. Preserve those searches for retry rather than exhausting them
+    # into the permanent failed bucket.
+    try:
+        url,html=_safari_snapshot(runner=runner)
+    except SourceSearchError:
+        pass
+    else:
+        if _ryerson_timeout_is_transient(html):
+            raise SourceBusyError("Ryerson search did not complete; retry later")
 
     raise SourceSearchError("Timed out waiting for Ryerson search results in Safari")
 

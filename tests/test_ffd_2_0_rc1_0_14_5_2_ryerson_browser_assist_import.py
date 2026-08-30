@@ -29,7 +29,6 @@ def test_browser_plan_uses_same_conservative_variants():
     plan=build_browser_search_plan(p)
     assert plan.url==RYERSON_SEARCH_URL
     assert plan.searches==(
-        {"surname":"Rigg","given_names":"Peter Stanly","state":"SA"},
         {"surname":"Rigg","given_names":"Peter","state":"SA"},
     )
 
@@ -41,7 +40,7 @@ def test_open_uses_normal_browser_without_submitting_search():
         opener=lambda url: opened.append(url),
     )
     assert opened==[RYERSON_SEARCH_URL]
-    assert plan.searches[0]["given_names"]=="Rodney Thomas"
+    assert plan.searches[0]["given_names"]=="Rodney"
 
 
 def test_parse_tab_separated_peter_result():

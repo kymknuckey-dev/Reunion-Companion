@@ -694,14 +694,14 @@ def data_page(db,msg="",import_page=1):
     current=esc(cur["source_path"]) if cur else "No GEDCOM recorded"
     disabled="" if cur else "disabled"
 
-    crawler_enabled=bool(surname_run["enabled"] or run["enabled"])
+    crawler_enabled=bool(run["enabled"])
     crawler_state=("Waiting for Ryerson" if crawler_enabled and run.get("source_waiting") else ("Running" if crawler_enabled else "Paused"))
     core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
     crawler_html=(
         "<div class='card'><h2>Ryerson Crawler</h2>"
-        "<p class='meta'>One control manages all background Ryerson collection. Pausing stops both internal queues without resetting progress.</p>"
+        "<p class='meta'>The normal crawler uses surname + first given name. The older family-wide surname crawler is retained for history but remains paused because broad surname searches can exceed reliable result pagination.</p>"
         f"<div class='topic'><strong>Ryerson Crawler — {crawler_state}</strong>"
-        f"<div class='small'>Family-wide: Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div>"
+        f"<div class='small'>Family-wide (paused): Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div>"
         f"<div class='small'>Death research: Queued {run['queued']} · Waiting {run['retry_wait']} · Searching {run.get('searching',0)} · Findings {run['findings']} · No finding {run['no_match']} · Failed {run['failed']} · Total {run.get('total',0)}</div>"
     )
     if crawler_enabled:
@@ -1006,7 +1006,7 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
                         f"<span class='rc-evidence-count'>{count} candidate{'s' if count!=1 else ''}</span></div>"
                         "<div class='rc-evidence-review-copy'>Review each Ryerson candidate below and decide whether it belongs to this person in Reunion.</div>"
                         "</div>"
-                        "<button type='button' class='rc-evidence-sort' id='rc-evidence-date-sort' aria-label='Toggle candidate event date order'>Sort by: &nbsp;Most Recent Event Date ▾</button>"
+                        "<button type='button' class='rc-evidence-sort' id='rc-evidence-date-sort' aria-label='Toggle candidate event date order within confidence'>Sort by: &nbsp;Confidence, then Most Recent Event Date ▾</button>"
                         "</div>"
                         "<div class='rc-evidence-list'>"+"".join(rendered)+"</div>"
                         "<script>(function(){"
@@ -1014,10 +1014,11 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
                         "if(!list||!btn)return;"
                         "var order=localStorage.getItem('rcCandidateOrder')||'recent';"
                         "function apply(){var cards=Array.from(list.querySelectorAll('.rc-evidence-candidate'));"
-                        "cards.sort(function(a,b){var av=parseInt(a.dataset.eventSort||'0',10),bv=parseInt(b.dataset.eventSort||'0',10);"
+                        "cards.sort(function(a,b){var ac=parseInt(a.dataset.confidence||'0',10),bc=parseInt(b.dataset.confidence||'0',10);"
+                        "if(ac!==bc)return bc-ac;var av=parseInt(a.dataset.eventSort||'0',10),bv=parseInt(b.dataset.eventSort||'0',10);"
                         "if(av===bv)return 0;if(av===0)return 1;if(bv===0)return -1;return order==='oldest'?av-bv:bv-av;});"
                         "cards.forEach(function(c){list.appendChild(c);});"
-                        "btn.innerHTML='Sort by: &nbsp;'+(order==='oldest'?'Oldest Event Date':'Most Recent Event Date')+' ▾';}"
+                        "btn.innerHTML='Sort by: &nbsp;Confidence, then '+(order==='oldest'?'Oldest Event Date':'Most Recent Event Date')+' ▾';}"
                         "btn.addEventListener('click',function(){order=order==='recent'?'oldest':'recent';"
                         "localStorage.setItem('rcCandidateOrder',order);apply();});apply();})();</script>"
                     )
@@ -1400,12 +1401,13 @@ def research_page(db,query=None):
     body+="<div class='card'><h2>Research Needed</h2>"
     body+=_priority_sort_choice_html(sort_mode,research_focus,"research-needed")
     body+=f"<div class='topic'><strong>Death research</strong><span class='badge warn' style='float:right'>{death_count}</span><div class='small'>People with a missing or incomplete Death event.</div>"
+    death_pager=_priority_pager("research_page",death_page,death_pages,death_total)
     for r in death_page_rows:
         semantics=death_research_semantics(db,r["person_id"])
         body+=_research_needed_row_html(db,r,semantics,sort_mode,_death_relationships)
     if not death_rows:
         body+="<p>No current missing or incomplete Death research items.</p>"
-    body+=_priority_pager("research_page",death_page,death_pages,death_total)
+    body+=death_pager
     body+="</div></div>"
 
     unsourced_people=len(rows)
@@ -1413,12 +1415,13 @@ def research_page(db,query=None):
     body+="<div class='card'><h2>Data Quality</h2>"
     body+=_priority_sort_choice_html(sort_mode,research_focus,"data-quality")
     body+=f"<div class='topic'><strong>Unsourced Events</strong><span class='badge warn' style='float:right'>{unsourced_total} events</span><div class='small'>{unsourced_people} people currently have events or facts without linked source or media evidence.</div>"
+    quality_pager=_priority_pager("quality_page",quality_page,quality_pages,quality_total)
     for r in quality_page_rows:
         relation=_quality_relationships.get(int(r["id"]),{"label":"Relationship not established"})["label"]
         body+=f"<a class='result' href='/person/{r['id']}?tab=overview'><strong>{esc(r['display_name'])}</strong><span class='badge warn' style='float:right'>{r['unsourced']} unsourced</span><span class='meta' style='display:block'>{esc(relation)}</span></a>"
     if not rows:
         body+="<p>No unsourced event priorities detected.</p>"
-    body+=_priority_pager("quality_page",quality_page,quality_pages,quality_total)
+    body+=quality_pager
     body+="</div></div>"
 
     return layout("Research",body+"</div>",active="priorities")
@@ -1839,14 +1842,16 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                                 return
 
                     if u.path in ("/manage/ryerson/start","/manage/ryerson/pause"):
-                        from .ryerson_targeted_bootstrap import start_targeted_bootstrap,pause_targeted_bootstrap
-                        from .external_research_runner import start_runner,pause_runner,recover_transport_failures
+                        from .ryerson_targeted_bootstrap import pause_targeted_bootstrap
+                        from .external_research_runner import start_runner,pause_runner,recover_transport_failures,recover_interrupted_runner_state
+                        # The family-wide surname crawler is deliberately dormant.
+                        # Normal Ryerson control manages only surname + first-given-name death research.
+                        pause_targeted_bootstrap(db)
                         if u.path.endswith("/start"):
                             recover_transport_failures(db)
-                            start_targeted_bootstrap(db)
+                            recover_interrupted_runner_state(db)
                             start_runner(db)
                         else:
-                            pause_targeted_bootstrap(db)
                             pause_runner(db)
                         self.send_html(data_page(db))
                         return
@@ -1963,11 +1968,21 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
         def log_message(self,*args):
             pass
 
-    from .external_research_runner import start_background_runner
+    from .external_research_runner import start_background_runner, recover_interrupted_runner_state
     from .ryerson_targeted_bootstrap import (
         live_targeted_search,
+        pause_targeted_bootstrap,
         start_background_targeted_bootstrap,
     )
+    # RC1.0.14.8.9.9.3: family-wide surname crawling is intentionally dormant.
+    # Clear any persisted enabled flag from earlier unified-control builds before
+    # starting the background worker, preserving queue/results without consuming it.
+    _crawler_db=connect(db_path)
+    try:
+        pause_targeted_bootstrap(_crawler_db)
+        recover_interrupted_runner_state(_crawler_db)
+    finally:
+        _crawler_db.close()
     start_background_runner(db_path)
     start_background_targeted_bootstrap(
         db_path,

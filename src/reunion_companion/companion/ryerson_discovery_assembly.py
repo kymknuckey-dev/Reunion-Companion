@@ -15,6 +15,7 @@ class AssembledDiscovery:
     external_record_key: str
     proposed_fact_key: str
     match_reason: str
+    match_confidence: int | None
 
 
 def _value(row: Mapping[str, Any], *names: str, default=""):
@@ -157,12 +158,19 @@ def assemble_candidate(row: Mapping[str, Any]) -> AssembledDiscovery | None:
         )
     )
 
+    confidence_raw=_value(row, "match_confidence", "confidence", default=None)
+    try:
+        confidence=int(float(confidence_raw)) if confidence_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        confidence=None
+
     return AssembledDiscovery(
         person_id=person_id,
         source_name="Ryerson",
         external_record_key=external_record_key(row),
         proposed_fact_key=proposed_fact_key(row),
         match_reason=reason,
+        match_confidence=confidence,
     )
 
 
@@ -235,6 +243,7 @@ def assemble_discoveries(db, candidates: Iterable[Mapping[str, Any]]):
             source_name=discovery.source_name,
             external_record_key=discovery.external_record_key,
             proposed_fact_key=discovery.proposed_fact_key,
+            match_confidence=discovery.match_confidence,
         )
         assembled.append(
             {

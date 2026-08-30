@@ -26,6 +26,7 @@ def ensure_discovery_review_schema(db):
             source_name TEXT NOT NULL,
             external_record_key TEXT NOT NULL,
             proposed_fact_key TEXT NOT NULL DEFAULT '',
+            match_confidence INTEGER,
             state TEXT NOT NULL DEFAULT 'new',
             decision_note TEXT NOT NULL DEFAULT '',
             first_seen_at TEXT NOT NULL,
@@ -36,6 +37,9 @@ def ensure_discovery_review_schema(db):
         )
         """
     )
+    columns={row["name"] for row in db.execute("PRAGMA table_info(companion_external_discovery_review)").fetchall()}
+    if "match_confidence" not in columns:
+        db.execute("ALTER TABLE companion_external_discovery_review ADD COLUMN match_confidence INTEGER")
     db.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_external_discovery_review_state
@@ -52,6 +56,7 @@ def remember_discovery(
     source_name: str,
     external_record_key: str,
     proposed_fact_key: str = "",
+    match_confidence: int | None = None,
     now: str | None = None,
 ):
     ensure_discovery_review_schema(db)
@@ -65,22 +70,42 @@ def remember_discovery(
             source_name,
             external_record_key,
             proposed_fact_key,
+            match_confidence,
             state,
             decision_note,
             first_seen_at,
             updated_at
         )
-        VALUES (?, ?, ?, ?, 'new', '', ?, ?)
+        VALUES (?, ?, ?, ?, ?, 'new', '', ?, ?)
         """,
         (
             person_id,
             source_name,
             external_record_key,
             proposed_fact_key,
+            int(match_confidence) if match_confidence is not None else None,
             stamp,
             stamp,
         ),
     )
+    if match_confidence is not None:
+        db.execute(
+            """
+            UPDATE companion_external_discovery_review
+            SET match_confidence=?
+            WHERE person_id=?
+              AND source_name=?
+              AND external_record_key=?
+              AND proposed_fact_key=?
+            """,
+            (
+                int(match_confidence),
+                person_id,
+                source_name,
+                external_record_key,
+                proposed_fact_key,
+            ),
+        )
     db.commit()
 
     return db.execute(
