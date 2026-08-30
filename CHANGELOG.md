@@ -223,3 +223,13 @@
 - External Evidence Candidate cards now sort by confidence descending first, then event-date recency within the same confidence.
 - The date-order toggle preserves confidence as the primary sort key.
 - Research and External Evidence pagination is shown once at the bottom of each paginated section; Previous/Next behaviour is unchanged.
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.4 — Relationship Answer Synthesis Regression Correction
+- Relationship searches with an internal marriage link now synthesise a concise by-marriage explanation instead of exposing the raw parent/child/spouse graph path.
+- Choosing a person from a duplicate-name relationship ambiguity now resolves that selected identity for the relationship question instead of redisplaying the same ambiguity.
+- Regression coverage locks both behaviours while preserving existing blood-relationship, focus, pronoun and possessive relationship contracts.
+
+### RC1.0.14.8.9.9.4.1.3.4 corrected QA overlay
+- Restores the established direct spouse-of-child relationship wording before the generic internal-marriage synthesis path.
+- Prevents a short `child -> spouse` relationship from being widened into the generic “related by marriage through …” answer.
+- Keeps the new internal-marriage synthesis and duplicate-name identity-resolution fixes intact.
+

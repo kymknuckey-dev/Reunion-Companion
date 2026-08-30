@@ -343,12 +343,25 @@ def contextual_subject(db,q,subject_id=None):
  if r["status"]=="ok":return {"status":"ok","people":[r["person"]],"phrase":groups[0]["phrase"],"reason":r["reason"]}
  return {"status":"ambiguous","people":r.get("matches",[]),"phrase":r.get("phrase",""),"reason":r.get("reason")}
 
-def contextual_pair(db,q,subject_id=None):
+def contextual_pair(db,q,subject_id=None,selected_identity_id=None):
  groups=named_people(db,q)
  if len(groups)<2:return {"status":"insufficient","groups":groups}
- a=resolve_contextual_group(db,groups[0],subject_id,True)
+
+ def selected_from(group):
+  if not selected_identity_id:return None
+  try: sid=int(selected_identity_id)
+  except Exception:return None
+  return next((p for p in group.get("matches",[]) if p.get("id")==sid),None)
+
+ # A choice made on the Search ambiguity screen is authoritative for whichever
+ # named group actually contains that person.  Previously relationship intent
+ # returned from contextual_pair before selected_identity_id was considered, so
+ # clicking "Answer using this person" simply redisplayed the same ambiguity.
+ chosen_a=selected_from(groups[0])
+ a={"status":"ok","person":chosen_a} if chosen_a else resolve_contextual_group(db,groups[0],subject_id,True)
  if a["status"]!="ok":return {"status":"ambiguous","ambiguous":{"phrase":groups[0]["phrase"],"matches":a.get("matches",[])}}
- b=resolve_contextual_group(db,groups[1],a["person"]["id"],False)
+ chosen_b=selected_from(groups[1])
+ b={"status":"ok","person":chosen_b} if chosen_b else resolve_contextual_group(db,groups[1],a["person"]["id"],False)
  if b["status"]!="ok":return {"status":"ambiguous","ambiguous":{"phrase":groups[1]["phrase"],"matches":b.get("matches",[])}}
  return {"status":"ok","people":[a["person"],b["person"]],"groups":groups}
 
@@ -547,6 +560,37 @@ def _human_path_answer(db,a,b,path):
    role=sexword(partner.get("sex"),"husband","wife","spouse")
    label=_friendly_kinship_label(rel.get("label"))
    return f'{a["display_name"]} is related to {b["display_name"]} through {role} {partner["display_name"]}. {partner["display_name"]} is {b["display_name"]}’s {label}.'
+
+ # Preserve the established direct spouse-of-child wording before the more
+ # general internal-marriage synthesis below.  A two-edge child -> spouse path
+ # is already a complete human relationship and must not be widened into the
+ # generic "related by marriage through" form.
+ if len(path)==3:
+  mid=path[1]["person"];e1=(path[1].get("edge") or "").casefold();e2=(path[2].get("edge") or "").casefold()
+  if e1=="child" and e2=="spouse":
+   return f'{b["display_name"]} is the spouse of {a["display_name"]}’s child, {mid["display_name"]}.'
+
+ # A marriage can also occur in the middle of an otherwise blood-line path.
+ # This is common in extended-family searches and must be synthesised as an
+ # affinity relationship rather than exposing the graph traversal as a chain
+ # of "parent of / child of / spouse of" clauses.
+ spouse_indexes=[i for i in range(1,len(path)) if (path[i].get("edge") or "").strip().casefold()=="spouse"]
+ if len(spouse_indexes)==1:
+  i=spouse_indexes[0]
+  left=path[i-1]["person"];right=path[i]["person"]
+  left_rel=None if left["id"]==a["id"] else blood_relationship(db,a["id"],left["id"])
+  right_rel=None if right["id"]==b["id"] else blood_relationship(db,b["id"],right["id"])
+  if (left["id"]==a["id"] or left_rel) and (right["id"]==b["id"] or right_rel):
+   intro=(f'{a["display_name"]} is related to {b["display_name"]} by marriage through '
+          f'{left["display_name"]} and {right["display_name"]}.')
+   details=[]
+   if left_rel:
+    details.append(f'{left["display_name"]} is {a["display_name"]}’s {_friendly_kinship_label(left_rel.get("label"))}')
+   if right_rel:
+    spouse_role=sexword(right.get("sex"),"husband","wife","spouse")
+    details.append(f'{right["display_name"]}, {left["display_name"]}’s {spouse_role}, is {b["display_name"]}’s {_friendly_kinship_label(right_rel.get("label"))}')
+   if details:return intro+" "+", and ".join(details)+"."
+   return intro
  steps=[]
  for i in range(1,len(path)):
   prev=path[i-1]["person"];cur=path[i]["person"];edge=(path[i].get("edge") or "").strip().casefold()
@@ -555,10 +599,6 @@ def _human_path_answer(db,a,b,path):
   elif edge=="spouse":steps.append(f'{cur["display_name"]} is the spouse of {prev["display_name"]}')
   else:steps.append(f'{cur["display_name"]} is linked to {prev["display_name"]} as {edge or "family"}')
  if len(steps)==1:return steps[0]+"."
- if len(path)==3:
-  mid=path[1]["person"];e1=(path[1].get("edge") or "").casefold();e2=(path[2].get("edge") or "").casefold()
-  if e1=="child" and e2=="spouse":
-   return f'{b["display_name"]} is the spouse of {a["display_name"]}’s child, {mid["display_name"]}.'
  return "; ".join(steps)+"."
 
 def _parse_genealogy_date(text):
@@ -880,7 +920,7 @@ def _answer_question_core(db,q,subject_id=None,selected_identity_id=None,prior_k
  discovery_subject_id=None if subject_id is None or has_identity_association else subject_id
 
  if intent=="relationship":
-  pair=contextual_pair(db,q,discovery_subject_id)
+  pair=contextual_pair(db,q,discovery_subject_id,selected_identity_id)
   if pair["status"]=="ambiguous":return _ambiguity_answer(pair["ambiguous"],db,q)
   if pair["status"]=="ok":
    a,b=pair["people"];rel=blood_relationship(db,a["id"],b["id"])
