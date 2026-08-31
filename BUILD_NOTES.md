@@ -225,3 +225,12 @@ Built from the validated RC1.0.11 family-scope baseline. RC1.0.10 PDF print geom
 - Regression target: Graham Robert Shearer pattern where death 05JUN2015 is already confirmed and funeral notice 11JUN2015 was stranded as `death:11JUN2015`.
 - New funeral notices produce no proposed Reunion death fact unless an explicit death date is supplied.
 - Legacy waiting rows linked to funeral/publication evidence resolve as evidence-only during refresh reconciliation.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.7 — Persistent Report Configurations
+
+- Added persistent, named Report Configurations without changing report generation.
+- Family-history Book configurations can retain the paternal endpoint, selected family expansions, and preferred output format.
+- Descendant Report configurations can retain the starting family, generation depth, and preferred output format.
+- Multiple configurations of the same report type are supported and distinguished by name.
+- Configurations are stored in the Companion database, survive application restarts and GEDCOM refreshes, and can be loaded, updated, saved as new, or deleted independently.
+- Existing PDF/HTML creation buttons and publishing renderers are unchanged; with no saved configuration loaded, publishing follows the existing RC1.0.14.8.9.9.4.1.3.6 behaviour.

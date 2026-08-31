@@ -243,3 +243,12 @@
 ## FFD 2.0 RC1.0.14.8.9.9.4.1.3.6 — Funeral Notice Death-Fact Reconciliation Correction
 - Correct Ryerson funeral notices so their publication/event date is not materialised as a second Reunion death date.
 - Historical waiting funeral-notice rows created with a legacy death-date key now reconcile as evidence-only and can complete after GEDCOM refresh.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.7 — Persistent Report Configurations
+
+- Added persistent, named Report Configurations without changing report generation.
+- Family-history Book configurations can retain the paternal endpoint, selected family expansions, and preferred output format.
+- Descendant Report configurations can retain the starting family, generation depth, and preferred output format.
+- Multiple configurations of the same report type are supported and distinguished by name.
+- Configurations are stored in the Companion database, survive application restarts and GEDCOM refreshes, and can be loaded, updated, saved as new, or deleted independently.
+- Existing PDF/HTML creation buttons and publishing renderers are unchanged; with no saved configuration loaded, publishing follows the existing RC1.0.14.8.9.9.4.1.3.6 behaviour.
