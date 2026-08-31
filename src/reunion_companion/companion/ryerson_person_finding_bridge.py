@@ -47,10 +47,12 @@ def _finding_to_candidate(person_id, finding):
         "match_confidence":_get(finding,"match_confidence","confidence",default=None),
     }
 
+    notice_type=str(_get(finding,"notice_type","evidence_type","type",default=""))
+    event_type=str(_get(finding,"event_type",default=""))
+
     for target,names in {
         "surname":("surname","last_name"),
         "given_name":("given_name","first_name","given_names"),
-        "death_date":("death_date","event_date"),
         "funeral_date":("funeral_date",),
         "publication_date":("publication_date","published_date"),
         "newspaper":("newspaper","publication"),
@@ -59,6 +61,19 @@ def _finding_to_candidate(person_id, finding):
         value=_get(finding,*names)
         if value not in (None,""):
             candidate[target]=value
+
+    # A Ryerson funeral notice commonly carries the notice/publication date in
+    # event_date.  It is corroborating evidence for the death, not a second
+    # death date to write back to Reunion.  Only death notices (or an explicit
+    # death_date field) may propose a Reunion Death fact.
+    explicit_death_date=_get(finding,"death_date",default=None)
+    is_funeral_notice="funeral" in notice_type.casefold()
+    if explicit_death_date not in (None,""):
+        candidate["death_date"]=explicit_death_date
+    elif not is_funeral_notice and event_type.casefold()=="death":
+        event_date=_get(finding,"event_date",default=None)
+        if event_date not in (None,""):
+            candidate["death_date"]=event_date
 
     return candidate
 

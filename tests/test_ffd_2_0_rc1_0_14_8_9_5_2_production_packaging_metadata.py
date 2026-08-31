@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-EXPECTED="FFD 2.0 RC1.0.14.8.9.9.4.1.3.4 — Relationship Answer Synthesis Regression Correction"
+EXPECTED="FFD 2.0 RC1.0.14.8.9.9.4.1.3.6 — Funeral Notice Death-Fact Reconciliation Correction"
 
 
 def live_release(path):

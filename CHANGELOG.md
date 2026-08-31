@@ -1,3 +1,9 @@
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.5 — Waiting-for-Reunion Reconciliation Hardening
+
+- Re-evaluates every accepted Waiting for Reunion discovery against the current imported Reunion state on refresh.
+- Accepted evidence with no proposed Reunion fact no longer remains permanently waiting; it completes on reconciliation because no Reunion change is required.
+- Adds regression coverage for later acceptance after the fact already exists in Reunion and publication-only evidence.
+
 ## FFD 2.0 RC1.0.14.8.9.9.4.1.2 — External Evidence Review Handoff Restoration
 - Fix: Ryerson Death research findings now appear in External Evidence Review as soon as they are stored.
 - Fix: existing stored findings are backfilled when the normal crawler starts, restoring people missed while the handoff was absent.
@@ -233,3 +239,7 @@
 - Prevents a short `child -> spouse` relationship from being widened into the generic “related by marriage through …” answer.
 - Keeps the new internal-marriage synthesis and duplicate-name identity-resolution fixes intact.
 
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.6 — Funeral Notice Death-Fact Reconciliation Correction
+- Correct Ryerson funeral notices so their publication/event date is not materialised as a second Reunion death date.
+- Historical waiting funeral-notice rows created with a legacy death-date key now reconcile as evidence-only and can complete after GEDCOM refresh.

@@ -309,6 +309,32 @@ def discovery_fact_present_in_reunion(db, discovery) -> bool:
     from .ryerson_discovery_assembly import _definite_date
 
     fact = str(discovery["proposed_fact_key"] or "").strip()
+    # Some accepted Ryerson evidence (for example a publication-only notice)
+    # is useful corroborating evidence but does not propose a Reunion fact.
+    # There is therefore nothing for a later GEDCOM refresh to wait for.
+    if not fact:
+        return True
+
+    # Historical compatibility: earlier person-level materialisation treated
+    # funeral-notice event_date as a proposed Death date.  That can strand an
+    # already accepted funeral notice in Waiting for Reunion forever because
+    # the notice/publication date is not a second death date.  Resolve those
+    # legacy rows as evidence-only when the linked stored Ryerson finding says
+    # it is a funeral/publication notice.
+    source_name = str(discovery["source_name"] or "").casefold()
+    external_key = str(discovery["external_record_key"] or "")
+    if source_name == "ryerson" and external_key.startswith("ryerson:"):
+        evidence_id = external_key.split(":", 1)[1]
+        if evidence_id.isdigit():
+            evidence = db.execute(
+                "SELECT evidence_type,event_type FROM companion_external_evidence WHERE id=?",
+                (int(evidence_id),),
+            ).fetchone()
+            if evidence is not None:
+                evidence_type = str(evidence["evidence_type"] or "").casefold()
+                event_type = str(evidence["event_type"] or "").casefold()
+                if "funeral" in evidence_type or event_type == "publication":
+                    return True
     if ":" not in fact:
         return False
 

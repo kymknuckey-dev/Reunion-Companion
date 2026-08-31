@@ -1,3 +1,9 @@
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.5 — Waiting-for-Reunion Reconciliation Hardening
+
+- Re-evaluates every accepted Waiting for Reunion discovery against the current imported Reunion state on refresh.
+- Accepted evidence with no proposed Reunion fact no longer remains permanently waiting; it completes on reconciliation because no Reunion change is required.
+- Adds regression coverage for later acceptance after the fact already exists in Reunion and publication-only evidence.
+
 ## FFD 2.0 RC1.0.14.8.9.9.4.1.2 — External Evidence Review Handoff Restoration
 - Restored the live handoff from successful Ryerson Death research findings into External Evidence Review.
 - Starting the normal Ryerson crawler now backfills already-stored Ryerson findings into the review index without rerunning source searches.
@@ -214,3 +220,8 @@ Built from the validated RC1.0.11 family-scope baseline. RC1.0.10 PDF print geom
 - Prevents a short `child -> spouse` relationship from being widened into the generic “related by marriage through …” answer.
 - Keeps the new internal-marriage synthesis and duplicate-name identity-resolution fixes intact.
 
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.6 — Funeral Notice Death-Fact Reconciliation Correction
+- Regression target: Graham Robert Shearer pattern where death 05JUN2015 is already confirmed and funeral notice 11JUN2015 was stranded as `death:11JUN2015`.
+- New funeral notices produce no proposed Reunion death fact unless an explicit death date is supplied.
+- Legacy waiting rows linked to funeral/publication evidence resolve as evidence-only during refresh reconciliation.

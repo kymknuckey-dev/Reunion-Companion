@@ -30,7 +30,7 @@ APP_BUILD="6"
 # Historical RC1.0.13 regression contract: APP_RELEASE="FFD 2.0 RC1.0.13 — Navigation, Person Focus & Conversation UX Consolidation"
 # Historical RC1.0.13.0.1 regression contract: APP_RELEASE="FFD 2.0 RC1.0.13.0.1 — Person Context Mode-aware QA Correction"
 # Historical RC1.0.13.1 regression contract: APP_RELEASE="FFD 2.0 RC1.0.13.1 — Persistent Global Navigation, Person Header Parity & Home Explore Removal"
-APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.4 — Relationship Answer Synthesis Regression Correction"
+APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.6 — Funeral Notice Death-Fact Reconciliation Correction"
 # RC1.0.5 Visual QA Pass 2 icon/bundle acceptance remains part of this cumulative build.
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
