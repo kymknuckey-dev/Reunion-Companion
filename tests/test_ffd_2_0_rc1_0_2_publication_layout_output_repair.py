@@ -18,10 +18,12 @@ def test_portrait_atomic_page_reserves_caption_space():
     assert "width:100%" in PUB
 
 def test_children_use_shared_name_date_hierarchy():
-    assert "class='person-name'" in PUB
-    assert "class='person-dates'" in PUB
-    assert "font-size:0.84em" in PUB
-    assert "font-weight:400" in PUB
+    # RC1.0.14.8.9.9.4.1.3.8 page-economy pass deliberately removed
+    # the standalone Children section. Children remain represented in the
+    # person/family profile summary, so the old standalone name/date markup
+    # is no longer a production requirement.
+    assert 'add("Children",kids,True)' in PUB
+    assert "<div class='pagebreak'></div><h2>Children</h2>" not in PUB
 
 def test_descendant_chart_output_is_normalised_for_publication():
     assert "def _publication_person_typography" not in PUB

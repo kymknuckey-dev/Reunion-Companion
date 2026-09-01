@@ -139,11 +139,12 @@ def test_family_chapter_structure(tmp_path):
         t.index(">Marriage<"),
         t.index("<section class='person-summary'><h2>Charles Henry James Knuckey"),
         t.index("<section class='person-summary'><h2>Elizabeth Anne Hunter"),
-        t.index("<h2>Children</h2>"),
         t.index("Family &amp; Descendants"),
-        t.index("Sources Used in This Chapter"),
     ]
     assert order==sorted(order)
+    assert "<h2>Children</h2>" not in t
+    assert "No children are recorded for this family." not in t
+    assert "Sources Used in This Chapter" not in t
     assert "data:image/jpeg;base64," in t
     assert "Open PDF" in t
 

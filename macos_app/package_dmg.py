@@ -7,7 +7,7 @@ import argparse, plistlib, shutil, subprocess, tempfile
 APP_NAME="Reunion Companion"
 APP_BUILD="6"
 # Historical RC1.0.5 regression contract: FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2
-APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.7 — Persistent Report Configurations"
+APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 — Hierarchical Family Chapter Selection & Ordering"
 ENGINE_BASELINE="FFD 1.9 RC1"
 VOLUME_NAME="Reunion Companion"
 DMG_NAME="Reunion Companion.dmg"

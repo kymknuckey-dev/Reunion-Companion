@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-EXPECTED="FFD 2.0 RC1.0.14.8.9.9.4.1.3.7 — Persistent Report Configurations"
+EXPECTED="FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 — Hierarchical Family Chapter Selection & Ordering"
 
 
 def live_release(path):

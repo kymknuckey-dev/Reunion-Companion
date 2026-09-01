@@ -72,8 +72,11 @@ def test_default_scope_selects_line_families_but_keeps_sibling_family_chart_only
 def test_manual_family_promotion_adds_only_that_family(tmp_path):
     db=connect(tmp_path/'scope.sqlite3');_seed(db)
     scope=build_scope(db,1,6,6,{100,101,102,200})
-    assert scope['selected_family_ids']==[100,101,102,200]
-    # No collateral family beneath the manually selected family is inferred.
+    assert scope['selected_family_ids']==[100,101,200,102]
+    # RC1.0.14.8.9.9.4.1.3.8 now keeps selected sibling-family chapters
+    # together before descending into the next generation. Root Daughter's
+    # promoted family therefore stays beside Line Son's family before Endpoint.
+    # No collateral family is selected merely because it is available.
     assert 300 not in scope['selected_family_ids']
     db.close()
 

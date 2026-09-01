@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .family_publication_model import children, family_partners, spouse_families, person
+from .timeline_engine import parse_genealogy_date
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,7 @@ class FamilyScopeEntry:
     depth: int
     state: str
     on_primary_path: bool = False
+    parent_family_id: int | None = None
 
 
 def birth_family(db, person_id):
@@ -96,25 +98,66 @@ def candidate_families(db,start_pid,generations=4):
 
 
 
-def scope_candidate_families(db,start_pid,end_pid):
-    """Return the primary path plus one-family sibling choices around it.
+def _children_by_birth(db,family_id):
+    """Return a family's children in genealogical (oldest-first) order.
 
-    The selector deliberately does not enumerate the complete descendant tree.
-    That would recreate the unwieldy behaviour RC1.0.11 is designed to avoid.
-    Each primary family exposes its children and, where recorded, those
-    children's spouse families as optional additions.
+    Reunion/GEDCOM import identifiers are stable identities, not a meaningful
+    sibling order.  Prefer the recorded Birth event and fall back to person id
+    only when no usable date exists.
+    """
+    rows=list(children(db,family_id))
+    def key(row):
+        birth=db.execute(
+            "SELECT date_text FROM events WHERE person_id=? AND lower(event_type)='birth' ORDER BY id LIMIT 1",
+            (row['id'],),
+        ).fetchone()
+        parsed=parse_genealogy_date(birth['date_text'] if birth else '')
+        return (parsed.sort_key,row['id'])
+    return sorted(rows,key=key)
+
+
+def scope_candidate_families(db,start_pid,end_pid):
+    """Return an expandable descendant-family hierarchy rooted on the book start.
+
+    Each spouse family belongs to the family in which that spouse was recorded
+    as a child.  Sibling families are ordered by the child's recorded birth
+    date, not by database ids, so the selector reads as a family rather than an
+    implementation traversal.  Branches can then be progressively opened to
+    arbitrary practical depth without automatically becoming chapters.
     """
     primary,main_line=paternal_family_path(db,start_pid,end_pid,True)
     if not primary and start_pid!=end_pid:return [],{},[]
+
+    roots=[primary[0]] if primary else [f['id'] for f in spouse_families(db,start_pid)]
     out=[];seen=set()
-    for depth,fid in enumerate(primary):
-        owner=main_line.get(fid,end_pid)
-        if fid not in seen:
-            seen.add(fid);out.append((fid,owner,depth))
-        for child in children(db,fid):
+
+    def walk(fid,owner,depth,parent_fid):
+        if fid in seen or depth>64:
+            return
+        seen.add(fid)
+        out.append((fid,owner,depth,parent_fid))
+        if depth==64:
+            return
+        # Establish the complete sibling level first, in birth order.  The UI
+        # then nests each child's family beneath the correct parent family.
+        child_families=[]
+        for child in _children_by_birth(db,fid):
             for sf in spouse_families(db,child['id']):
                 if sf['id'] not in seen:
-                    seen.add(sf['id']);out.append((sf['id'],child['id'],depth+1))
+                    child_families.append((sf['id'],child['id']))
+        for child_fid,child_pid in child_families:
+            walk(child_fid,child_pid,depth+1,fid)
+
+    for fid in roots:
+        walk(fid,main_line.get(fid,start_pid),0,None)
+
+    # A pathological/cousin relationship can make a primary-path family enter
+    # through another route. Ensure every primary family is still available.
+    present={x[0] for x in out}
+    for i,fid in enumerate(primary):
+        if fid not in present:
+            parent=primary[i-1] if i else None
+            out.append((fid,main_line.get(fid,end_pid),i,parent))
     return primary,main_line,out
 
 def endpoint_candidates(db,start_pid,generations=64):
@@ -138,23 +181,77 @@ def endpoint_candidates(db,start_pid,generations=64):
     return result
 
 
-def build_scope(db,start_pid,end_pid,generations=4,selected_family_ids=None):
+def build_scope(db,start_pid,end_pid,generations=4,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
     primary,main_line,candidates=scope_candidate_families(db,start_pid,end_pid)
     if not primary and start_pid!=end_pid:
         raise ValueError('The selected endpoint is not on the recorded paternal line from the starting person.')
     selected=set(primary if selected_family_ids is None else selected_family_ids)
     entries=[]
-    for fid,owner,depth in candidates:
-        entries.append(FamilyScopeEntry(fid,owner,depth,'book_section' if fid in selected else 'chart_only',fid in primary))
+    for fid,owner,depth,parent_fid in candidates:
+        entries.append(FamilyScopeEntry(fid,owner,depth,'book_section' if fid in selected else 'chart_only',fid in primary,parent_fid))
     # Endpoint spouse families can be deeper than the selector generation limit.
     present={e.family_id for e in entries}
     for fid in primary:
         if fid not in present:
             owner=main_line.get(fid,end_pid)
-            entries.append(FamilyScopeEntry(fid,owner,generations,'book_section',True))
-    order={fid:i for i,fid in enumerate(primary)}
-    selected_order=[fid for fid in primary if fid in selected]
-    selected_order.extend(e.family_id for e in entries if e.family_id in selected and e.family_id not in order)
+            entries.append(FamilyScopeEntry(fid,owner,generations,'book_section',True,None))
+    # Publication order follows family levels, not the construction spine.
+    # The paternal path remains useful for finding/default-selecting the book
+    # scope, but reader-facing chapters keep all selected sibling families
+    # together (in recorded child birth order) before descending into the next
+    # generation.  This preserves the early/original family group at the front
+    # of the book while still giving later generations a natural birth-order
+    # reading sequence.  Missing birth dates retain the selector's stable fallback.
+    by_parent={}
+    for e in entries:
+        by_parent.setdefault(e.parent_family_id,[]).append(e)
+    selected_order=[];visited=set()
+
+    branch_start = int(branch_order_start_family_id) if branch_order_start_family_id else None
+
+    def emit_branch_first(parent_entry):
+        """Publish each child's selected branch before moving to the next sibling."""
+        child_entries=[e for e in by_parent.get(parent_entry.family_id,[])
+                       if e.family_id not in visited]
+        for child_entry in child_entries:
+            visited.add(child_entry.family_id)
+            if child_entry.family_id in selected:
+                selected_order.append(child_entry.family_id)
+            emit_branch_first(child_entry)
+
+    def emit_descendant_levels(parent_entry):
+        # A report configuration may nominate one family as the editorial
+        # changeover point. Above it, keep historical sibling-family levels
+        # together. From it downward, follow each child's branch in birth order.
+        if branch_start is not None and parent_entry.family_id == branch_start:
+            emit_branch_first(parent_entry)
+            return
+        child_entries=[e for e in by_parent.get(parent_entry.family_id,[])
+                       if e.family_id not in visited]
+        # First establish the complete sibling-family level.
+        for child_entry in child_entries:
+            visited.add(child_entry.family_id)
+            if child_entry.family_id in selected:
+                selected_order.append(child_entry.family_id)
+        # Only after that level is complete do we descend into each branch.
+        for child_entry in child_entries:
+            emit_descendant_levels(child_entry)
+
+    for root_entry in by_parent.get(None,[]):
+        if root_entry.family_id in visited:
+            continue
+        visited.add(root_entry.family_id)
+        if root_entry.family_id in selected:
+            selected_order.append(root_entry.family_id)
+        emit_descendant_levels(root_entry)
+    # Defensive fallback for any disconnected/pathological candidate.
+    for e in entries:
+        if e.family_id in visited:
+            continue
+        visited.add(e.family_id)
+        if e.family_id in selected:
+            selected_order.append(e.family_id)
+        emit_descendant_levels(e)
     # A manually promoted family also has a focal person: the descendant through
     # whom the selector reached that family.  Use that person only to orient the
     # incoming-spouse context chart; it does not make the family part of the

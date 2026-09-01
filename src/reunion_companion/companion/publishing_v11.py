@@ -57,10 +57,10 @@ PRO_CSS=r"""
 @page:first { @bottom-center { content:none; } }
 
 html { scroll-behavior:smooth; }
-body { max-width:180mm; margin:0 auto; font-size:10.5pt; line-height:1.45; }
-h1 { font-size:24pt; margin:0 0 4mm; padding-bottom:2mm; }
-h2 { font-size:15pt; margin:7mm 0 3mm; border-bottom:1px solid #aaa; padding-bottom:1mm; page-break-after:avoid; }
-h3 { font-size:11.5pt; margin:4mm 0 1.5mm; page-break-after:avoid; }
+body { max-width:180mm; margin:0 auto; font-size:10pt; line-height:1.36; }
+h1 { font-size:22pt; margin:0 0 3.5mm; padding-bottom:1.8mm; }
+h2 { font-size:14pt; margin:5.5mm 0 2.5mm; border-bottom:1px solid #aaa; padding-bottom:.8mm; page-break-after:avoid; }
+h3 { font-size:11pt; margin:3.2mm 0 1.2mm; page-break-after:avoid; }
 p { margin:2.2mm 0; }
 a { color:inherit; }
 .pagebreak { break-before:page; page-break-before:always; }
@@ -734,13 +734,6 @@ def _person_section(db,pid,output_html,anchor=None):
     else:
         P.append("<p>No biographical material is currently available.</p>")
 
-    sources=person_sources(db,pid)
-    if sources:
-        P.append("<section class='person-sources'><h3>Sources</h3><ol class='sources'>")
-        for source in sources:
-            P.append(f"<li><span class='source-ref'>{esc(source_label(source))}</span> {esc(source_text(source))}</li>")
-        P.append("</ol></section>")
-
     ordered=(("birth","Birth Documents"),("death","Death & Burial Documents"),
              ("military","Military Documents"),("other-documents","Other Documents"))
     for key,label in ordered:
@@ -857,20 +850,6 @@ def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_
         P.append("<div class='pagebreak'></div><h2>Family Documents &amp; Media</h2>")
         for m in extra:P.append(_media_block(m,output_html,family_names=family_names,db=db))
 
-    P.append("<div class='pagebreak'></div><h2>Children</h2>")
-    kids=children(db,family_id)
-    if kids:
-        P.append("<ul class='children-list'>")
-        for ch in kids:
-            d=life_dates(db,ch["id"])
-            dates=[]
-            if d["birth"]:dates.append("b. "+d["birth"])
-            if d["death"]:dates.append("d. "+d["death"])
-            date_html=(" <span class='person-dates'>— "+esc(" — ".join(dates))+"</span>") if dates else ""
-            P.append("<li class='person-line'><strong class='person-name'>"+esc(ch["display_name"])+"</strong>"+date_html+"</li>")
-        P.append("</ul>")
-    else:P.append("<p>No children are recorded for this family.</p>")
-
     # RC1.0.11.1: scoped books show the current family's children and one
     # collateral generation (children of the paternal siblings), then stop.
     # The paternal continuation itself is expanded by the next selected chapter.
@@ -881,13 +860,6 @@ def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_
         P.append(spouse_context_chart_html(db,family_id,main_line_pid))
     P.append("</div>")
 
-    sources=_chapter_sources(db,family_id,h,w)
-    if sources:
-        P.append("<div class='pagebreak'></div><h2>Sources Used in This Chapter</h2><ol class='sources'>")
-        for s in sources:
-            # Reader-facing number; GEDCOM @Sxx@ never leaks into the book.
-            P.append(f"<li><span class='source-ref'>{esc(source_label(s))}</span> {esc(source_text(s))}</li>")
-        P.append("</ol>")
     return "".join(P)
 
 def family_chapter_html(db,family_id,output_html=None,theme=DEFAULT_THEME,descendant_generations=4):
@@ -919,13 +891,13 @@ def write_family_chapter(db,family_id,path=None,theme=DEFAULT_THEME,descendant_g
     p.write_text(html,encoding="utf-8")
     return p
 
-def book_family_ids(db,start_pid,generations=4,end_pid=None,selected_family_ids=None):
+def book_family_ids(db,start_pid,generations=4,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
     # RC1.0.11: explicit book scope constrains recursive family expansion.
     # Calls without scope retain legacy behaviour for compatibility.
     if end_pid is not None or selected_family_ids is not None:
         from .family_book_scope import build_scope
         endpoint=start_pid if end_pid is None else end_pid
-        return build_scope(db,start_pid,endpoint,generations,selected_family_ids)['selected_family_ids']
+        return build_scope(db,start_pid,endpoint,generations,selected_family_ids,paternal_path_last,branch_order_start_family_id)['selected_family_ids']
     out=[];seen_people=set();seen_fam=set()
     def walk(pid,level):
         if level>generations or pid in seen_people:return
@@ -993,12 +965,12 @@ def _source_index(sources):
     P.append("</ol></section>")
     return "".join(P)
 
-def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None):
+def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
     start=db.execute("SELECT * FROM people WHERE id=?",(start_pid,)).fetchone()
     scope=None
     if end_pid is not None or selected_family_ids is not None:
         from .family_book_scope import build_scope
-        scope=build_scope(db,start_pid,start_pid if end_pid is None else end_pid,generations,selected_family_ids)
+        scope=build_scope(db,start_pid,start_pid if end_pid is None else end_pid,generations,selected_family_ids,paternal_path_last,branch_order_start_family_id)
         fam_ids=scope['selected_family_ids']
     else:
         fam_ids=book_family_ids(db,start_pid,generations)
@@ -1034,11 +1006,11 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pi
     P.append("</body></html>")
     return "".join(P)
 
-def write_book(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None):
+def write_book(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     p=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.html")
     p.parent.mkdir(parents=True,exist_ok=True)
-    p.write_text(book_html(db,start_pid,p,generations,theme,end_pid,selected_family_ids),encoding="utf-8")
+    p.write_text(book_html(db,start_pid,p,generations,theme,end_pid,selected_family_ids,paternal_path_last,branch_order_start_family_id),encoding="utf-8")
     return p
 
 def export_pdf_from_html(html_path,pdf_path=None):
@@ -1059,7 +1031,7 @@ def export_pdf_from_html(html_path,pdf_path=None):
     HTML(filename=str(html_path),base_url=str(html_path.parent)).write_pdf(str(pdf_path))
     return pdf_path
 
-def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None):
+def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     pdf=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.pdf")
     pdf.parent.mkdir(parents=True,exist_ok=True)
@@ -1067,7 +1039,15 @@ def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_
     # Keep them outside the report directory and remove them automatically after rendering.
     with tempfile.TemporaryDirectory(prefix="reunion-companion-pdf-") as td:
         html=Path(td)/(pdf.stem+".html")
-        write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids)
+        if branch_order_start_family_id is not None:
+            write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids,paternal_path_last,branch_order_start_family_id)
+        elif paternal_path_last:
+            write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids,paternal_path_last)
+        else:
+            # Preserve the established HTML/PDF shared-source call path when no
+            # ordering extension is requested. Historical publishing regressions
+            # intentionally assert this exact call shape.
+            write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids)
         export_pdf_from_html(html,pdf)
     return pdf
 

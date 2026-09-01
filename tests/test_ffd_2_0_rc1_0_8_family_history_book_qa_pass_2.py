@@ -27,7 +27,8 @@ def test_person_summary_uses_dad_order_and_book_hierarchy():
     assert 'add("Children"' in src
     assert "Life &amp; Notes" not in src
     assert "<h3>Biography</h3>" in src
-    assert "<h3>Sources</h3>" in src
+    assert "<h3>Sources</h3>" not in src
+    assert "<h1>Source Index</h1>" in src
 
 
 def test_old_cached_changed_prose_is_not_reused(tmp_path):

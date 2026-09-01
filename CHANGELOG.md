@@ -1,3 +1,7 @@
+
+### RC1.0.14.8.9.9.4.1.3.8 CORRECTED-4
+- Restored the historical HTML/PDF shared-source call shape when `Paternal path last` is not requested.
+- Keeps the new ordering preference additive while preserving the earlier spouse-chart regression contract.
 ## FFD 2.0 RC1.0.14.8.9.9.4.1.3.5 — Waiting-for-Reunion Reconciliation Hardening
 
 - Re-evaluates every accepted Waiting for Reunion discovery against the current imported Reunion state on refresh.
@@ -252,3 +256,50 @@
 - Multiple configurations of the same report type are supported and distinguished by name.
 - Configurations are stored in the Companion database, survive application restarts and GEDCOM refreshes, and can be loaded, updated, saved as new, or deleted independently.
 - Existing PDF/HTML creation buttons and publishing renderers are unchanged; with no saved configuration loaded, publishing follows the existing RC1.0.14.8.9.9.4.1.3.6 behaviour.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 — Hierarchical Family Chapter Selection & Ordering
+- Added progressive, expandable family-branch selection to Family-history Book scope.
+- Any descendant family can be independently promoted to a chapter; expanding a branch does not select it.
+- Chapter order is now family-grouped breadth-first so siblings and families of the same generation stay together before deeper branches.
+- Existing report configurations continue to persist the exact selected family IDs.
+- No changes to chapter rendering, HTML/PDF engines, media handling, or report content.
+- CORRECTED: fixed misleading leaf indentation (for example Jamie appearing visually beneath Kym), restored true parent-family nesting, ordered sibling families oldest-first from recorded Birth events, and made chapter traversal parent + immediate child families before deeper descendants.
+
+- RC1.0.14.8.9.9.4.1.3.8 refinement: added a saved **Paternal path last** family-history ordering option. Within each sibling-family group, selected side families print first and the recorded paternal continuation prints last before the report moves deeper.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-5
+- Corrected Family History chapter order to birth-order, branch-first traversal.
+- Paternal path is now used to construct/default the scope, not to override reader-facing sibling order.
+- Removed the `Paternal path last` Publish option while retaining compatibility with older call signatures/configuration data.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-6 — Family-level-first chapter ordering
+- Corrected Family History publication traversal so all selected sibling family chapters are emitted together in recorded child birth order before descending into the next generation.
+- Preserves the original/early family grouping near the front of the book while retaining natural birth-order reading within later generations.
+- Selector hierarchy and saved report configuration behaviour are unchanged.
+
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-7 — Configurable branch-order changeover
+- Added one optional Family History setting, **Branch ordering starts here**.
+- Above the selected family, historical sibling-family levels remain grouped in birth order.
+- From the selected family downward, each selected child's branch is completed in birth order before the next sibling branch begins.
+- `None` preserves the CORRECTED-6 family-level ordering throughout.
+- The changeover family is persisted in named Report Configurations and applies identically to HTML and PDF.
+- No family selector hierarchy, report content, chart, media, or rendering behaviour was otherwise changed.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-8
+- Family History HTML/PDF page-economy presentation pass: removed duplicate Children section/page break and gently tightened body/heading typography while retaining existing A4 margins.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-8B — Consolidated Source Index
+- Removed the repeated `Sources Used in This Chapter` section and its forced page break from Family History chapters.
+- Retained inline source references and the existing end-of-book Source Index unchanged.
+- No source data, family ordering, report configuration, typography, chart, media, or rendering semantics changed.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-8C — Biography Source Consolidation
+- Removed repeated person-level Sources lists beneath Family History biographies.
+- Source records remain collected in the consolidated end-of-book Source Index.
+- No changes to biography text, citations/evidence storage, family ordering, media, or charts.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 CORRECTED-8C-A — Biography Sources Regression Test Alignment
+- Corrected an obsolete historical regression assertion that still required the deliberately removed Biography Sources block.
+- Preserves the consolidated end-of-book Source Index requirement.
+- No production behaviour changes from CORRECTED-8C.

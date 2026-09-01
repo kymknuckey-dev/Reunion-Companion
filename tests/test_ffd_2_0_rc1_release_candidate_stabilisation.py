@@ -88,7 +88,8 @@ def test_media_and_fact_sources_use_numbered_reader_facing_citations(tmp_path):
     media_html=_media_block(row,None,family_names="Kym Wayne Knuckey and Sue Anne Example",db=db)
     assert "Marriage Certificate" in media_html and "[12]" in media_html
     html=_person_section(db,1,None)
-    assert "<h3>Sources</h3>" in html and "[12]" in html
+    # Person-level source lists are consolidated into the book Source Index.
+    assert "<section class='person-sources'>" not in html
 
 def test_family_and_descendants_attaches_dates_to_each_spouse(tmp_path):
     db=connect(tmp_path/"x.sqlite3");seed(db,tmp_path)

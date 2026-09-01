@@ -14,10 +14,10 @@ from .descendant_chart import chart_html,chart_text
 
 BOOK_CSS="""
 @page { size:A4; margin:16mm 15mm 18mm 15mm; }
-body { max-width:180mm; margin:0 auto; font-size:10.5pt; }
-h1 { font-size:24pt; margin:0 0 4mm; padding-bottom:2mm; }
-h2 { font-size:15pt; margin:7mm 0 3mm; border-bottom:1px solid #aaa; padding-bottom:1mm; page-break-after:avoid; }
-h3 { font-size:12pt; margin:5mm 0 2mm; page-break-after:avoid; }
+body { max-width:180mm; margin:0 auto; font-size:10pt; line-height:1.36; }
+h1 { font-size:22pt; margin:0 0 3.5mm; padding-bottom:1.8mm; }
+h2 { font-size:14pt; margin:5.5mm 0 2.5mm; border-bottom:1px solid #aaa; padding-bottom:.8mm; page-break-after:avoid; }
+h3 { font-size:11pt; margin:3.2mm 0 1.2mm; page-break-after:avoid; }
 p { margin:2.2mm 0; }
 ul { padding-left:6mm; }
 li { margin:1mm 0; }
@@ -213,32 +213,7 @@ def family_chapter_html(db,family_id,theme=DEFAULT_THEME,descendant_generations=
         P.append("<div class='pagebreak'></div><h2>Family Documents &amp; Media</h2>")
         for m in fm:P.append(_media_figure(m,output_html=output_html))
 
-    kids=children(db,family_id)
-    P.append("<div class='pagebreak'></div><h2>Children</h2>")
-    if kids:
-        P.append("<ul>")
-        for ch in kids:
-            d=life_dates(db,ch["id"])
-            bits=[ch["display_name"]]
-            if d["birth"]:bits.append("b. "+d["birth"])
-            if d["death"]:bits.append("d. "+d["death"])
-            P.append("<li>"+esc(" — ".join(bits))+"</li>")
-        P.append("</ul>")
-    else:P.append("<p>No children are recorded for this family.</p>")
-
     P.append(chart_html(db,h["id"] if h else None,w["id"] if w else None,descendant_generations))
-
-    # Consolidated chapter sources.
-    src={}
-    for s in family_sources(db,family_id):src[s["id"]]=s
-    for p in (h,w):
-        if p:
-            for s in person_sources(db,p["id"]):src[s["id"]]=s
-    if src:
-        P.append("<div class='pagebreak'></div><h2>Sources Used in This Chapter</h2><ol class='sources'>")
-        for s in sorted(src.values(),key=lambda x:x["id"]):
-            P.append(f"<li><strong>{esc(s['gedcom_xref'])}</strong> — {esc(_source_text(s))}</li>")
-        P.append("</ol>")
 
     if include_research:
         P.append("<section class='research-only'><h2>Research Edition Notes</h2>")
