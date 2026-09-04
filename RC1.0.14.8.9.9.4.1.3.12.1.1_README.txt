@@ -1,0 +1,12 @@
+FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.1.1 — Production Metadata Regression Hardening
+
+Corrects the remaining stale production-packaging regression contract.
+
+The previous test hard-coded RC1.0.14.8.9.9.4.1.3.12 as the expected
+release forever. That makes every legitimate later release fail.
+
+The corrected regression now tests the actual invariant:
+  - build_app.py and package_dmg.py have the same live APP_RELEASE;
+  - the live release is an FFD 2.0 RC1.0 release identity.
+
+No Manage-page or product behaviour changes are included.

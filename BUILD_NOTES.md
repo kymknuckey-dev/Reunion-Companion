@@ -284,3 +284,10 @@ Family History person biographies no longer render a repeated Sources block. Sou
 - Updated the historical Family History QA test to reflect the intentional removal of per-biography Sources blocks.
 - The test now requires the per-biography `<h3>Sources</h3>` block to be absent while retaining the final `<h1>Source Index</h1>`.
 - No production publishing code changed from CORRECTED-8C.
+
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.11.2 — Manage Page Layout Consolidation
+- Compact three-part Data Manager hierarchy: Family Files, Reunion GEDCOM, Ryerson Crawler.
+- Import History nested/collapsed within Reunion GEDCOM; paging retained.
+- Add/Rename Family File controls are progressive disclosure rather than permanent form rows.
+- Full supplied-source regression run: 1275 passed; one unrelated pre-existing Ryerson hash-pagination test failure reproduced on baseline.

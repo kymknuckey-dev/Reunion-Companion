@@ -5,19 +5,20 @@ UI=Path("src/reunion_companion/companion/beta_ui.py")
 def _text():
     return UI.read_text()
 
-def test_ryerson_crawler_control_has_spacing_from_status_text():
+def test_manage_uses_one_primary_gedcom_refresh_action():
     text=_text()
-    assert "action='/manage/ryerson/pause' style='margin-top:10px'" in text
-    assert "action='/manage/ryerson/start' style='margin-top:10px'" in text
+    assert '>Safe Refresh GEDCOM</button>' in text
+    assert 'Safe Refresh Current GEDCOM' not in text
+    assert '<h2>Safe Refresh from New GEDCOM</h2>' not in text
+    assert 'Choose Different GEDCOM…' in text
 
-def test_recent_crawler_activity_has_spacing_before_first_result():
+def test_manage_hides_full_import_history_but_keeps_latest_status():
     text=_text()
-    assert 'first_style=" style=\'margin-top:7px\'" if index==0 else ""' in text
-    assert 'for index,item in enumerate(recent):' in text
+    assert 'LAST REFRESH' in text
+    assert '<h2>Import History</h2>' not in text
+    assert 'latest_history=import_history(db,limit=1)' in text
 
-def test_import_history_pager_matches_priorities_presentation():
+def test_manage_keeps_recent_crawler_activity_compact():
     text=_text()
-    assert "history_pager=\"<div class='rc-priority-pager'>\"" in text
-    assert "pager.append(f\"<a class='button' href='/data?import_page={import_page-1}'>Previous</a>\")" in text
-    assert "pager.append(f\"<a class='button' href='/data?import_page={import_page+1}'>Next</a>\")" in text
-    assert "history_pager=\"<div class='publication-actions'" not in text
+    assert 'Recent crawler activity' in text
+    assert 'rc-manage-activity' in text

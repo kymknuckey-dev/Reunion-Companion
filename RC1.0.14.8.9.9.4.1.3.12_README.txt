@@ -1,0 +1,8 @@
+FFD 2.0 RC1.0.14.8.9.9.4.1.3.12 — Data Manager Workflow Consolidation
+
+- Compact Family Files management.
+- One primary Safe Refresh GEDCOM action.
+- Different GEDCOM path is revealed only on demand.
+- Full import history removed from normal Manage UI.
+- Latest refresh remains visible; audit history remains stored internally.
+- Ryerson management retained in a compact operational section.

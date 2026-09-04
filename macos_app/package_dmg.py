@@ -7,7 +7,10 @@ import argparse, plistlib, shutil, subprocess, tempfile
 APP_NAME="Reunion Companion"
 APP_BUILD="6"
 # Historical RC1.0.5 regression contract: FFD 2.0 RC1.0.5 — Application Identity & Distribution Polish — Visual QA Pass 2
-APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.8 — Hierarchical Family Chapter Selection & Ordering"
+# Historical release: APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.11.1 — Terminal Individual Opt-in Default"
+# Historical release: APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12 — Data Manager Workflow Consolidation"
+# Historical release: APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.1 — Data Manager Regression Contract Correction"
+APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.1.1 — Production Metadata Regression Hardening"
 ENGINE_BASELINE="FFD 1.9 RC1"
 VOLUME_NAME="Reunion Companion"
 DMG_NAME="Reunion Companion.dmg"

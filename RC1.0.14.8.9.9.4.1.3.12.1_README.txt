@@ -1,0 +1,13 @@
+FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.1 — Data Manager Regression Contract Correction
+
+Purpose
+-------
+Corrects stale RC1.0.14.8.9.9.4.1.3.11.2 regression tests that still required:
+- the removed rc-manage-page wrapper contract,
+- the removed user-facing GEDCOM Import History UI,
+- and the .11.2 release identity as the current release.
+
+The .12 product behaviour is unchanged. The tests now preserve the useful
+historical Manage-page contract while explicitly accepting the .12 workflow
+simplification: one primary GEDCOM refresh, on-demand alternate GEDCOM choice,
+compact last-refresh status, and no user-facing paginated import history.

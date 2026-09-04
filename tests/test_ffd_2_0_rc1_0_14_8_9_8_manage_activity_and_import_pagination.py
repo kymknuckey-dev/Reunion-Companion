@@ -35,7 +35,7 @@ def test_import_history_supports_limit_offset_and_count(tmp_path):
     assert page2[-1]['source_path'].endswith('import-03.ged')
 
 
-def test_manage_import_history_is_ten_rows_per_page(monkeypatch,tmp_path):
+def test_manage_shows_only_latest_refresh_not_full_import_history(monkeypatch,tmp_path):
     db=connect(tmp_path/'x.db')
     ensure_companion_tables(db)
     for i in range(23):
@@ -46,20 +46,11 @@ def test_manage_import_history_is_ten_rows_per_page(monkeypatch,tmp_path):
     db.commit()
     _stub_crawler_status(monkeypatch)
     monkeypatch.setattr(beta_ui,'_ryerson_recent_activity',lambda db,limit=3:[])
-
-    first=beta_ui.data_page(db,import_page=1)
-    assert 'Page 1 of 3' in first
-    assert "href='/data?import_page=2'>Next</a>" in first
-    assert "import-22.ged" in first and "import-13.ged" in first
-    assert "import-12.ged" not in first
-
-    second=beta_ui.data_page(db,import_page=2)
-    assert 'Page 2 of 3' in second
-    assert "href='/data?import_page=1'>Previous</a>" in second
-    assert "href='/data?import_page=3'>Next</a>" in second
-    history_section=second.split("<div class='card'><h2>Import History</h2>",1)[1]
-    assert "import-12.ged" in history_section and "import-03.ged" in history_section
-    assert "import-22.ged" not in history_section
+    html=beta_ui.data_page(db)
+    assert 'LAST REFRESH' in html
+    assert '2026-08-29T22:00:00+09:30' in html
+    assert '<h2>Import History</h2>' not in html
+    assert 'Page 1 of' not in html
 
 
 def test_render_get_accepts_import_history_page_query(monkeypatch,tmp_path):

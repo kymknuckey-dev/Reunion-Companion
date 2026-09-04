@@ -27,7 +27,7 @@ from .beta3_publishing import (
 from .version_identity import APP_DISPLAY_NAME, FFD_DISPLAY
 from .branding import header_brand_html
 from .family_book_scope import build_scope,endpoint_candidates
-from .family_publication_model import family_partners, children
+from .family_publication_model import family_partners, children, spouse_families
 from .report_configurations import (
     list_report_configurations,get_report_configuration,save_report_configuration,delete_report_configuration
 )
@@ -665,96 +665,105 @@ def data_page(db,msg="",import_page=1):
     from .external_research_runner import runner_status
     from .ryerson_targeted_bootstrap import targeted_status
 
+    # Import history remains an internal audit trail. The Manage page only needs
+    # the most recent successful refresh; older entries are diagnostic data.
     seed_history_from_current(db)
     cur=current_gedcom(db)
-    import_page=max(1,int(import_page or 1))
-    import_page_size=10
-    import_total=import_history_count(db)
-    import_pages=max(1,(import_total+import_page_size-1)//import_page_size)
-    import_page=min(import_page,import_pages)
-    hist=import_history(db,limit=import_page_size,offset=(import_page-1)*import_page_size)
+    latest_history=import_history(db,limit=1)
+    last_refresh=latest_history[0] if latest_history else None
     counts=dataset_counts(db)
     run=runner_status(db)
     surname_run=targeted_status(db)
-    stats="".join(f"<div><strong>{esc(k.title())}</strong><div class='kpi'>{v:,}</div></div>" for k,v in counts.items())
-    history=""
-    for x in hist:
-        diff=", ".join(f"{k} {v:+d}" for k,v in x["diff"].items() if v)
-        history+=f"""<div class='topic'><strong>{esc(Path(x['source_path']).name)}</strong><br>
-<span class='small'>{esc(x['imported_at'])}</span>
-<div>{esc(diff or 'Baseline / no count changes')}</div></div>"""
-    if import_total:
-        pager=[]
-        if import_page>1:
-            pager.append(f"<a class='button' href='/data?import_page={import_page-1}'>Previous</a>")
-        pager.append(f"<span class='small'>Page {import_page} of {import_pages}</span>")
-        if import_page<import_pages:
-            pager.append(f"<a class='button' href='/data?import_page={import_page+1}'>Next</a>")
-        history_pager="<div class='rc-priority-pager'>"+" ".join(pager)+"</div>"
-    else:
-        history_pager=""
+    stat_order=("people","families","events","notes","sources","media","citations")
+    stats="".join(
+        f"<div class='rc-manage-stat'><strong>{counts.get(k,0):,}</strong><span>{esc(k.title())}</span></div>"
+        for k in stat_order
+    )
     message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ""
     current=esc(cur["source_path"]) if cur else "No GEDCOM recorded"
+    current_name=esc(Path(cur["source_path"]).name) if cur else "No GEDCOM recorded"
     disabled="" if cur else "disabled"
 
     crawler_enabled=bool(run["enabled"])
     crawler_state=("Waiting for Ryerson" if crawler_enabled and run.get("source_waiting") else ("Running" if crawler_enabled else "Paused"))
     core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
     crawler_html=(
-        "<div class='card'><h2>Ryerson Crawler</h2>"
-        "<p class='meta'>The normal crawler uses surname + first given name. The older family-wide surname crawler is retained for history but remains paused because broad surname searches can exceed reliable result pagination.</p>"
-        f"<div class='topic'><strong>Ryerson Crawler — {crawler_state}</strong>"
-        f"<div class='small'>Family-wide (paused): Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div>"
+        "<div class='card rc-manage-section'><h2>Ryerson Crawler</h2>"
+        "<p class='meta'>External death and funeral notice research from the Ryerson Index. The normal crawler uses surname + first given name.</p>"
+        f"<div class='rc-manage-row'><div><strong>Ryerson Crawler — {crawler_state}</strong>"
         f"<div class='small'>Death research: Queued {run['queued']} · Waiting {run['retry_wait']} · Searching {run.get('searching',0)} · Findings {run['findings']} · No finding {run['no_match']} · Failed {run['failed']} · Total {run.get('total',0)}</div>"
+        f"<div class='small'>Family-wide (paused): Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div></div>"
     )
     if crawler_enabled:
-        crawler_html+="<form method='post' action='/manage/ryerson/pause' style='margin-top:10px'><button type='submit'>Pause Ryerson Crawler</button></form>"
+        crawler_html+="<form method='post' action='/manage/ryerson/pause'><button class='secondary' type='submit'>Pause Ryerson Crawler</button></form></div>"
     else:
-        crawler_html+="<form method='post' action='/manage/ryerson/start' style='margin-top:10px'><button type='submit'>Start Ryerson Crawler</button></form>"
+        crawler_html+="<form method='post' action='/manage/ryerson/start'><button type='submit'>Start Ryerson Crawler</button></form></div>"
     recent=_ryerson_recent_activity(db,3)
     if recent:
-        crawler_html+="<div style='margin-top:14px'><strong>Recent crawler activity</strong>"
-        for index,item in enumerate(recent):
-            first_style=" style='margin-top:7px'" if index==0 else ""
+        crawler_html+="<h3 class='rc-manage-subhead'>Recent crawler activity</h3><div class='rc-manage-list'>"
+        for item in recent:
             crawler_html+=(
-                f"<div class='topic'{first_style}>"
-                f"<strong>{esc(item['time'])} &nbsp; {esc(item['name'])}</strong>"
-                f"<div class='small'>{esc(item['status'])} · {esc(item['outcome'])}</div>"
-                "</div>"
+                "<div class='rc-manage-activity'>"
+                f"<strong>{esc(item['time'])}</strong><strong>{esc(item['name'])}</strong>"
+                f"<span class='small'>{esc(item['status'])} · {esc(item['outcome'])}</span></div>"
             )
         crawler_html+="</div>"
     else:
-        crawler_html+="<p class='small' style='margin-top:14px'>No crawler activity recorded yet.</p>"
-    crawler_html+="</div></div>"
+        crawler_html+="<p class='small'>No crawler activity recorded yet.</p>"
+    crawler_html+="</div>"
+
     ff=active_family_file(db); fams=list_family_files(db)
-    family_rows=""
+    active_rows=[]; other_rows=[]
     for x in fams:
-        flags=[]
-        if x.get('is_default'):flags.append('Default')
-        if x.get('is_active'):flags.append('Active')
-        badges=(" · ".join(flags))
         reports=family_report_count(db,x['id'])
-        actions=f"""<div class='publication-actions'>
-<form method='post' action='/family-file/rename' class='inline-form'><input type='hidden' name='workspace_id' value='{x['id']}'><input name='name' value='{esc(x['display_name'])}' required><button class='secondary'>Rename</button></form>
-"""
+        badges=[]
+        if x.get('is_active'): badges.append('ACTIVE')
+        if x.get('is_default'): badges.append('DEFAULT')
+        badge_html=(f" <span class='badge info'>{esc(' · '.join(badges))}</span>" if badges else "")
+        detail=f"{esc(x.get('source_application') or 'GEDCOM')} · {esc(Path(x.get('gedcom_path') or '').name or 'No GEDCOM recorded')} · Reports: {reports}"
+        actions=[]
         if not x.get('is_default'):
-            actions+=f"<form method='post' action='/family-file/default' class='inline-form'><input type='hidden' name='workspace_id' value='{x['id']}'><button class='secondary'>Make Default</button></form>"
+            actions.append(f"<form method='post' action='/family-file/default' class='inline-form'><input type='hidden' name='workspace_id' value='{x['id']}'><button class='secondary'>Make Default</button></form>")
+        actions.append(f"<details class='rc-inline-details'><summary>Rename</summary><form method='post' action='/family-file/rename' class='rc-rename-form'><input type='hidden' name='workspace_id' value='{x['id']}'><input name='name' value='{esc(x['display_name'])}' required><button class='secondary'>Save</button></form></details>")
         if len(fams)>1:
             confirm_text=_delete_confirmation(db,x['id']).replace("'","&#39;")
-            actions+=f"""<form method='post' action='/family-file/delete' class='inline-form' onsubmit="return confirm('{confirm_text}')"><input type='hidden' name='workspace_id' value='{x['id']}'><label class='small'><input type='checkbox' name='delete_reports' value='1'> Delete {reports} generated report(s) and assets</label><button class='secondary'>Delete Family File</button></form>"""
-        family_rows+=f"<div class='topic'><strong>{esc(x['display_name'])}</strong>{(' — '+esc(badges)) if badges else ''} — {esc(x.get('source_application') or 'GEDCOM')}<br><span class='small'>{esc(x.get('gedcom_path') or 'No GEDCOM recorded')} · Reports: {reports}</span>{actions}</div>"
+            actions.append(f"<form method='post' action='/family-file/delete' class='inline-form' onsubmit=\"return confirm('{confirm_text}')\"><input type='hidden' name='workspace_id' value='{x['id']}'><input type='hidden' name='delete_reports' value='0'><button class='secondary rc-danger-outline'>Delete Family File</button></form>")
+        row=f"<div class='rc-manage-row'><div><strong>{esc(x['display_name'])}</strong>{badge_html}<div class='small'>{detail}</div></div><div class='rc-manage-actions'>{''.join(actions)}</div></div>"
+        (active_rows if x.get('is_active') else other_rows).append(row)
+    family_html="".join(active_rows)
+    if other_rows:
+        family_html+="<div class='rc-manage-divider'><strong>Other Family Files</strong></div>"+"".join(other_rows)
+
+    if last_refresh:
+        diff=", ".join(f"{k} {v:+d}" for k,v in last_refresh["diff"].items() if v)
+        refresh_status=(last_refresh.get("status") or "success").replace("_"," ").title()
+        last_refresh_html=(
+            "<div class='rc-last-refresh'><span class='rc-manage-label'>LAST REFRESH</span>"
+            f"<div><strong>✓ &nbsp;{esc(last_refresh['imported_at'])}</strong> &nbsp; {esc(refresh_status)}</div>"
+            f"<div class='small'>{esc(diff or 'No count changes')}</div></div>"
+        )
+    else:
+        last_refresh_html="<div class='rc-last-refresh'><span class='rc-manage-label'>LAST REFRESH</span><div class='small'>No refresh recorded yet.</div></div>"
+
     return layout("Data Manager",f"""<h1>Data Manager</h1>{message}
-<div class='card'><h2>Family Files</h2><p class='meta'>The active Family File is <strong>{esc(ff['display_name'] if ff else '')}</strong>. Rename and manage Family Files here. The internal Family File identity does not change when a name is changed.</p>{family_rows}
-<h3>Add Family File</h3><form method='post' action='/family-file/add'><input name='name' placeholder='Family File name' required><input name='path' placeholder='/Users/.../Family.ged' required><input name='source_application' placeholder='Source application (e.g. Reunion)'><button>Add Family</button></form></div>
-<div class='card'><h2>Current GEDCOM</h2><div class='small'>{current}</div>
-<div class='grid' style='margin-top:15px'>{stats}</div>
-<form method='post' action='/data/reload' style='margin-top:16px'><button {disabled}>Safe Refresh Current GEDCOM</button></form><p class='small'>Builds and verifies a staged database, backs up the current database, then atomically promotes the refresh.</p></div>
-<div class='card'><h2>Safe Refresh from New GEDCOM</h2>
-<p class='meta'>Enter the full path to a Reunion GEDCOM export. Companion rebuilds imported data in a staging database, validates it, backs up the working database, and only then replaces it.</p>
-<form class='search' method='post' action='/data/import'>
-<input name='path' placeholder='/Users/.../Family.ged'><button>Safe Refresh</button></form></div>
-{crawler_html}
-<div class='card'><h2>Import History</h2>{history or '<p>No Companion import history yet.</p>'}{history_pager}</div>""",active="manage")
+<style>
+.rc-manage-section{{padding:16px;margin-bottom:16px}}.rc-manage-section h2{{margin:0 0 2px}}.rc-manage-section>.meta{{margin:0 0 10px}}
+.rc-manage-row{{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;margin-top:8px}}.rc-manage-row .small{{margin-top:2px}}
+.rc-manage-actions{{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}}.rc-manage-actions form{{margin:0}}.rc-danger-outline{{border-color:#d9a4a4!important;color:#6e2727!important;background:#fff!important}}
+.rc-manage-divider{{margin:0 14px;padding:10px 0 2px;border-bottom:1px solid var(--line);font-size:13px}}.rc-inline-details{{position:relative}}.rc-inline-details summary{{cursor:pointer;list-style:none;padding:8px 2px}}.rc-inline-details summary::-webkit-details-marker{{display:none}}.rc-rename-form{{position:absolute;right:0;top:34px;z-index:3;display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 4px 16px #0002}}.rc-rename-form input{{min-width:220px}}
+.rc-add-family{{margin-top:10px;text-align:right}}.rc-add-family summary{{cursor:pointer;list-style:none;font-weight:600}}.rc-add-family summary::-webkit-details-marker{{display:none}}.rc-add-family form{{display:flex;gap:8px;margin-top:10px}}.rc-add-family input{{min-width:0;flex:1}}
+.rc-gedcom-box{{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:10px}}.rc-gedcom-head{{padding:12px 14px}}.rc-gedcom-stats{{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}.rc-manage-stat{{text-align:center;padding:10px 5px;border-right:1px solid var(--line)}}.rc-manage-stat:last-child{{border-right:0}}.rc-manage-stat strong{{display:block;font-size:20px}}.rc-manage-stat span{{font-size:11px;color:var(--muted)}}
+.rc-gedcom-action{{display:flex;align-items:center;gap:14px;padding:12px 14px}}.rc-gedcom-action form{{margin:0}}.rc-change-gedcom{{padding:0 14px 12px}}.rc-change-gedcom summary{{cursor:pointer;font-weight:650}}.rc-change-gedcom form{{display:flex;gap:8px;margin-top:9px}}.rc-change-gedcom input{{flex:1}}.rc-last-refresh{{border-top:1px solid var(--line);padding:10px 14px}}.rc-manage-label{{display:block;font-size:9px;font-weight:750;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}}
+.rc-manage-subhead{{font-size:13px;margin:12px 0 6px}}.rc-manage-list{{border:1px solid var(--line);border-radius:8px;overflow:hidden}}.rc-manage-activity{{display:grid;grid-template-columns:52px 1fr 2fr;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);align-items:center}}.rc-manage-activity:last-child{{border-bottom:0}}
+@media(max-width:900px){{.rc-gedcom-stats{{grid-template-columns:repeat(4,1fr)}}.rc-manage-stat{{border-bottom:1px solid var(--line)}}.rc-manage-row{{align-items:flex-start;flex-direction:column}}.rc-manage-actions{{justify-content:flex-start}}}}
+</style>
+<div class='card rc-manage-section'><h2>Family Files</h2><p class='meta'>Choose and maintain the Family Files managed by Companion.</p>{family_html}
+<details class='rc-add-family'><summary>＋ Add Family File</summary><form method='post' action='/family-file/add'><input name='name' placeholder='Family File name' required><input name='path' placeholder='/Users/.../Family.ged' required><input name='source_application' placeholder='Source application (e.g. Reunion)'><button>Add Family</button></form></details></div>
+<div class='card rc-manage-section'><h2>Reunion GEDCOM</h2><p class='meta'>Refresh the active Family File from its current or a different Reunion GEDCOM export.</p>
+<div class='rc-gedcom-box'><div class='rc-gedcom-head'><strong>{current_name}</strong><div class='small'>{current}</div></div><div class='rc-gedcom-stats'>{stats}</div>
+<div class='rc-gedcom-action'><form method='post' action='/data/reload'><button {disabled}>Safe Refresh GEDCOM</button></form><span class='small'>Builds and verifies a staged database, backs up the current database, then atomically promotes the refresh.</span></div>
+<details class='rc-change-gedcom'><summary>Choose Different GEDCOM…</summary><form method='post' action='/data/import'><input name='path' placeholder='/Users/.../Family.ged' required><button class='secondary'>Refresh This GEDCOM</button></form></details>{last_refresh_html}</div></div>
+{crawler_html}""",active="manage")
 
 def quality_page(db):
     q=quick_wins(db)
@@ -1233,6 +1242,13 @@ def book_scope_page(db,start_pid,query=None,msg=""):
         except ValueError as e:
             return layout("Family-history Book Scope",body+f"<div class='card error'>{esc(str(e))}</div>",dict(start),"publish")
         selected=(set(int(x) for x in saved_settings.get('selected_family_ids',[])) if loaded_config else set(scope['primary_family_ids']))
+        terminal_scope_ids={ch['id'] for e in scope['entries'] for ch in children(db,e.family_id) if not spouse_families(db,ch['id'])}
+        if loaded_config and 'selected_individual_ids' in saved_settings:
+            selected_individuals={int(x) for x in saved_settings.get('selected_individual_ids',[])}
+        else:
+            # Terminal individuals are opt-in. They may occur throughout a large
+            # family tree, so visibility must not imply report inclusion.
+            selected_individuals=set()
         try:
             branch_order_start_family_id=int(saved_settings.get('branch_order_start_family_id') or 0) or None
         except Exception:
@@ -1249,19 +1265,26 @@ def book_scope_page(db,start_pid,query=None,msg=""):
             badge=" <span class='badge good'>Paternal path</span>" if entry.on_primary_path else " <span class='badge info'>Chart only</span>"
             descendants=child_entries.get(entry.family_id,[])
             child_rows=children(db,entry.family_id)
+            terminal_children=[ch for ch in child_rows if not spouse_families(db,ch['id'])]
             child_context=''
             if child_rows:
                 child_prefix='Children: ' if entry.on_primary_path else 'Children shown in chart: '
                 child_context="<span class='meta family-selector-children'>"+child_prefix+esc(', '.join(ch['display_name'] for ch in child_rows))+"</span>"
             control=f"<label class='family-selector-label'><input type='checkbox' name='family_{entry.family_id}' value='1'{checked}> <strong>{esc(title)}</strong>{badge}{child_context}</label>"
-            if not descendants:
+            terminal_html=''.join(
+                "<div class='family-selector-individual'><label class='family-selector-label'><input type='checkbox' name='individual_"
+                +str(ch['id'])+"' value='1'"+(" checked" if ch['id'] in selected_individuals else "")+"> <strong>"
+                +esc(ch['display_name'])+"</strong> <span class='badge neutral'>Individual — no family branch</span></label></div>"
+                for ch in terminal_children
+            )
+            if not descendants and not terminal_html:
                 return "<div class='family-selector-leaf'>"+control+"</div>"
             # Show one family level at a time. Only the root starts open; the
             # user deliberately opens the next family level when needed. This
             # keeps sibling families visible together instead of letting the
             # paternal route push them far down the page.
             open_attr=' open' if entry.depth==0 else ''
-            nested=''.join(family_selector_node(ch) for ch in descendants)
+            nested=''.join(family_selector_node(ch) for ch in descendants)+terminal_html
             return f"<details class='family-selector-branch'{open_attr}><summary>{control}</summary><div class='family-selector-level'>{nested}</div></details>"
 
         roots=child_entries.get(None,[])
@@ -1279,7 +1302,7 @@ def book_scope_page(db,start_pid,query=None,msg=""):
             "<select name='branch_order_start_family_id'>"+''.join(ordering_options)+"</select></div>"
         )
         config_editor=_configuration_editor(loaded_config).replace("__CONFIG_SAVE_PATH__",f"/report-config/family-history/{start_pid}/save")
-        body+=f"<style>.family-selector-branch,.family-selector-leaf{{border-top:1px solid #e5e5e5}}.family-selector-branch summary{{cursor:pointer;padding:10px 0;list-style-position:outside}}.family-selector-leaf{{padding:10px 0}}.family-selector-level{{margin-left:22px}}.family-selector-label{{cursor:pointer;display:block}}.family-selector-children{{display:block;margin-left:24px;margin-top:2px}}.family-ordering-control{{margin-top:18px;padding-top:14px;border-top:1px solid #ddd}}details.family-selector-branch>summary::marker{{color:#667}}</style><div class='card'><h2>2. Choose family chapters</h2><p class='meta'>Open only the branches you want to inspect. Ticking a family gives it its own chapter; opening a branch does not include it. The paternal path to {esc(endpoint['display_name'] if endpoint else str(end_pid))} is selected automatically. Other families stay visible in family context but do not become chapters unless you tick them.</p><form class='scope-publish-form' method='post' action='/publish/person/{start_pid}/scoped-book'><input type='hidden' name='endpoint' value='{end_pid}'>{rows}{ordering_control}{config_editor}<div style='margin-top:16px'><button name='format' value='PDF'>Create Print-ready PDF</button> <button class='secondary' name='format' value='HTML'>Create HTML</button></div></form><div id='scope-publish-progress' class='publishing-activity' style='display:none;margin-top:16px'><style>@keyframes rc-scope-spin{{to{{transform:rotate(360deg)}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-scope-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}</style><strong><span class='rc-spinner' aria-hidden='true'></span>Creating family history report…</strong><p class='meta'>Companion is assembling the selected families, narrative, charts and media. This can take a little while.</p></div><script>document.querySelectorAll('.scope-publish-form').forEach(function(f){{f.addEventListener('submit',function(e){{var s=e.submitter;if(s&&s.name&&s.value){{var h=document.createElement('input');h.type='hidden';h.name=s.name;h.value=s.value;h.className='submitted-format';f.appendChild(h);}}if(s&&s.name==='format'){{document.getElementById('scope-publish-progress').style.display='block';f.querySelectorAll('button').forEach(function(b){{b.disabled=true;}});}}}});}});</script></div>"
+        body+=f"<style>.family-selector-branch,.family-selector-leaf{{border-top:1px solid #e5e5e5}}.family-selector-branch summary{{cursor:pointer;padding:10px 0;list-style-position:outside}}.family-selector-leaf{{padding:10px 0}}.family-selector-level{{margin-left:22px}}.family-selector-label{{cursor:pointer;display:block}}.family-selector-children{{display:block;margin-left:24px;margin-top:2px}}.family-selector-individual{{padding:10px 0;border-top:1px solid #e5e5e5;color:var(--text)}}.family-selector-individual-marker{{display:inline-block;width:18px;color:#667}}.badge.neutral{{background:#f0f0ed;color:#555}}.family-ordering-control{{margin-top:18px;padding-top:14px;border-top:1px solid #ddd}}details.family-selector-branch>summary::marker{{color:#667}}</style><div class='card'><h2>2. Choose family chapters</h2><p class='meta'>Open only the branches you want to inspect. Ticking a family gives it its own chapter; terminal children without a family branch have their own checkbox. Remember: opening a branch does not include it. The paternal path to {esc(endpoint['display_name'] if endpoint else str(end_pid))} is selected automatically. Other families stay visible in family context but do not become chapters unless you tick them.</p><form class='scope-publish-form' method='post' action='/publish/person/{start_pid}/scoped-book'><input type='hidden' name='endpoint' value='{end_pid}'>{rows}{ordering_control}{config_editor}<div style='margin-top:16px'><button name='format' value='PDF'>Create Print-ready PDF</button> <button class='secondary' name='format' value='HTML'>Create HTML</button></div></form><div id='scope-publish-progress' class='publishing-activity' style='display:none;margin-top:16px'><style>@keyframes rc-scope-spin{{to{{transform:rotate(360deg)}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-scope-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}</style><strong><span class='rc-spinner' aria-hidden='true'></span>Creating family history report…</strong><p class='meta'>Companion is assembling the selected families, narrative, charts and media. This can take a little while.</p></div><script>document.querySelectorAll('.scope-publish-form').forEach(function(f){{f.addEventListener('submit',function(e){{var s=e.submitter;if(s&&s.name&&s.value){{var h=document.createElement('input');h.type='hidden';h.name=s.name;h.value=s.value;h.className='submitted-format';f.appendChild(h);}}if(s&&s.name==='format'){{document.getElementById('scope-publish-progress').style.display='block';f.querySelectorAll('button').forEach(function(b){{b.disabled=true;}});}}}});}});</script></div>"
         body+="<div class='card'><h2>Spouse context rule</h2><p class='meta'>For families on the primary path, the incoming spouse receives a chart-only family context. Direct ancestors may be shown; siblings may show partner/marriage and children; those branches stop at the children and never become chapters automatically.</p></div>"
     return layout("Family-history Book Scope",body,dict(start),"publish")
 
@@ -2030,6 +2053,7 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                         pid=int(m.group(1))
                         end_pid=int(form.get('endpoint','0') or 0)
                         chosen=sorted(int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('family_') and v=='1')
+                        chosen_individuals=sorted(int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('individual_') and v=='1')
                         fmt=(form.get('config_format') or 'PDF').upper()
                         if fmt not in {'PDF','HTML'}:
                             fmt='PDF'
@@ -2040,7 +2064,7 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                         branch_order_start_family_id=int(form.get('branch_order_start_family_id','0') or 0) or None
                         saved_id=save_report_configuration(
                             db,'family_history',pid,form.get('config_name',''),
-                            {'endpoint':end_pid,'selected_family_ids':chosen,'format':fmt,
+                            {'endpoint':end_pid,'selected_family_ids':chosen,'selected_individual_ids':chosen_individuals,'format':fmt,
                              'branch_order_start_family_id':branch_order_start_family_id},
                             config_id=config_id,
                         )
@@ -2093,11 +2117,12 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     if m:
                         pid=int(m.group(1));end_pid=int(form.get('endpoint','0') or 0)
                         chosen={int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('family_') and v=='1'}
+                        chosen_individuals={int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('individual_') and v=='1'}
                         branch_order_start_family_id=int(form.get('branch_order_start_family_id','0') or 0) or None
                         scope=build_scope(db,pid,end_pid,4,chosen,False,branch_order_start_family_id)
                         row=db.execute("SELECT display_name FROM people WHERE id=?",(pid,)).fetchone()
                         fmt=(form.get('format') or 'PDF').upper()
-                        p=scoped_book_output(db,pid,end_pid,scope['selected_family_ids'],row['display_name'],fmt,4,False,branch_order_start_family_id)
+                        p=scoped_book_output(db,pid,end_pid,scope['selected_family_ids'],row['display_name'],fmt,4,False,branch_order_start_family_id,chosen_individuals)
                         self.send_html(book_scope_page(db,pid,{'endpoint':str(end_pid)},f"Published: {p}"))
                         return
 

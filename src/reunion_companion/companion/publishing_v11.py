@@ -788,6 +788,16 @@ def _family_title(db,family_id):
     h,w=family_partners(db,family_id)
     return " and ".join(x["display_name"] for x in (h,w) if x) or f"Family {family_id}"
 
+def _terminal_child_ids(db,family_id):
+    """Children who never form a recorded spouse family.
+
+    Family-history scope is family-based for branch/chapter selection, but a
+    child must not disappear merely because they never married or otherwise
+    formed a family record.  These people are terminal individuals in the
+    parent family chapter.
+    """
+    return [ch["id"] for ch in children(db,family_id) if not spouse_families(db,ch["id"])]
+
 def _family_title_html(db,family_id):
     h,w=family_partners(db,family_id)
     if h and w:
@@ -820,7 +830,7 @@ def _chapter_sources(db,family_id,h,w):
     return sorted(src.values(),key=lambda s:int(source_number(s)) if source_number(s).isdigit() else 10**9)
 
 def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_generations=4,
-                        chapter_anchor=None,person_anchors=None,main_line_pid=None):
+                        chapter_anchor=None,person_anchors=None,main_line_pid=None,selected_individual_ids=None):
     o=family_overview(db,family_id);h=o["husband"];w=o["wife"];f=o["family"]
     family_names=_family_title(db,family_id)
     person_anchors=person_anchors or {}
@@ -843,6 +853,15 @@ def family_chapter_body(db,family_id,output_html,theme=DEFAULT_THEME,descendant_
 
     if h:P.append(_person_section(db,h["id"],output_html,person_anchors.get(h["id"])))
     if w:P.append(_person_section(db,w["id"],output_html,person_anchors.get(w["id"])))
+    # A child without a spouse/family record has no later family chapter that
+    # can carry their life material.  Keep them in the report as a terminal
+    # individual in their parents' chapter instead of silently dropping them.
+    terminal_ids=_terminal_child_ids(db,family_id)
+    if selected_individual_ids is not None:
+        selected_set=set(selected_individual_ids)
+        terminal_ids=[pid for pid in terminal_ids if pid in selected_set]
+    for child_pid in terminal_ids:
+        P.append(_person_section(db,child_pid,output_html,person_anchors.get(child_pid)))
 
     surfaced={m["id"] for m in o["wedding_photos"]+o["marriage_documents"]}
     extra=[m for m in family_media(db,family_id) if m["id"] not in surfaced]
@@ -910,7 +929,7 @@ def book_family_ids(db,start_pid,generations=4,end_pid=None,selected_family_ids=
     walk(start_pid,0)
     return out
 
-def _book_maps(db,fam_ids):
+def _book_maps(db,fam_ids,selected_individual_ids=None):
     chapter_anchor={fid:f"chapter-{i+1}" for i,fid in enumerate(fam_ids)}
     person_anchor={}
     person_chapter={}
@@ -927,6 +946,20 @@ def _book_maps(db,fam_ids):
                     if e["place_text"]:
                         places[e["place_text"]].append(chapter_anchor[fid])
                 for s in person_sources(db,p["id"]):all_sources[s["id"]]=s
+        # Terminal children do not own a family chapter, so anchor and index
+        # them against their parents' chapter.
+        terminal_ids=_terminal_child_ids(db,fid)
+        if selected_individual_ids is not None:
+            selected_set=set(selected_individual_ids)
+            terminal_ids=[pid for pid in terminal_ids if pid in selected_set]
+        for pid in terminal_ids:
+            if pid not in person_anchor:
+                person_anchor[pid]=f"person-{pid}"
+                person_chapter[pid]=chapter_anchor[fid]
+            for e in person_events(db,pid):
+                if e["place_text"]:
+                    places[e["place_text"]].append(chapter_anchor[fid])
+            for s in person_sources(db,pid):all_sources[s["id"]]=s
         for s in family_sources(db,fid):all_sources[s["id"]]=s
     return chapter_anchor,person_anchor,person_chapter,all_sources,places
 
@@ -965,7 +998,7 @@ def _source_index(sources):
     P.append("</ol></section>")
     return "".join(P)
 
-def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
+def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None,selected_individual_ids=None):
     start=db.execute("SELECT * FROM people WHERE id=?",(start_pid,)).fetchone()
     scope=None
     if end_pid is not None or selected_family_ids is not None:
@@ -974,7 +1007,7 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pi
         fam_ids=scope['selected_family_ids']
     else:
         fam_ids=book_family_ids(db,start_pid,generations)
-    chapter_anchor,person_anchor,person_chapter,sources,places=_book_maps(db,fam_ids)
+    chapter_anchor,person_anchor,person_chapter,sources,places=_book_maps(db,fam_ids,selected_individual_ids)
 
     P=["<!doctype html><html><head><meta charset='utf-8'>",
        f"<title>{esc(start['display_name'])} — Family History</title>",
@@ -995,9 +1028,17 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pi
             if p and p["id"] not in anchored:
                 local[p["id"]]=person_anchor[p["id"]]
                 anchored.add(p["id"])
+        terminal_ids=_terminal_child_ids(db,fid)
+        if selected_individual_ids is not None:
+            selected_set=set(selected_individual_ids)
+            terminal_ids=[pid for pid in terminal_ids if pid in selected_set]
+        for child_pid in terminal_ids:
+            if child_pid not in anchored:
+                local[child_pid]=person_anchor[child_pid]
+                anchored.add(child_pid)
         P.append(f"<section class='chapter'><div class='chapter-kicker'>Chapter {i}</div>")
         main_line_pid=scope['main_line_by_family'].get(fid) if scope else None
-        P.append(family_chapter_body(db,fid,output_html,theme,generations,chapter_anchor[fid],local,main_line_pid))
+        P.append(family_chapter_body(db,fid,output_html,theme,generations,chapter_anchor[fid],local,main_line_pid,selected_individual_ids))
         P.append("</section>")
 
     P.append(_person_index(db,person_anchor,person_chapter))
@@ -1006,11 +1047,11 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pi
     P.append("</body></html>")
     return "".join(P)
 
-def write_book(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
+def write_book(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None,selected_individual_ids=None):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     p=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.html")
     p.parent.mkdir(parents=True,exist_ok=True)
-    p.write_text(book_html(db,start_pid,p,generations,theme,end_pid,selected_family_ids,paternal_path_last,branch_order_start_family_id),encoding="utf-8")
+    p.write_text(book_html(db,start_pid,p,generations,theme,end_pid,selected_family_ids,paternal_path_last,branch_order_start_family_id,selected_individual_ids),encoding="utf-8")
     return p
 
 def export_pdf_from_html(html_path,pdf_path=None):
@@ -1031,7 +1072,7 @@ def export_pdf_from_html(html_path,pdf_path=None):
     HTML(filename=str(html_path),base_url=str(html_path.parent)).write_pdf(str(pdf_path))
     return pdf_path
 
-def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None):
+def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_pid=None,selected_family_ids=None,paternal_path_last=False,branch_order_start_family_id=None,selected_individual_ids=None):
     name=db.execute("SELECT display_name FROM people WHERE id=?",(start_pid,)).fetchone()["display_name"]
     pdf=Path(path).expanduser() if path else default_report_dir()/(slug(name)+"_Professional_Family_History.pdf")
     pdf.parent.mkdir(parents=True,exist_ok=True)
@@ -1039,7 +1080,9 @@ def write_book_pdf(db,start_pid,path=None,generations=4,theme=DEFAULT_THEME,end_
     # Keep them outside the report directory and remove them automatically after rendering.
     with tempfile.TemporaryDirectory(prefix="reunion-companion-pdf-") as td:
         html=Path(td)/(pdf.stem+".html")
-        if branch_order_start_family_id is not None:
+        if selected_individual_ids is not None:
+            write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids,paternal_path_last,branch_order_start_family_id,selected_individual_ids)
+        elif branch_order_start_family_id is not None:
             write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids,paternal_path_last,branch_order_start_family_id)
         elif paternal_path_last:
             write_book(db,start_pid,html,generations,theme,end_pid,selected_family_ids,paternal_path_last)

@@ -303,3 +303,11 @@
 - Corrected an obsolete historical regression assertion that still required the deliberately removed Biography Sources block.
 - Preserves the consolidated end-of-book Source Index requirement.
 - No production behaviour changes from CORRECTED-8C.
+
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.11.2 — Manage Page Layout Consolidation
+- Reorganised Data Manager into compact Family Files, Reunion GEDCOM, and Ryerson Crawler sections.
+- Consolidated current/new GEDCOM refresh controls and dataset statistics into one Reunion GEDCOM panel.
+- Moved paginated Import History beneath the GEDCOM section and collapsed it by default while preserving all history and paging.
+- Reduced persistent Family File form clutter by revealing Add/Rename controls only when needed.
+- Preserved existing Family File, safe refresh, Ryerson crawler, and recent activity behaviour.
