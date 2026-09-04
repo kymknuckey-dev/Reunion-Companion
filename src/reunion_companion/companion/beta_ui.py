@@ -661,6 +661,37 @@ def _ryerson_recent_activity(db,limit=3):
     items.sort(key=lambda x:x.get("at") or "",reverse=True)
     return items[:max(0,int(limit))]
 
+def _ryerson_retry_status(run,now=None):
+    """Human-readable retry state using the crawler's persisted eligibility time."""
+    from datetime import datetime, timezone
+    value=run.get("next_retry_at")
+    waiting=int(run.get("retry_wait") or 0)
+    if not value:
+        return "Next retry: None pending" if not waiting else "Next retry: Pending"
+    try:
+        text=str(value).strip()
+        if text.endswith("Z"):
+            text=text[:-1]+"+00:00"
+        due=datetime.fromisoformat(text)
+        if due.tzinfo is None:
+            due=due.replace(tzinfo=timezone.utc)
+        now=now or datetime.now(timezone.utc)
+        if now.tzinfo is None:
+            now=now.replace(tzinfo=timezone.utc)
+        seconds=max(0,int((due.astimezone(timezone.utc)-now.astimezone(timezone.utc)).total_seconds()))
+        if seconds < 60:
+            relative="in less than 1 min"
+        elif seconds < 3600:
+            minutes=(seconds+59)//60
+            relative=f"in {minutes} min"
+        else:
+            hours=seconds//3600
+            minutes=(seconds%3600)//60
+            relative=f"in {hours} hr"+(f" {minutes} min" if minutes else "")
+        return f"Next retry: {due.astimezone().strftime('%H:%M')} · {relative}"
+    except Exception:
+        return f"Next retry: {value}"
+
 def data_page(db,msg="",import_page=1):
     from .external_research_runner import runner_status
     from .ryerson_targeted_bootstrap import targeted_status
@@ -692,6 +723,7 @@ def data_page(db,msg="",import_page=1):
         "<p class='meta'>External death and funeral notice research from the Ryerson Index. The normal crawler uses surname + first given name.</p>"
         f"<div class='rc-manage-row'><div><strong>Ryerson Crawler — {crawler_state}</strong>"
         f"<div class='small'>Death research: Queued {run['queued']} · Waiting {run['retry_wait']} · Searching {run.get('searching',0)} · Findings {run['findings']} · No finding {run['no_match']} · Failed {run['failed']} · Total {run.get('total',0)}</div>"
+        f"<div class='small rc-manage-retry'>{esc(_ryerson_retry_status(run))}</div>"
         f"<div class='small'>Family-wide (paused): Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div></div>"
     )
     if crawler_enabled:

@@ -291,3 +291,10 @@ Family History person biographies no longer render a repeated Sources block. Sou
 - Import History nested/collapsed within Reunion GEDCOM; paging retained.
 - Add/Rename Family File controls are progressive disclosure rather than permanent form rows.
 - Full supplied-source regression run: 1275 passed; one unrelated pre-existing Ryerson hash-pagination test failure reproduced on baseline.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.2 — Ryerson Retry Timing Visibility
+- Added the actual next eligible Death Research retry time to Manage > Ryerson Crawler.
+- Retry timing is derived from persisted retry queue state and the source-wide cooldown; the later gate wins.
+- Shows local clock time plus relative wait when a retry is pending, otherwise `Next retry: None pending`.
+- Recent crawler activity remains reserved for completed/past activity.
+

@@ -48,12 +48,22 @@ def pause_runner(db):
 def runner_status(db):
     summary=scan_summary(db,SOURCE_RYERSON); c=summary["counts"]
     until=source_cooldown_until(db)
+    retry_row=db.execute(
+        "SELECT MIN(next_retry_at) next_retry_at FROM companion_external_scan_queue "
+        "WHERE source_name=? AND status='retry_wait' AND next_retry_at IS NOT NULL",
+        (SOURCE_RYERSON,),
+    ).fetchone()
+    retry_at=_parse_iso(retry_row["next_retry_at"]) if retry_row and retry_row["next_retry_at"] else None
+    # The source-wide cooldown gates every queued retry.  If it extends beyond
+    # the earliest row retry, the cooldown is the actual next eligible time.
+    next_retry=max((x for x in (retry_at,until) if x is not None),default=None)
     return {"enabled":runner_enabled(db),"source_name":SOURCE_RYERSON,"total":summary["total"],
             "queued":c.get("queued",0),"searching":c.get("searching",0),
             "retry_wait":c.get("retry_wait",0),"findings":c.get("succeeded_with_findings",0),
             "no_match":c.get("succeeded_no_match",0),"failed":c.get("failed",0),
             "source_waiting":source_waiting(db),
-            "cooldown_until":until.isoformat() if until else None}
+            "cooldown_until":until.isoformat() if until else None,
+            "next_retry_at":next_retry.isoformat() if next_retry else None}
 
 def runner_tick(db,search_fn,now=None):
     from datetime import datetime, timezone

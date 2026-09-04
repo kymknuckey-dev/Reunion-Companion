@@ -311,3 +311,10 @@
 - Moved paginated Import History beneath the GEDCOM section and collapsed it by default while preserving all history and paging.
 - Reduced persistent Family File form clutter by revealing Add/Rename controls only when needed.
 - Preserved existing Family File, safe refresh, Ryerson crawler, and recent activity behaviour.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.2 — Ryerson Retry Timing Visibility
+- Added the actual next eligible Death Research retry time to Manage > Ryerson Crawler.
+- Retry timing is derived from persisted retry queue state and the source-wide cooldown; the later gate wins.
+- Shows local clock time plus relative wait when a retry is pending, otherwise `Next retry: None pending`.
+- Recent crawler activity remains reserved for completed/past activity.
+

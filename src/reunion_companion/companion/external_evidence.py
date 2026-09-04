@@ -147,6 +147,38 @@ def add_external_evidence(
     if match_confidence is not None and not 0 <= int(match_confidence) <= 100:
         raise ValueError("match_confidence must be between 0 and 100")
 
+    # External searches can legitimately rediscover the same source record on a
+    # later pass (for example a grouped ``Bickle, John`` Ryerson search).  The
+    # evidence store must therefore be idempotent for a person/source finding.
+    # Keep this guard here, at the common insertion boundary, so every ingest
+    # path (runner, harvest cross-match and browser assist) gets the same
+    # protection.  Existing databases may already contain duplicates, so this
+    # deliberately does not rely on adding a UNIQUE index during migration.
+    existing = db.execute(
+        """
+        SELECT id
+        FROM companion_external_evidence
+        WHERE person_gedcom_xref=?
+          AND source_name=?
+          AND COALESCE(source_record_name,'')=COALESCE(?, '')
+          AND COALESCE(event_type,'')=COALESCE(?, '')
+          AND COALESCE(event_date,'')=COALESCE(?, '')
+          AND COALESCE(publication_date,'')=COALESCE(?, '')
+        ORDER BY id
+        LIMIT 1
+        """,
+        (
+            person_gedcom_xref,
+            source_name,
+            source_record_name,
+            event_type,
+            event_date,
+            publication_date,
+        ),
+    ).fetchone()
+    if existing:
+        return int(existing["id"])
+
     cur = db.execute(
         """
         INSERT INTO companion_external_evidence(
