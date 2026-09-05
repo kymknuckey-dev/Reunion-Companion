@@ -136,12 +136,19 @@ def pagination_links() -> list[dict]:
     seen=set()
 
     for item in data.get("links",[]):
-        href=urljoin(current,item.get("href") or "")
+        raw_href=item.get("href") or ""
+        href=urljoin(current,raw_href)
         text=(item.get("text") or "").strip()
-        if not text or not href or href==current:
+        if not text or not href:
             continue
 
-        if href.endswith("#"):
+        # Ryerson's pager can expose several distinct JavaScript controls with
+        # the same literal # target. urljoin normalises that fragment away, so
+        # preserve the raw control identity before comparing the resolved URL.
+        shared_hash=raw_href.rstrip().endswith("#")
+        if href==current and not shared_hash:
+            continue
+        if shared_hash:
             identity=("control",text.casefold())
         else:
             identity=("href",href)

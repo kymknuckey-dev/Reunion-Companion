@@ -248,3 +248,69 @@ def external_evidence_with_current_person(db, person_gedcom_xref: str):
         """,
         (person_gedcom_xref,),
     ).fetchall()
+
+
+def consolidate_external_evidence_duplicates(db) -> int:
+    """Collapse historical exact duplicate evidence and preserve review state.
+
+    The canonical evidence row is the oldest id. Discovery review references are
+    repointed before duplicate evidence is deleted; review lifecycle consolidation
+    then ensures the same logical source record is represented only once.
+    """
+    from .ryerson_discovery_review import ensure_discovery_review_schema, consolidate_discovery_record_identity
+
+    ensure_external_evidence(db)
+    ensure_discovery_review_schema(db)
+    groups=db.execute(
+        """
+        SELECT person_gedcom_xref,source_name,COALESCE(source_record_name,'') record_name,
+               COALESCE(event_type,'') event_type,COALESCE(event_date,'') event_date,
+               COALESCE(publication_date,'') publication_date,COUNT(*) n
+        FROM companion_external_evidence
+        GROUP BY person_gedcom_xref,source_name,record_name,event_type,event_date,publication_date
+        HAVING COUNT(*)>1
+        """
+    ).fetchall()
+    removed=0
+    for g in groups:
+        rows=db.execute(
+            """SELECT id FROM companion_external_evidence
+               WHERE person_gedcom_xref=? AND source_name=?
+                 AND COALESCE(source_record_name,'')=? AND COALESCE(event_type,'')=?
+                 AND COALESCE(event_date,'')=? AND COALESCE(publication_date,'')=?
+               ORDER BY id""",
+            (g['person_gedcom_xref'],g['source_name'],g['record_name'],g['event_type'],g['event_date'],g['publication_date']),
+        ).fetchall()
+        canonical=int(rows[0]['id'])
+        for row in rows[1:]:
+            duplicate=int(row['id'])
+            old_key=f"ryerson:{duplicate}"
+            new_key=f"ryerson:{canonical}"
+            review_rows=db.execute(
+                "SELECT * FROM companion_external_discovery_review WHERE source_name='Ryerson' AND external_record_key=? ORDER BY id",
+                (old_key,),
+            ).fetchall()
+            for review in review_rows:
+                targets=db.execute(
+                    """SELECT * FROM companion_external_discovery_review
+                       WHERE person_id=? AND source_name='Ryerson' AND external_record_key=? ORDER BY id""",
+                    (review['person_id'],new_key),
+                ).fetchall()
+                if targets:
+                    from .ryerson_discovery_review import _preferred_discovery_row
+                    preferred=_preferred_discovery_row(list(targets)+[review])
+                    target=targets[0]
+                    if int(preferred['id'])==int(review['id']):
+                        db.execute(
+                            """UPDATE companion_external_discovery_review SET state=?,decision_note=?,reviewed_at=?,confirmed_at=?,updated_at=?,match_confidence=? WHERE id=?""",
+                            (review['state'],review['decision_note'],review['reviewed_at'],review['confirmed_at'],review['updated_at'],review['match_confidence'],target['id']),
+                        )
+                    db.execute("DELETE FROM companion_external_discovery_review WHERE id=?",(review['id'],))
+                else:
+                    db.execute("UPDATE companion_external_discovery_review SET external_record_key=? WHERE id=?",(new_key,review['id']))
+            db.execute("DELETE FROM companion_external_evidence WHERE id=?",(duplicate,))
+            removed+=1
+        consolidate_discovery_record_identity(db)
+    if removed:
+        db.commit()
+    return removed

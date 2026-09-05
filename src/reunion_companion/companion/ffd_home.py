@@ -31,30 +31,19 @@ def _research_credit(db):
     return dict(row) if row else None
 
 def featured_people(db,limit=6):
-    # Prefer recently explored people, then fill with stable family-history suggestions.
-    result=[];seen=set()
-    try:
-        db.execute("CREATE TABLE IF NOT EXISTS companion_recent_people(person_id INTEGER PRIMARY KEY, viewed_at TEXT NOT NULL)")
-        rows=db.execute("SELECT p.id,p.display_name,p.gedcom_xref FROM companion_recent_people r JOIN people p ON p.id=r.person_id ORDER BY r.viewed_at DESC LIMIT ?",(limit,)).fetchall()
-        for row in rows: result.append(dict(row));seen.add(row["id"])
-    except Exception: pass
-    preferred=["Mervyn Neil Knuckey","Elaine Fay Cox","Victor Alexander Knuckey","Charles Henry James Knuckey","James Knuckey","Lionel George Waight"]
-    for name in preferred:
-        if len(result)>=limit:break
-        row=db.execute("SELECT id,display_name,gedcom_xref FROM people WHERE lower(display_name)=lower(?) LIMIT 1",(name,)).fetchone()
-        if row and row["id"] not in seen: result.append(dict(row));seen.add(row["id"])
-    if len(result)<limit:
-        for row in db.execute("SELECT id,display_name,gedcom_xref FROM people ORDER BY id LIMIT ?",(limit*3,)).fetchall():
-            if row["id"] not in seen:result.append(dict(row));seen.add(row["id"])
-            if len(result)>=limit:break
-    return result[:limit]
+    # Compatibility wrapper: Home now treats these as Recently Explored People.
+    from .person_recents import recently_explored_people
+    return recently_explored_people(db,limit)
 
-def home_body(db,quality_counts,presentation=False):
+def home_body(db,quality_counts,presentation=False,search_html="",q=""):
     from .family_files import active_family_file
     ff=active_family_file(db)
     family_title=ff['display_name'] if ff else 'Family History'
     credit=_research_credit(db)
-    people=featured_people(db)
+    from .person_bookmarks import bookmarked_people
+    from .person_recents import recently_explored_people
+    bookmarks=bookmarked_people(db)
+    recents=recently_explored_people(db,6)
 
     stats={
         "People":_count(db,"people"),
@@ -71,19 +60,28 @@ def home_body(db,quality_counts,presentation=False):
         "<p class='ffd-credit'>Family history research preserved in Reunion</p>"
     )
 
-    people_rows=[]
-    for p in people:
-        code_html="" if presentation else f"<span class='meta'> {esc(p.get('gedcom_xref'))}</span>"
-        people_rows.append(
-            f"<a class='result' href='/person/{p['id']}'>"
-            f"<strong>{esc(p['display_name'])}</strong>{code_html}</a>"
-        )
-    people_html="".join(people_rows) or "<p class='meta'>No people are currently available.</p>"
+    def person_rows(people, *, bookmarked=False):
+        rows=[]
+        for p in people:
+            events=db.execute("SELECT event_type,date_text FROM events WHERE person_id=? ORDER BY id",(p["id"],)).fetchall()
+            birth=death=""
+            for e in events:
+                year=re.search(r"\b(1[5-9]\d{2}|20\d{2}|2100)\b",e["date_text"] or "")
+                if not year: continue
+                kind=(e["event_type"] or "").casefold()
+                if kind=="birth" and not birth: birth=year.group(1)
+                if kind=="death" and not death: death=year.group(1)
+            lifespan=(f"{birth}–{death}" if birth and death else (f"Born {birth}" if birth else (f"Died {death}" if death else "")))
+            identity=f" <span class='meta'>({esc(lifespan)})</span>" if lifespan else ""
+            star="★ " if bookmarked else ""
+            rows.append(f"<a class='result' href='/person/{p['id']}'><strong>{star}{esc(p['display_name'])}</strong>{identity}</a>")
+        return "".join(rows)
 
-    stats_html="".join(
-        f"<div class='card ffd-stat'><div class='meta'>{esc(label)}</div>"
-        f"<div class='kpi'>{value:,}</div></div>"
-        for label,value in stats.items()
+    recents_html=person_rows(recents) or "<p class='meta'>People you open will appear here for quick return.</p>"
+    bookmarks_html=person_rows(bookmarks,bookmarked=True) or "<p class='meta'>No people bookmarked yet. Open a person and choose Bookmark person.</p>"
+
+    stats_html=" · ".join(
+        f"<strong>{value:,}</strong> {esc(label)}" for label,value in stats.items()
     )
 
     quality_total=sum(quality_counts.values())
@@ -106,36 +104,29 @@ def home_body(db,quality_counts,presentation=False):
   <h1>{esc(family_title)}</h1>
   {credit_html}
   <p class='ffd-intro'>
-    Explore the people, families, evidence and publications preserved in Reunion,
-    and continue building on that research.
+    Find a person, or ask a question about someone in your family history.
+    Explore the people, families, evidence and publications preserved in Reunion.
   </p>
-  <form class='ffd-search' action='/search' method='get'>
+  <form class='ffd-search' action='/' method='get'>
     <input id='family-search' name='q'
-      placeholder='Search the family history — e.g. Mervyn, Waight, Hunter'>
+      placeholder='Search the family history — e.g. Mervyn, or Where did Susan Knuckey live?'>
     <button>Search</button>
   </form>
 </section>
 
-<!-- RC1.0.13.1: Explore/Research launch cards moved to persistent sidebar navigation. -->
-<div class='ffd-two'>
-  <div>
-    <h2 class='ffd-section'>Family to Explore</h2>
-    <div class='card'>{people_html}</div>
-  </div>
-  <div>
-    <h2 class='ffd-section'>A Living Family History</h2>
-    <div class='card'>
-      <p>
-        Reunion remains the authoritative family-history record.
-        Companion helps make that work easier to explore, review and share.
-      </p>
-      <p class='meta'>Research preserved for future generations.</p>
-    </div>
-  </div>
+{search_html}
+<div class='ffd-home-people-grid'>
+  <section>
+    <h2 class='ffd-section'>Recently Explored People</h2>
+    <div class='card ffd-home-people-card rc-recent-people'>{recents_html}</div>
+  </section>
+  <section>
+    <h2 class='ffd-section'>Bookmarked People</h2>
+    <div class='card ffd-home-people-card rc-bookmarked-people'>{bookmarks_html}</div>
+  </section>
 </div>
 
-<h2 class='ffd-section'>Family History at a Glance</h2>
-<div class='grid'>{stats_html}</div>
+<div class='ffd-home-glance'><span class='meta'>Family History at a Glance</span> · {stats_html}</div>
 """
 
 def _discovery_group_rank(person):

@@ -15,7 +15,8 @@ def test_presentation_global_navigation_before_person_selection(tmp_path,monkeyp
     db=connect(tmp_path/"x.sqlite3")
     monkeypatch.setattr(ui,"presentation_mode_enabled",lambda: True)
     html=ui.home(db)
-    assert ">Home</a>" in html and ">Search</a>" in html
+    assert ">Home</a>" in html
+    assert ">Search</a>" not in html
     assert ">Reports</a>" in html
     assert ">Priorities</a>" not in html
     assert ">Improve</a>" not in html
@@ -57,7 +58,7 @@ def test_home_no_longer_renders_duplicate_explore_launch_cards(tmp_path):
     assert "Research Priorities" not in research
     assert "Improve the Data" not in research
     assert "Data Manager" not in research
-    assert "Family to Explore" in presentation
+    assert "Family to Explore" not in presentation
     assert "Family History at a Glance" in research
     db.close()
 

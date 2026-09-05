@@ -39,7 +39,7 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Aria
 header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;gap:20px;align-items:center}.rc-header-utilities{margin-left:auto;display:flex;align-items:center;gap:12px}.rc-header-utilities form{margin:0!important}.rc-mode-control{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#f7f7f4}.rc-mode-control form{display:flex}.rc-mode-option{border:0;border-radius:0;padding:8px 12px;background:transparent;color:var(--text);font-weight:650}.rc-mode-option+*{border-left:1px solid var(--line)}.rc-mode-option.active{background:var(--brand-navy);color:#fff}.rc-mode-control form+form{border-left:1px solid var(--line)}
 header a{color:var(--text);text-decoration:none;margin-right:13px}
 .rc-brand{display:flex;align-items:center;gap:9px;margin-right:0!important;color:var(--brand-navy)!important;font-weight:700;white-space:nowrap}.rc-header-mark{width:46px;height:46px;object-fit:contain;display:block}.rc-brand span{font-size:20px}
-main{max-width:1200px;margin:24px auto;padding:0 22px 60px}.rc-app-shell{display:grid;grid-template-columns:190px minmax(0,1fr);max-width:1510px;margin:0 auto}.rc-sidebar{padding:24px 12px 60px 14px;border-right:1px solid var(--line);min-height:calc(100vh - 69px);background:#f7f7f4}.rc-sidebar nav{position:sticky;top:94px;display:flex;flex-direction:column;gap:2px}.rc-sidebar a{position:relative;display:block;padding:8px 11px;border-radius:7px;text-decoration:none;color:#30332f;font-size:14px;line-height:1.3}.rc-sidebar a:hover{background:#e9ece5}.rc-sidebar a.active{background:#e7edf3!important;color:var(--brand-navy)!important;font-weight:700}.rc-sidebar a.active:before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--brand-navy)}.rc-sidebar .rc-side-section{margin:18px 11px 6px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:10.5px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.rc-sidebar .rc-side-section-first{margin-top:0;padding-top:0;border-top:0}.rc-sidebar .rc-person-section{white-space:normal;line-height:1.3;color:var(--brand-navy);text-transform:none;letter-spacing:0;font-size:12px}.rc-sidebar .rc-person-section .rc-side-person-label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}.rc-sidebar .rc-person-section .rc-side-person-name{display:block;font-weight:750;color:var(--brand-navy)}.rc-content{min-width:0}.rc-app-shell main{margin:24px auto}.rc-person-strip{display:flex;align-items:center;gap:15px;margin:0 0 18px;padding:5px 2px 14px;border-bottom:1px solid var(--line)}.rc-person-strip img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}.rc-person-strip .rc-person-eyebrow{font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}.rc-person-strip .rc-person-name{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:600;line-height:1.05}.rc-person-strip .rc-person-life{color:var(--muted);margin-top:4px}.rc-person-strip .rc-person-context{font-size:13px;color:var(--muted);margin-top:3px}
+main{max-width:1200px;margin:24px auto;padding:0 22px 60px}.rc-app-shell{display:grid;grid-template-columns:190px minmax(0,1fr);max-width:1510px;margin:0 auto}.rc-sidebar{padding:24px 12px 60px 14px;border-right:1px solid var(--line);min-height:calc(100vh - 69px);background:#f7f7f4}.rc-sidebar nav{position:sticky;top:94px;display:flex;flex-direction:column;gap:2px}.rc-sidebar a{position:relative;display:block;padding:8px 11px;border-radius:7px;text-decoration:none;color:#30332f;font-size:14px;line-height:1.3}.rc-sidebar a:hover{background:#e9ece5}.rc-sidebar a.active{background:#e7edf3!important;color:var(--brand-navy)!important;font-weight:700}.rc-sidebar a.active:before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:3px;background:var(--brand-navy)}.rc-sidebar .rc-side-section{margin:18px 11px 6px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:10.5px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}.rc-sidebar .rc-side-section-first{margin-top:0;padding-top:0;border-top:0}.rc-sidebar .rc-person-section{white-space:normal;line-height:1.3;color:var(--brand-navy);text-transform:none;letter-spacing:0;font-size:12px}.rc-sidebar .rc-person-section .rc-side-person-label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}.rc-sidebar .rc-person-section .rc-side-person-name{display:block;font-weight:750;color:var(--brand-navy)}.rc-content{min-width:0}.rc-app-shell main{margin:24px auto}.rc-person-strip{display:flex;align-items:center;gap:15px;margin:0 0 18px;padding:5px 2px 14px;border-bottom:1px solid var(--line)}.rc-person-strip img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}.rc-person-strip .rc-person-eyebrow{font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}.rc-person-strip .rc-person-name{font-family:Georgia,"Times New Roman",serif;font-size:25px;font-weight:600;line-height:1.05}.rc-person-strip .rc-person-life{color:var(--muted);margin-top:4px}.rc-person-strip .rc-person-context{font-size:13px;color:var(--muted);margin-top:3px}.rc-person-strip-copy{min-width:0}.rc-person-bookmark-form{margin:0 0 0 auto}.rc-person-bookmark{display:flex;align-items:center;gap:7px;background:#fff;color:var(--brand-navy);border:1px solid var(--line);padding:8px 10px;white-space:nowrap}.rc-person-bookmark:hover,.rc-person-bookmark.active{background:#f4f7fa;border-color:#9aa8b4}.rc-person-bookmark:first-letter{font-size:18px}.rc-person-bookmark span{font-size:12px;font-weight:650}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
 .search{display:flex;gap:10px}
@@ -226,13 +226,14 @@ pre.note{white-space:pre-wrap;font-family:inherit}
 .ffd-explore p{line-height:1.45}
 .ffd-two{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
 .ffd-stat .kpi{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:34px}
+.ffd-home-search-results{margin-top:24px}.ffd-home-search-results .card{margin-bottom:0}.ffd-home-people-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}.ffd-home-people-grid .ffd-section{margin-top:27px}.ffd-home-people-card{min-height:132px}.ffd-home-people-card .result:first-child{padding-top:2px}.ffd-home-people-card .result:last-child{border-bottom:0;padding-bottom:2px}.ffd-home-glance{margin:28px 0 6px;padding:14px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}.ffd-home-glance strong{color:var(--text);font-weight:700}
 .ffd-page-heading{margin:8px 0 22px}
 .ffd-page-heading h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:36px}
 @media(max-width:900px){.rc-app-shell{grid-template-columns:1fr}.rc-sidebar{display:none}}
 @media(max-width:760px){
   .ffd-hero{padding:28px 22px}.ffd-hero h1{font-size:34px}
   .ffd-search{display:block}.ffd-search input,.ffd-search button{width:100%;margin-bottom:8px}
-  .ffd-two{grid-template-columns:1fr}
+  .ffd-two,.ffd-home-people-grid{grid-template-columns:1fr}
 }
 
 /* FFD Build 1.2 — Presentation Mode */
@@ -536,7 +537,7 @@ def layout(title,body,person_context=None,active=None):
 </style></head><body>
 <header class='rc-utility-header'>{header_brand_html()}<div class='rc-header-utilities'>{family_selector_html()}{mode_control_html(presentation)}</div></header>
 <div class='rc-app-shell'><aside class='rc-sidebar'><nav>
-<div class='rc-side-section rc-side-section-first'>Companion</div><a{home_cls} href='/'>Home</a><a{search_cls} href='/search'>Search</a>
+<div class='rc-side-section rc-side-section-first'>Companion</div><a{home_cls} href='/'>Home</a>
 {global_nav}{contextual}{output}
 </nav></aside><div class='rc-content'><main>{body}</main></div></div></body></html>"""
 
@@ -551,18 +552,30 @@ def error_page(title,error):
 <pre class='note'>{esc(error)}</pre>
 <p class='meta'>The local UI remains running. Return to <a href='/'>Search</a>.</p></div>""")
 
-def home(db,q=""):
-    # Compatibility: an old-style /?q= search still works.
-    if q:
-        return search_page(db,q)
-    return layout("Home",ffd_home_body(db,quick_wins(db),presentation_mode_enabled()),active="home")
+def _home_search_results(db,q="",selected_identity_id=None):
+    q=(q or "").strip()
+    if not q:
+        return ""
+    question_result=None
+    if is_natural_language_question(q) and interpret_question(q)!="unknown":
+        question_result=answer_question(db,q,None,selected_identity_id,global_identity_discovery=True)
+    # Reuse the established Search renderer so identity discovery, ambiguity,
+    # natural-language answers and person links retain their existing behaviour.
+    rendered=ffd_search_body(db,q,search_people,presentation_mode_enabled(),question_result)
+    marker="<div class='card'>\n  <h2>Results</h2>"
+    pos=rendered.find(marker)
+    if pos >= 0:
+        rendered=rendered[pos:]
+    return f"<div class='ffd-home-search-results'>{rendered}</div>"
+
+def home(db,q="",selected_identity_id=None):
+    results=_home_search_results(db,q,selected_identity_id)
+    body=ffd_home_body(db,quick_wins(db),presentation_mode_enabled(),results,q)
+    return layout("Home",body,active="home")
 
 def search_page(db,q="",selected_identity_id=None):
-    question_result=None
-    if q and is_natural_language_question(q) and interpret_question(q)!="unknown":
-        # Legacy pipeline shape: answer_question(db,q,None,selected_identity_id)
-        question_result=answer_question(db,q,None,selected_identity_id,global_identity_discovery=True)
-    return layout("Search",ffd_search_body(db,q,search_people,presentation_mode_enabled(),question_result),active="search")
+    # Backward-compatible route: old bookmarks/links now land in merged Home.
+    return home(db,q,selected_identity_id)
 
 def _delete_confirmation(db, workspace_id):
     life=deletion_lifecycle(db,workspace_id)
@@ -961,10 +974,10 @@ def person_page(db,pid,tab="overview",view="story",presentation_override=None):
         return layout("Not found","<div class='card'><h1>Person not found</h1></div>")
     p=w["person"];presentation=presentation_mode_enabled() if presentation_override is None else bool(presentation_override)
     try:
-        from datetime import datetime
-        db.execute("CREATE TABLE IF NOT EXISTS companion_recent_people(person_id INTEGER PRIMARY KEY, viewed_at TEXT NOT NULL)")
-        db.execute("INSERT INTO companion_recent_people(person_id,viewed_at) VALUES(?,?) ON CONFLICT(person_id) DO UPDATE SET viewed_at=excluded.viewed_at",(pid,datetime.now().isoformat(timespec="seconds")));db.commit()
-    except Exception: pass
+        from .person_recents import record_recent_person
+        record_recent_person(db,pid)
+    except Exception:
+        pass
 
     if tab=="family-chart":
         return layout("Interactive Family Chart",person_identity_header(db,w,presentation)+family_chart_body(db,pid,view),p,"family-chart")
@@ -1454,7 +1467,7 @@ def _priority_recent_event_keys(db,person_ids):
 
 
 def _priority_sort_choice_html(sort_mode,focus,section):
-    recent_active=" active" if sort_mode=="recent" else ""
+    recent_active=" active" if sort_mode!="relationship" else ""
     relationship_active=" active" if sort_mode=="relationship" else ""
     focus_suffix=f"&focus={focus['id']}" if focus else ""
     return (
@@ -1484,7 +1497,7 @@ def research_page(db,query=None):
 
     def _priority_pager(name,page,pages,total):
         keep=[]
-        for key in ("sort","focus","evidence_page","research_page","quality_page"):
+        for key in ("sort","focus","evidence_page","evidence_group","research_page","quality_page"):
             if key!=name and query.get(key):
                 keep.append(f"{key}={quote(str(query.get(key)))}")
         def href(target):
@@ -1517,7 +1530,7 @@ def research_page(db,query=None):
     rows=db.execute(sql).fetchall()
 
     from .research_priority import resolve_focus_person, sort_rows_by_focus, death_research_semantics
-    sort_mode="relationship" if query.get("sort")=="relationship" else "recent"
+    sort_mode=query.get("sort") if query.get("sort") in ("recent","relationship","value") else "recent"
     research_focus=resolve_focus_person(db,query.get("focus"))
     if sort_mode=="relationship" and research_focus:
         death_rows,_death_relationships=sort_rows_by_focus(db,research_focus["id"],death_rows,"person_id")
@@ -1552,7 +1565,7 @@ def research_page(db,query=None):
     if sort_mode=="relationship" and research_focus:
         body+=f"<div class='card'><strong>Relationship anchor: {esc(research_focus['display_name'])}</strong><div class='small'>External evidence, research needs and data quality are prioritised outward through this person's recorded family network.</div></div>"
 
-    body+=render_discovery_review_section(db,focus_id=research_focus["id"] if research_focus else None,sort_mode=sort_mode,page=_page_number("evidence_page"))
+    body+=render_discovery_review_section(db,focus_id=research_focus["id"] if research_focus else None,sort_mode=sort_mode,page=_page_number("evidence_page"),group=query.get("evidence_group"))
 
     death_count=len(death_rows)
     body+="<div class='card'><h2>Research Needed</h2>"
@@ -1658,12 +1671,10 @@ def publishing_page(db,msg="", origin_pid=None):
 
 def render_get(db,path,query=None):
     query=query or {}
-    if path=="/":
-        return home(db,query.get("q",""))
-    if path=="/search":
+    if path in ("/", "/search"):
         try: selected=int(query.get("selected","0") or 0) or None
         except Exception: selected=None
-        return search_page(db,query.get("q",""),selected)
+        return home(db,query.get("q",""),selected)
     if path=="/data":
         try: import_page=int(query.get("import_page","1") or 1)
         except Exception: import_page=1
@@ -1681,7 +1692,7 @@ def render_get(db,path,query=None):
         try: person_id=int(query.get("person","0") or 0) or None
         except Exception: person_id=None
         state=query.get("state","new")
-        return layout("External Evidence Review",render_discovery_workspace(db,state=state,page=page_no,page_size=20,person_id=person_id,focus_id=query.get("focus"),sort_mode=query.get("sort","recent")),active="priorities")
+        return layout("External Evidence Review",render_discovery_workspace(db,state=state,page=page_no,page_size=20,person_id=person_id,focus_id=query.get("focus"),sort_mode=query.get("sort","recent"),group=query.get("group")),active="priorities")
     if path=="/places":
         return places_page(db)
     if path=="/sources":
@@ -1844,6 +1855,19 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     self.send_json({"status":"success","message":f"Imported {count} people. Reunion Companion is ready."})
                 except Exception as e:
                     traceback.print_exc(); self.send_json({"status":"error","message":f"{type(e).__name__}: {e}"},400)
+                return
+
+            m=re.match(r"^/person/(\d+)/bookmark$",u.path)
+            if m:
+                db=connect(db_path)
+                try:
+                    from .person_bookmarks import set_bookmarked
+                    pid=int(m.group(1))
+                    set_bookmarked(db,pid,str(form.get("bookmarked","1")).casefold() in {"1","true","yes","on"})
+                    tab=(form.get("tab") or "overview").strip()
+                    self.send_html(person_page(db,pid,tab))
+                finally:
+                    db.close()
                 return
 
             if u.path=="/presentation/mode":

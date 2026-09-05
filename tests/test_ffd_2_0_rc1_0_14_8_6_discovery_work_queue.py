@@ -28,7 +28,7 @@ def test_dashboard_does_not_render_thousands_of_discoveries(tmp_path):
     html=render_discovery_review_section(db,preview_people=5)
     assert "New: 90" in html
     assert "Review New Discoveries" in html
-    assert "Showing 5 of 30 people" in html
+    assert "Page 1 of 6 · 30 people in Unassessed" in html
 
 
 def test_workspace_groups_multiple_candidates_by_person(tmp_path):

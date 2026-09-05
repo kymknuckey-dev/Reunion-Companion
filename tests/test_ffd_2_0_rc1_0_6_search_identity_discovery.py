@@ -73,7 +73,7 @@ def test_search_page_invites_names_or_questions(tmp_path,monkeypatch):
     monkeypatch.setenv('HOME',str(tmp_path))
     db=connect(tmp_path/'x.sqlite3');seed(db)
     html=render_get(db,'/search',{})
-    assert 'Search the Family' in html
+    assert 'Search the family history' in html
     assert 'Find a person, or ask a question about someone in your family history.' in html
     assert 'Where did Susan Knuckey live?' in html
 

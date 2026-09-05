@@ -10,7 +10,8 @@ def test_global_nav_is_companion_sidebar_before_person_selection(tmp_path):
     html=render_get(db,'/reports',{})
     sidebar=html.split("<aside class='rc-sidebar'>",1)[1].split('</aside>',1)[0]
     assert "href='/'>Home</a>" in sidebar
-    assert "href='/search'>Search</a>" in sidebar
+    # RC1.0.14...12.5 merged Search into Home; no separate sidebar destination.
+    assert "href='/search'>Search</a>" not in sidebar
     assert "href='/questions'>Ask</a>" not in sidebar
     assert "href='/search'>People</a>" not in sidebar
     assert "href='/research'>Research</a>" not in sidebar

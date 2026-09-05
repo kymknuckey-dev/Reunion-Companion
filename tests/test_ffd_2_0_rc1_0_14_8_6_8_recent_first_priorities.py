@@ -26,10 +26,10 @@ def test_dashboard_defaults_to_recent_and_shows_twelve(tmp_path):
     for pid in range(1,14):
         add_person(db,pid,f"Person {pid}"); discovery(db,pid,f"death:01JAN{2000+pid}")
     html=render_discovery_review_section(db)
-    assert "Most recent first" in html
+    assert "Grouped by match quality" in html
     assert "Most Recent" in html
     assert "Relationship" in html
-    assert "Showing 12 of 13 people" in html
+    assert "Page 1 of 2 · 13 people in Unassessed" in html
 
 
 def test_relationship_mode_exposes_anchor_picker(tmp_path):

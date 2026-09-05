@@ -298,3 +298,32 @@ Family History person biographies no longer render a repeated Sources block. Sou
 - Shows local clock time plus relative wait when a retry is pending, otherwise `Next retry: None pending`.
 - Recent crawler activity remains reserved for completed/past activity.
 
+
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.2 — Discovery Match Grading
+External Evidence Review now visually grades identity-match strength while preserving the established Most Recent and Relationship navigation modes. Existing matcher reasons are reused; no AI/fuzzy interpretation is introduced.
+
+### FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.4 — Grouped Review & Birth Match Correction
+- Rolled External Evidence Review into collapsible match-quality groups.
+- Preserved newest-to-oldest ordering inside each group in Most Recent mode.
+- Moved Previous/Next navigation inside the group being paged.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.5 — Review-State Match Grading Correction
+
+- Apply discovery match grading to candidates in the currently viewed review state, not only `new` discoveries.
+- Confirmed Complete, Waiting for Reunion, Deferred, Already Known and Rejected views retain Strong/Supported/Possible/Low Specificity grading when linked Ryerson identity evidence is available.
+- Preserve New review grouping behaviour unchanged.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.6 — External Evidence Identity & Review Lifecycle Correction
+- Makes external source-record identity independent of proposed_fact_key so parser reinterpretation cannot resurrect completed evidence as New.
+- Consolidates historical review rows for the same person/source/external record while preserving the strongest reviewed lifecycle state.
+- Consolidates historical exact external-evidence duplicates and repoints review state to the canonical evidence record.
+- Prevents recurrence through the common remember_discovery and add_external_evidence boundaries.
+- Preserves Discovery Match Grading across review states.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.7 — Home Recent & Bookmarked Navigation
+- Restores Recently Explored People to Home as the primary quick-return navigation aid.
+- Places Recently Explored People left of Bookmarked People in a responsive two-column Home layout.
+- Records six distinct recently opened people, newest first; revisiting a person moves them to the top without duplication.
+- Uses active-Family-File + GEDCOM xref identity so recents survive Safe Refresh GEDCOM replacements and do not leak across family files.
+- Preserves existing Bookmarked People behaviour and lifespan identity context.

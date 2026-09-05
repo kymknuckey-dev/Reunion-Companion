@@ -71,7 +71,9 @@ def _person_lifespan(db,pid):
     return _lifespan(_events(db,pid))
 
 def person_identity_header(db,w,presentation=True):
+    from .person_bookmarks import is_bookmarked
     p=w["person"];events=_events(db,p["id"]);family=_family(db,p["id"]);portrait=_portrait(w)
+    bookmarked=is_bookmarked(db,p["id"])
     img=f"<img src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
     context=[]
     parents=[name for _,label,name,_ in family if label in ("Father","Mother","Parent")]
@@ -80,7 +82,10 @@ def person_identity_header(db,w,presentation=True):
     if spouse: context.append("Spouse: "+spouse)
     context_html=f"<div class='rc-person-context'>{esc(' · '.join(context))}</div>" if context else ""
     xref="" if presentation else f"<div class='small'>{esc(p.get('gedcom_xref'))}</div>"
-    return f"<section class='rc-person-strip'>{img}<div><div class='rc-person-eyebrow'>Current person</div><div class='rc-person-name'>{esc(p['display_name'])}</div><div class='rc-person-life'>{esc(_lifespan(events))}</div>{context_html}{xref}</div></section>"
+    bookmark_label="Remove bookmark" if bookmarked else "Bookmark person"
+    bookmark_symbol="★" if bookmarked else "☆"
+    bookmark=f"<form class='rc-person-bookmark-form' method='post' action='/person/{p['id']}/bookmark'><input type='hidden' name='bookmarked' value='{0 if bookmarked else 1}'><button class='rc-person-bookmark {'active' if bookmarked else ''}' type='submit' title='{bookmark_label}' aria-label='{bookmark_label}'>{bookmark_symbol}<span>{bookmark_label}</span></button></form>"
+    return f"<section class='rc-person-strip'>{img}<div class='rc-person-strip-copy'><div class='rc-person-eyebrow'>Current person</div><div class='rc-person-name'>{esc(p['display_name'])}</div><div class='rc-person-life'>{esc(_lifespan(events))}</div>{context_html}{xref}</div>{bookmark}</section>"
 
 def _event_icon(kind):
     k=(kind or '').casefold()

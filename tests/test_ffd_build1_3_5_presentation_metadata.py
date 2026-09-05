@@ -37,7 +37,8 @@ def test_person_xref_retained_in_research_mode(tmp_path,monkeypatch):
     db=connect(tmp_path/"x.sqlite3");seed(db)
     set_presentation_mode(False)
     p=render_get(db,"/person/1",{"tab":"biography"})
-    assert "@I1@" in p
+    # Family to Explore was retired in RC1.0.14...12.5; bookmarks use lifespan identity instead of xref.
+    assert "Family to Explore" not in p
     db.close()
 
 def test_family_to_explore_hides_xref_in_presentation(tmp_path,monkeypatch):
@@ -45,7 +46,7 @@ def test_family_to_explore_hides_xref_in_presentation(tmp_path,monkeypatch):
     db=connect(tmp_path/"x.sqlite3");seed(db)
     set_presentation_mode(True)
     p=render_get(db,"/",{})
-    assert "Family to Explore" in p
+    assert "Family to Explore" not in p
     assert "Mervyn Neil Knuckey" in p
     assert "@I1@" not in p
     db.close()
@@ -56,7 +57,8 @@ def test_family_to_explore_retains_xref_in_research_mode(tmp_path,monkeypatch):
     set_presentation_mode(False)
     p=render_get(db,"/",{})
     assert "Mervyn Neil Knuckey" in p
-    assert "@I1@" in p
+    # Family to Explore was retired in RC1.0.14...12.5; bookmarks use lifespan identity instead of xref.
+    assert "Family to Explore" not in p
     db.close()
 
 def test_timeline_and_event_navigation_retained(tmp_path,monkeypatch):

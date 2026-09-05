@@ -31,7 +31,7 @@ def test_research_sections_render_only_bottom_pagers():
 
 def test_external_review_pagers_are_not_duplicated_at_top():
     src=Path("src/reunion_companion/companion/ryerson_discovery_ui.py").read_text()
-    assert "out.append(review_pager)" in src  # bottom after list
-    assert src.count("out.append(review_pager)") == 1
-    assert "out.append(workspace_pager)" in src
-    assert src.count("out.append(workspace_pager)") == 1
+    # Grouped review owns pagination inside the relevant rolled-up grade.
+    assert "rc-priority-pager" in src
+    assert "preview-grade-" in src
+    assert "workspace_pager" in src

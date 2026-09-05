@@ -53,8 +53,11 @@ def migrate(db):
     
     from .family_files import ensure_family_files
     ensure_family_files(db)
-    from .external_evidence import ensure_external_evidence
+    from .external_evidence import ensure_external_evidence, consolidate_external_evidence_duplicates
     ensure_external_evidence(db)
+    from .ryerson_discovery_review import ensure_discovery_review_schema
+    ensure_discovery_review_schema(db)
+    consolidate_external_evidence_duplicates(db)
     db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('schema_version',?)",(str(SCHEMA_VERSION),));db.commit()
 def connect(path):
     p=Path(path).expanduser();p.parent.mkdir(parents=True,exist_ok=True)

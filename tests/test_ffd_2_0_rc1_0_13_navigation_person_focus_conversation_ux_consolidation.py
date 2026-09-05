@@ -37,7 +37,7 @@ def test_home_and_search_get_clear_active_states(tmp_path):
     h=home(db)
     s=search_page(db)
     assert "class='active' href='/'>Home</a>" in h
-    assert "class='active' href='/search'>Search</a>" in s
+    assert "class='active' href='/'>Home</a>" in s
     db.close()
 
 

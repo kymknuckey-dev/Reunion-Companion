@@ -17,6 +17,57 @@ def _utcnow():
     return datetime.now(timezone.utc).isoformat()
 
 
+_STATE_PRIORITY = {
+    "new": 0,
+    "ineligible": 1,
+    "deferred": 2,
+    "waiting_for_reunion": 3,
+    "already_known": 4,
+    "rejected": 4,
+    "confirmed_complete": 5,
+}
+
+def _preferred_discovery_row(rows):
+    """Choose the durable decision when one external record has legacy duplicates."""
+    return max(
+        rows,
+        key=lambda row: (
+            _STATE_PRIORITY.get(str(row["state"] or "new"), 0),
+            str(row["reviewed_at"] or ""),
+            str(row["updated_at"] or ""),
+            -int(row["id"]),
+        ),
+    )
+
+def consolidate_discovery_record_identity(db):
+    """Collapse legacy review rows to one lifecycle per external source record.
+
+    proposed_fact_key is an interpretation of a source record and can change as
+    parsing improves.  It must not be part of the durable review identity.
+    """
+    groups=db.execute(
+        """SELECT person_id,source_name,external_record_key,COUNT(*) n
+           FROM companion_external_discovery_review
+           GROUP BY person_id,source_name,external_record_key HAVING COUNT(*)>1"""
+    ).fetchall()
+    removed=0
+    for group in groups:
+        rows=db.execute(
+            """SELECT * FROM companion_external_discovery_review
+               WHERE person_id=? AND source_name=? AND external_record_key=? ORDER BY id""",
+            (group["person_id"],group["source_name"],group["external_record_key"]),
+        ).fetchall()
+        keep=_preferred_discovery_row(rows)
+        for row in rows:
+            if int(row["id"])==int(keep["id"]):
+                continue
+            db.execute("DELETE FROM companion_external_discovery_review WHERE id=?",(row["id"],))
+            removed+=1
+    if removed:
+        db.commit()
+    return removed
+
+
 def ensure_discovery_review_schema(db):
     db.execute(
         """
@@ -40,6 +91,7 @@ def ensure_discovery_review_schema(db):
     columns={row["name"] for row in db.execute("PRAGMA table_info(companion_external_discovery_review)").fetchall()}
     if "match_confidence" not in columns:
         db.execute("ALTER TABLE companion_external_discovery_review ADD COLUMN match_confidence INTEGER")
+    consolidate_discovery_record_identity(db)
     db.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_external_discovery_review_state
@@ -62,67 +114,35 @@ def remember_discovery(
     ensure_discovery_review_schema(db)
     stamp = now or _utcnow()
 
-    db.execute(
-        """
-        INSERT OR IGNORE INTO companion_external_discovery_review
-        (
-            person_id,
-            source_name,
-            external_record_key,
-            proposed_fact_key,
-            match_confidence,
-            state,
-            decision_note,
-            first_seen_at,
-            updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, 'new', '', ?, ?)
-        """,
-        (
-            person_id,
-            source_name,
-            external_record_key,
-            proposed_fact_key,
-            int(match_confidence) if match_confidence is not None else None,
-            stamp,
-            stamp,
-        ),
-    )
-    if match_confidence is not None:
-        db.execute(
-            """
-            UPDATE companion_external_discovery_review
-            SET match_confidence=?
-            WHERE person_id=?
-              AND source_name=?
-              AND external_record_key=?
-              AND proposed_fact_key=?
-            """,
-            (
-                int(match_confidence),
-                person_id,
-                source_name,
-                external_record_key,
-                proposed_fact_key,
-            ),
-        )
-    db.commit()
+    existing=db.execute(
+        """SELECT * FROM companion_external_discovery_review
+           WHERE person_id=? AND source_name=? AND external_record_key=?
+           ORDER BY id LIMIT 1""",
+        (person_id,source_name,external_record_key),
+    ).fetchone()
+    if existing is not None:
+        # Parsing may reinterpret a notice (for example a publication-only
+        # notice no longer proposing a Death). Preserve the review lifecycle.
+        if match_confidence is not None:
+            db.execute(
+                "UPDATE companion_external_discovery_review SET match_confidence=?,updated_at=? WHERE id=?",
+                (int(match_confidence),stamp,existing["id"]),
+            )
+            db.commit()
+        return db.execute("SELECT * FROM companion_external_discovery_review WHERE id=?",(existing["id"],)).fetchone()
 
+    db.execute(
+        """INSERT INTO companion_external_discovery_review
+           (person_id,source_name,external_record_key,proposed_fact_key,match_confidence,state,decision_note,first_seen_at,updated_at)
+           VALUES (?,?,?,?,?,'new','',?,?)""",
+        (person_id,source_name,external_record_key,proposed_fact_key,
+         int(match_confidence) if match_confidence is not None else None,stamp,stamp),
+    )
+    db.commit()
     return db.execute(
-        """
-        SELECT *
-        FROM companion_external_discovery_review
-        WHERE person_id=?
-          AND source_name=?
-          AND external_record_key=?
-          AND proposed_fact_key=?
-        """,
-        (
-            person_id,
-            source_name,
-            external_record_key,
-            proposed_fact_key,
-        ),
+        """SELECT * FROM companion_external_discovery_review
+           WHERE person_id=? AND source_name=? AND external_record_key=? ORDER BY id LIMIT 1""",
+        (person_id,source_name,external_record_key),
     ).fetchone()
 
 

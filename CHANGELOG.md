@@ -318,3 +318,36 @@
 - Shows local clock time plus relative wait when a retry is pending, otherwise `Next retry: None pending`.
 - Recent crawler activity remains reserved for completed/past activity.
 
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.1 — Research Value Specificity Correction
+- Tightened Research Value to account for candidate-set ambiguity and recency.
+- Recent missing-Death leads are High only when the current candidate set is specific (one or two candidates).
+- Broad common-name result sets are downgraded to Needs careful review instead of appearing as High opportunity.
+- Older (>100 year) missing-Death leads are downgraded from High opportunity.
+- Exact normalized agreement with an existing unsourced Reunion Death remains the strongest High opportunity signal.
+
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.2 — Discovery Match Grading
+- Replaced the experimental Research Value sort with visual Discovery Match Grading.
+- Retained Most Recent and Relationship as the two review orderings.
+- Grades current new Ryerson candidates as Strong match, Supported match, Possible match, Low specificity, or Unassessed.
+- Birth-date agreement is the strongest deterministic identity signal; place and family-detail corroboration provide supporting evidence.
+- Candidate count expresses ambiguity but does not override one individually strong birth-date match.
+- Shows publication title as review context without treating the newspaper alone as proof of identity.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.4 — Grouped Review & Birth Match Correction
+- Group discoveries visually by match grade while retaining Most Recent and Relationship ordering within each group.
+- Place pagination controls inside each collapsible grade group.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.5 — Review-State Match Grading Correction
+
+- Apply discovery match grading to candidates in the currently viewed review state, not only `new` discoveries.
+- Confirmed Complete, Waiting for Reunion, Deferred, Already Known and Rejected views retain Strong/Supported/Possible/Low Specificity grading when linked Ryerson identity evidence is available.
+- Preserve New review grouping behaviour unchanged.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.6 — External Evidence Identity & Review Lifecycle Correction
+- Makes external source-record identity independent of proposed_fact_key so parser reinterpretation cannot resurrect completed evidence as New.
+- Consolidates historical review rows for the same person/source/external record while preserving the strongest reviewed lifecycle state.
+- Consolidates historical exact external-evidence duplicates and repoints review state to the canonical evidence record.
+- Prevents recurrence through the common remember_discovery and add_external_evidence boundaries.
+- Preserves Discovery Match Grading across review states.

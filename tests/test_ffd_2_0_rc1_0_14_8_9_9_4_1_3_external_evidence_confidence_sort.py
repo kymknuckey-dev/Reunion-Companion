@@ -29,4 +29,4 @@ def test_recent_review_prioritises_confidence_then_date():
 def test_recent_review_copy_explains_confidence_priority():
     from pathlib import Path
     text=Path("src/reunion_companion/companion/ryerson_discovery_ui.py").read_text()
-    assert "100% matches are shown before 75% matches" in text
+    assert "Grouped by match quality" in text

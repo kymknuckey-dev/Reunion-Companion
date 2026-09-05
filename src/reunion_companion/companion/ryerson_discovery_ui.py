@@ -424,6 +424,211 @@ def _format_review_date(value):
     return value.strftime("%-d %b %Y") if value else "Date not available"
 
 
+
+def _unsourced_death_rows(db, person_id):
+    return db.execute(
+        """
+        SELECT e.id,e.date_text
+        FROM events e
+        WHERE e.person_id=? AND lower(e.event_type)='death'
+          AND NOT EXISTS(SELECT 1 FROM event_sources es WHERE es.event_id=e.id)
+          AND NOT EXISTS(SELECT 1 FROM event_media em WHERE em.event_id=e.id)
+        ORDER BY e.id
+        """,
+        (int(person_id),),
+    ).fetchall()
+
+
+def _linked_ryerson_evidence(db, row):
+    key=str(row["external_record_key"] or "")
+    if str(row["source_name"] or "").casefold() != "ryerson" or not key.startswith("ryerson:"):
+        return None
+    raw=key.split(":",1)[1]
+    if not raw.isdigit():
+        return None
+    return db.execute(
+        "SELECT evidence_type,event_type,event_date,publication,publication_date,birth_date_claim,place_claim,details,match_confidence,match_reason FROM companion_external_evidence WHERE id=?",
+        (int(raw),),
+    ).fetchone()
+
+
+def research_value_assessment(db, person_id, candidates):
+    """Explain the best *currently new* research opportunity for one person.
+
+    Research Value is deliberately read-only and candidate-specific.  It rewards
+    evidence that can improve current Reunion data, while reducing the priority
+    of broad/ambiguous name matches and very old missing-fact leads.
+    """
+    from datetime import date
+    from .ryerson_discovery_assembly import _definite_date
+
+    active=list(candidates)
+    candidate_count=len(active)
+    deaths=_unsourced_death_rows(db,person_id)
+    death_dates=[(_definite_date(r["date_text"]),str(r["date_text"] or "")) for r in deaths]
+    definite_existing=[d for d,_ in death_dates if d is not None]
+    has_unsourced=bool(deaths)
+    has_any_death=db.execute(
+        "SELECT 1 FROM events WHERE person_id=? AND lower(event_type)='death' LIMIT 1",
+        (int(person_id),),
+    ).fetchone() is not None
+
+    matching=[]
+    missing_death=[]
+    conflicting=[]
+    plausible=[]
+    for row in active:
+        fact=str(row["proposed_fact_key"] or "").strip()
+        evidence=_linked_ryerson_evidence(db,row)
+        evidence_type=str(evidence["evidence_type"] or "").casefold() if evidence else ""
+        event_type=str(evidence["event_type"] or "").casefold() if evidence else ""
+        is_death_evidence=(event_type=="death" and "funeral" not in evidence_type)
+        proposed=None
+        if fact.casefold().startswith("death:"):
+            proposed=_definite_date(fact.split(":",1)[1])
+        if proposed is not None and is_death_evidence:
+            if proposed in definite_existing and has_unsourced:
+                matching.append((proposed,row))
+            elif definite_existing and proposed not in definite_existing:
+                conflicting.append((proposed,row))
+            elif not has_any_death:
+                missing_death.append((proposed,row))
+            else:
+                plausible.append(row)
+        elif evidence is not None:
+            plausible.append(row)
+
+    # A definite candidate that agrees with an existing unsourced Death is the
+    # strongest actionable case.  The exact-date agreement itself provides the
+    # specificity, even when secondary publication rows also exist.
+    if matching:
+        d,_=max(matching,key=lambda item:item[0])
+        return {"rank":0,"order":0,"level":"High opportunity","reason":"May source existing Death","detail":f"Reunion Death {_format_review_date(d)} · Ryerson Death {_format_review_date(d)} · dates agree"}
+
+    # A missing Death is useful only when the candidate set is sufficiently
+    # specific.  Broad common-name result sets must not be labelled High merely
+    # because one candidate happens to be a Death record.
+    if missing_death:
+        d,_=max(missing_death,key=lambda item:item[0])
+        age=max(0,date.today().year-d.year)
+        if age <= 100 and candidate_count <= 2:
+            return {"rank":0,"order":1,"level":"High opportunity","reason":"May fill missing Death","detail":f"Ryerson Death {_format_review_date(d)} · {candidate_count} current candidate{'s' if candidate_count != 1 else ''}"}
+        if age <= 100 and candidate_count <= 5:
+            return {"rank":1,"order":0,"level":"Potential opportunity","reason":"Missing Death has several possible matches","detail":f"Ryerson Death {_format_review_date(d)} · {candidate_count} current candidates"}
+        if age > 100 and candidate_count <= 2:
+            return {"rank":1,"order":1,"level":"Potential opportunity","reason":"Older missing Death lead","detail":f"Ryerson Death {_format_review_date(d)} · more than 100 years ago"}
+        if age <= 100:
+            return {"rank":2,"order":1,"level":"Needs careful review","reason":"Many possible Ryerson Death matches","detail":f"{candidate_count} current candidates · newest Death {_format_review_date(d)}"}
+        return {"rank":3,"order":1,"level":"Lower immediate value","reason":"Old and highly ambiguous Death lead","detail":f"{candidate_count} current candidates · Ryerson Death {_format_review_date(d)}"}
+
+    if conflicting:
+        d,_=max(conflicting,key=lambda item:item[0])
+        current=_format_review_date(definite_existing[0]) if definite_existing else "recorded date"
+        return {"rank":2,"order":0,"level":"Needs careful review","reason":"Candidate Death conflicts with Reunion","detail":f"Reunion Death {current} · candidate Death {_format_review_date(d)}"}
+    if has_unsourced and plausible:
+        return {"rank":1,"order":2,"level":"Potential opportunity","reason":"New evidence may add to an unsourced Death","detail":"No new candidate directly confirms the recorded Death date"}
+    if plausible:
+        if candidate_count > 5:
+            return {"rank":2,"order":2,"level":"Needs careful review","reason":"Broad candidate set needs disambiguation","detail":f"{candidate_count} current candidates · no specific Reunion gap yet confirmed"}
+        return {"rank":1,"order":3,"level":"Potential opportunity","reason":"New evidence may add useful context","detail":"Review the current candidate evidence for possible additions"}
+    return {"rank":3,"order":2,"level":"Lower immediate value","reason":"No obvious current Reunion gap identified","detail":"Current new candidates do not directly strengthen a detected Death gap"}
+
+
+def sort_grouped_people_research_value(grouped, db):
+    def key(item):
+        assessment=research_value_assessment(db,item[0],item[1])
+        confidence=_group_match_confidence(item[1]) or 0
+        d=_group_recent_date(item[1])
+        return (assessment["rank"],assessment.get("order",0),len(item[1]),-confidence,d is None,-d.toordinal() if d else 0,_person_name(item[1][0]).casefold(),int(item[0]))
+    return sorted(grouped,key=key)
+
+def discovery_match_assessment(db, person_id, candidates):
+    """Summarise how strongly the supplied Ryerson review candidates identify a person.
+
+    The caller supplies candidates for the active review state (New, Waiting for
+    Reunion, Confirmed Complete, and so on). Candidate-specific evidence wins over
+    person-level ambiguity.  Birth-date
+    agreement is determined directly from the current Reunion Birth event and the
+    Ryerson birth-date claim where possible, with the stored matcher reason retained
+    as a compatibility fallback.
+    """
+    from .ryerson_discovery_assembly import _definite_date
+
+    birth_rows=db.execute(
+        "SELECT date_text FROM events WHERE person_id=? AND lower(event_type)='birth' ORDER BY id",
+        (int(person_id),),
+    ).fetchall()
+    reunion_birth_dates={d for d in (_definite_date(r["date_text"]) for r in birth_rows) if d is not None}
+
+    active=list(candidates)
+    assessed=[]
+    for row in active:
+        evidence=_linked_ryerson_evidence(db,row)
+        if evidence is None:
+            continue
+        reason=str(evidence["match_reason"] or "").casefold()
+        confidence=int(evidence["match_confidence"] or row["match_confidence"] or 0)
+        claim=_definite_date(str(evidence["birth_date_claim"] or ""))
+        direct_birth_exact=claim is not None and claim in reunion_birth_dates
+        birth_exact=direct_birth_exact or "birth date exact" in reason
+        place_consistent="place consistent" in reason
+        family=[]
+        for label in ("spouse","child","parent"):
+            if f"{label} corroborated" in reason:
+                family.append(label)
+        assessed.append((birth_exact,place_consistent,bool(family),confidence,evidence,row,family))
+
+    count=len(active)
+    if not assessed:
+        return {"rank":3,"level":"Unassessed","reason":"No linked Ryerson match detail","detail":f"{count} current candidate{'s' if count != 1 else ''}"}
+
+    # Candidate-specific evidence wins over person-level ambiguity.  A person may
+    # have dozens of name candidates but still contain one exact birth-date match.
+    best=max(assessed,key=lambda x:(x[0],x[1] or x[2],x[3]))
+    birth_exact,place_consistent,family_supported,confidence,evidence,row,family=best
+    publication=str(evidence["publication"] or "").strip()
+
+    supports=[]
+    if birth_exact:
+        supports.append("Birth date agrees")
+    if place_consistent:
+        supports.append("Place agrees")
+    if family_supported:
+        supports.append("Family detail agrees")
+    if publication:
+        supports.append(f"Published in {publication}")
+
+    strong_count=sum(1 for x in assessed if x[0])
+    supported_count=sum(1 for x in assessed if (not x[0]) and (x[1] or x[2]) and x[3] >= 55)
+
+    if birth_exact:
+        prefix=(f"{strong_count} strong match{'es' if strong_count != 1 else ''} among {count}" if count > 1 else "Birth date identifies this candidate strongly")
+        detail=" · ".join([prefix]+supports)
+        return {"rank":0,"level":"Strong match","reason":"Birth date agrees","detail":detail}
+
+    if (place_consistent or family_supported) and confidence >= 55:
+        prefix=(f"{supported_count or 1} supported match{'es' if (supported_count or 1) != 1 else ''} among {count}" if count > 1 else "Supporting identity detail agrees")
+        detail=" · ".join([prefix]+supports)
+        return {"rank":1,"level":"Supported match","reason":"Supporting details agree","detail":detail}
+
+    if count > 5:
+        detail=f"{count} current candidates · name evidence only"
+        if publication:
+            detail+=f" · Best candidate published in {publication}"
+        return {"rank":3,"level":"Low specificity","reason":"Many name-based candidates","detail":detail}
+
+    detail=f"{count} current candidate{'s' if count != 1 else ''} · no birth-date or other identity corroboration yet"
+    if publication:
+        detail+=f" · Published in {publication}"
+    return {"rank":2,"level":"Possible match","reason":"Name match needs confirmation","detail":detail}
+
+
+def _match_grade_badge(assessment):
+    level=assessment.get("level","")
+    cls="good" if level=="Strong match" else "info" if level=="Supported match" else "warn"
+    return f"<span class='badge {cls}' style='float:right'>{escape(level)}</span>"
+
+
 def _review_sort_controls(people, *, sort_mode, focus):
     options={}
     if focus:
@@ -457,7 +662,7 @@ def _review_sort_controls(people, *, sort_mode, focus):
     )
 
 
-def render_discovery_review_section(db, *, preview_people=12, focus_id=None, sort_mode="recent", page=1):
+def render_discovery_review_section(db, *, preview_people=12, focus_id=None, sort_mode="recent", page=1, group=None):
     from .ryerson_discovery_review import discovery_counts
     counts=discovery_counts(db)
     focus=resolve_focus_person(db,focus_id)
@@ -480,52 +685,84 @@ def render_discovery_review_section(db, *, preview_people=12, focus_id=None, sor
 
     if counts["new"]==0:
         out.append("<p>No new person-level discoveries currently need review.</p>")
+        out.append("</div>")
+        return "".join(out)
+
+    rows=discovery_review_rows(db,state="new")
+    people=_group_people(rows)
+    sort_mode="relationship" if sort_mode=="relationship" else "recent"
+    rels={}
+    if sort_mode=="relationship" and focus:
+        people,rels=sort_grouped_people(db,focus["id"],people)
     else:
-        rows=discovery_review_rows(db,state="new")
-        people=_group_people(rows)
-        sort_mode="relationship" if sort_mode=="relationship" else "recent"
-        rels={}
-        if sort_mode=="relationship" and focus:
-            people,rels=sort_grouped_people(db,focus["id"],people)
-        else:
-            people=sort_grouped_people_recent(people,db)
-        href=f"/research/discoveries?state=new&page=1&sort={sort_mode}"+(f"&focus={focus['id']}" if focus else "")
-        out.append(f"<p><a class='button' href='{href}'>Review New Discoveries</a> <span class='small'>{counts['new']} discoveries across {len(people)} people</span></p>")
-        out.append(_review_sort_controls(people,sort_mode=sort_mode,focus=focus))
-        if sort_mode=="relationship" and focus:
-            out.append(f"<div class='topic'><strong>Relationship anchor: {escape(focus['display_name'])}</strong><div class='small'>Closest recorded family relationships are shown first.</div></div>")
-        else:
-            out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>100% matches are shown before 75% matches; within each confidence level, the newest candidate event date appears first.</div></div>")
-        out.append("<h3>Next people to review</h3>")
-        total_people=len(people)
-        total_pages=max(1,(total_people+preview_people-1)//preview_people)
-        page=max(1,min(int(page or 1),total_pages))
-        start=(page-1)*preview_people
-        page_people=people[start:start+preview_people]
-        review_pager=""
-        if total_pages>1:
-            suffix=f"&sort={sort_mode}"+(f"&focus={focus['id']}" if focus else "")
-            nav=[]
-            if page>1:
-                nav.append(f"<a class='button' href='/research?evidence_page={page-1}{suffix}'>Previous</a>")
-            nav.append(f"<span class='small'>Page {page} of {total_pages} · {total_people} people</span>")
-            if page<total_pages:
-                nav.append(f"<a class='button' href='/research?evidence_page={page+1}{suffix}'>Next</a>")
-            review_pager="<div class='rc-priority-pager'>"+" ".join(nav)+"</div>"
-        for person_id,candidates in page_people:
+        people=sort_grouped_people_recent(people,db)
+
+    href=f"/research/discoveries?state=new&page=1&sort={sort_mode}"+(f"&focus={focus['id']}" if focus else "")
+    out.append(f"<p><a class='button' href='{href}'>Review New Discoveries</a> <span class='small'>{counts['new']} discoveries across {len(people)} people</span></p>")
+    out.append(_review_sort_controls(people,sort_mode=sort_mode,focus=focus))
+    if sort_mode=="relationship" and focus:
+        out.append(f"<div class='topic'><strong>Grouped by match quality</strong><div class='small'>Within each group, closest recorded family relationships to {escape(focus['display_name'])} are shown first.</div></div>")
+    else:
+        out.append("<div class='topic'><strong>Grouped by match quality</strong><div class='small'>Strong identity matches are separated from less specific candidates. Within each group, the newest candidate date appears first.</div></div>")
+
+    grade_order=("Strong match","Supported match","Possible match","Low specificity","Unassessed")
+    grade_slug={"Strong match":"strong","Supported match":"supported","Possible match":"possible","Low specificity":"low","Unassessed":"unassessed"}
+    grade_help={
+        "Strong match":"Birth date agrees with Reunion.",
+        "Supported match":"Place or family detail supports the identity.",
+        "Possible match":"Name match still needs confirmation.",
+        "Low specificity":"Broad name-based candidate set with little identity corroboration.",
+        "Unassessed":"Linked Ryerson identity detail is not available.",
+    }
+    grouped={name:[] for name in grade_order}
+    assessments={}
+    for pid,candidates in people:
+        assessment=discovery_match_assessment(db,pid,candidates)
+        assessments[int(pid)]=assessment
+        grouped.setdefault(assessment.get("level","Unassessed"),[]).append((pid,candidates))
+
+    requested_slug=str(group or "").strip().casefold()
+    if requested_slug not in set(grade_slug.values()):
+        requested_slug="strong" if grouped.get("Strong match") else next((grade_slug[g] for g in grade_order if grouped.get(g)),"")
+
+    for level in grade_order:
+        members=grouped.get(level,[])
+        if not members:
+            continue
+        slug=grade_slug[level]
+        group_page=page if slug==requested_slug else 1
+        total=len(members)
+        pages=max(1,(total+preview_people-1)//preview_people)
+        group_page=max(1,min(group_page,pages))
+        start=(group_page-1)*preview_people
+        shown=members[start:start+preview_people]
+        open_attr=" open" if slug==requested_slug else ""
+        out.append(f"<details class='rc-review-grade-group' id='preview-grade-{slug}'{open_attr}>")
+        out.append(f"<summary class='rc-review-grade-summary'><span><strong>{escape(level)}</strong> <span class='badge'>{total} people</span></span><span class='small'>{escape(grade_help[level])}</span></summary>")
+        out.append("<div class='rc-review-person-list'>")
+        for person_id,candidates in shown:
             name=_person_name(candidates[0])
+            grade=assessments[int(person_id)]
             context=(rels.get(int(person_id),{"label":"Relationship not established"})["label"] if sort_mode=="relationship" else "Most recent candidate: "+_format_review_date(_group_recent_date(candidates)))
-            out.append(f"<a class='result' href='/person/{person_id}?tab=research'><strong>{escape(name)}</strong><span class='badge warn' style='float:right'>{len(candidates)} candidate{'s' if len(candidates)!=1 else ''}</span><span class='meta' style='display:block'>{escape(context)}</span></a>")
-        if total_pages>1:
-            shown=min(preview_people,total_people-start)
-            out.append(f"<div class='small'>Showing {shown} of {total_people} people with new discoveries.</div>")
-            out.append(review_pager)
+            count=len(candidates)
+            detail=f"{grade['detail']} · {count} candidate{'s' if count!=1 else ''} · {context}"
+            out.append(f"<a class='result' href='/person/{person_id}?tab=research'><strong>{escape(name)}</strong>{_match_grade_badge(grade)}<span class='meta' style='display:block'>{escape(detail)}</span></a>")
+        out.append("</div>")
+        if pages>1:
+            keep=f"sort={quote(sort_mode)}&evidence_group={quote(slug)}"+(f"&focus={focus['id']}" if focus else "")
+            nav=[]
+            if group_page>1:
+                nav.append(f"<a class='button' href='/research?{keep}&evidence_page={group_page-1}#preview-grade-{slug}'>Previous</a>")
+            nav.append(f"<span class='small'>Page {group_page} of {pages} · {total} people in {escape(level)}</span>")
+            if group_page<pages:
+                nav.append(f"<a class='button' href='/research?{keep}&evidence_page={group_page+1}#preview-grade-{slug}'>Next</a>")
+            out.append("<div class='rc-priority-pager'>"+" ".join(nav)+"</div>")
+        out.append("</details>")
 
     out.append("</div>")
     return "".join(out)
 
-
-def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_id=None, focus_id=None, sort_mode="recent"):
+def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_id=None, focus_id=None, sort_mode="recent", group=None):
     from .ryerson_discovery_review import discovery_counts
 
     if state not in STATE_ORDER:
@@ -547,13 +784,6 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
         people=[item for item in people if int(item[0])==int(person_id)]
         page=1
 
-    total_people=len(people)
-    total_pages=max(1,(total_people+page_size-1)//page_size)
-    if page>total_pages:
-        page=total_pages
-    start=(page-1)*page_size
-    shown=people[start:start+page_size]
-
     out=[
         "<h1>External Evidence Review</h1>",
         "<p class='meta'>Browse Ryerson discoveries by review state. Open a person to review candidates with the full Reunion and external-evidence context.</p>",
@@ -571,49 +801,110 @@ def render_discovery_workspace(db, *, state="new", page=1, page_size=20, person_
     out.append("<div class='rc-review-statebar'>"+"".join(links)+"</div></div>")
     out.append(_review_sort_controls(people,sort_mode=sort_mode,focus=focus))
     if sort_mode=="relationship" and focus:
-        out.append(f"<div class='topic'><strong>Relationship anchor: {escape(focus['display_name'])}</strong><div class='small'>Closest recorded family relationships are shown first.</div></div>")
+        out.append(f"<div class='topic'><strong>Relationship anchor: {escape(focus['display_name'])}</strong><div class='small'>Grouped by match quality; within each group, closest recorded family relationships are shown first.</div></div>")
     else:
-        out.append("<div class='topic'><strong>Most recent first</strong><div class='small'>100% matches are shown before 75% matches; within each confidence level, the newest candidate event date appears first.</div></div>")
-    out.append(f"<div class='small rc-review-page-summary'>Showing {len(shown)} of {total_people} people · Page {page} of {total_pages}</div>")
-    workspace_pager=""
-    if total_pages>1:
-        nav=[]
-        suffix=f"&sort={quote(sort_mode)}"+(f"&focus={focus['id']}" if focus else "")
-        if page>1:
-            nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page-1}{suffix}'>Previous</a>")
-        nav.append(f"<span class='small'>Page {page} of {total_pages} · {total_people} people</span>")
-        if page<total_pages:
-            nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={page+1}{suffix}'>Next</a>")
-        workspace_pager="<div class='rc-priority-pager'>"+" ".join(nav)+"</div>"
+        out.append("<div class='topic'><strong>Grouped by match quality</strong><div class='small'>Strong identity matches are separated from less specific candidates. Within each group, the newest candidate event date appears first.</div></div>")
+    state_summary=(f"{len(people)} people in this review state" if state=="ineligible" else f"{len(people)} people with {STATE_LABELS.get(state,state)} discoveries")
+    out.append(f"<div class='small rc-review-page-summary'>{escape(state_summary)}</div>")
     out.append("</div>")
 
-    if not shown:
+    if not people:
         out.append("<div class='card'><p>No discoveries in this review state.</p></div>")
         return "".join(out)
 
-    out.append("<div class='card rc-review-person-list'>")
-    for pid,candidates in shown:
-        context=person_reunion_context(db,pid)
-        relation=(rels.get(int(pid),{"label":"Relationship not established"}) if sort_mode=="relationship" else {"label":"Most recent candidate: "+_format_review_date(_group_recent_date(candidates))})
-        count=len(candidates)
-        bits=[]
-        if context.get("birth"):
-            bits.append(f"Birth: {context['birth']}")
-        if context.get("death"):
-            bits.append(f"Death: {context['death']}")
-        if relation.get("label"):
-            bits.append(relation["label"])
-        summary=" · ".join(bits)
-        out.append(
-            f"<a class='result rc-review-person-summary' href='/person/{pid}?tab=research'>"
-            f"<span class='rc-review-person-main'><strong>{escape(context['name'])}</strong>"
-            f"<span class='small'>{escape(summary)}</span></span>"
-            f"<span class='badge warn'>{count} candidate{'s' if count!=1 else ''}</span>"
-            "</a>"
-        )
-    out.append("</div>")
+    grade_order=("Strong match","Supported match","Possible match","Low specificity","Unassessed")
+    grade_slug={
+        "Strong match":"strong",
+        "Supported match":"supported",
+        "Possible match":"possible",
+        "Low specificity":"low",
+        "Unassessed":"unassessed",
+    }
+    grade_help={
+        "Strong match":"Birth date agrees with Reunion.",
+        "Supported match":"Place or family detail supports the identity.",
+        "Possible match":"Name match still needs confirmation.",
+        "Low specificity":"Broad name-based candidate set with little identity corroboration.",
+        "Unassessed":"Linked Ryerson identity detail is not available.",
+    }
+    grouped={name:[] for name in grade_order}
+    assessments={}
+    for pid,candidates in people:
+        grade=discovery_match_assessment(db,pid,candidates)
+        assessments[int(pid)]=grade
+        grouped.setdefault(grade.get("level","Unassessed"),[]).append((pid,candidates))
 
-    if workspace_pager:
-        out.append(workspace_pager)
+    requested_slug=str(group or "").strip().casefold()
+    known_slugs=set(grade_slug.values())
+    if requested_slug not in known_slugs:
+        requested_slug="strong" if grouped.get("Strong match") else next((grade_slug[g] for g in grade_order if grouped.get(g)),"")
+
+    # Page belongs to the explicitly selected/expanded grade.  Other groups stay
+    # on their first page, so Previous/Next lives inside the group it controls.
+    for level in grade_order:
+        members=grouped.get(level,[])
+        if not members:
+            continue
+        slug=grade_slug[level]
+        group_page=page if slug==requested_slug else 1
+        total=len(members)
+        total_pages=max(1,(total+page_size-1)//page_size)
+        group_page=max(1,min(group_page,total_pages))
+        start=(group_page-1)*page_size
+        shown=members[start:start+page_size]
+        is_open=(slug==requested_slug)
+        open_attr=" open" if is_open else ""
+        out.append(f"<details class='card rc-review-grade-group' id='grade-{slug}'{open_attr}>")
+        out.append(
+            f"<summary class='rc-review-grade-summary'><span><strong>{escape(level)}</strong> "
+            f"<span class='badge'>{total} people</span></span>"
+            f"<span class='small'>{escape(grade_help[level])}</span></summary>"
+        )
+        out.append("<div class='rc-review-person-list'>")
+        for pid,candidates in shown:
+            context=person_reunion_context(db,pid)
+            grade=assessments[int(pid)]
+            if sort_mode=="relationship":
+                relation=rels.get(int(pid),{"label":"Relationship not established"})
+            else:
+                relation={"label":"Most recent candidate: "+_format_review_date(_group_recent_date(candidates))}
+            count=len(candidates)
+            bits=[]
+            if context.get("birth"):
+                bits.append(f"Birth: {context['birth']}")
+            if context.get("death"):
+                bits.append(f"Death: {context['death']}")
+            bits.append(grade['detail'])
+            bits.append(f"{count} candidate{'s' if count!=1 else ''}")
+            if relation.get("label"):
+                bits.append(relation["label"])
+            summary=" · ".join(bits)
+            out.append(
+                f"<a class='result rc-review-person-summary' href='/person/{pid}?tab=research'>"
+                f"<span class='rc-review-person-main'><strong>{escape(context['name'])}</strong>"
+                f"<span class='small'>{escape(summary)}</span></span>"
+                f"{_match_grade_badge(grade)}"
+                "</a>"
+            )
+        out.append("</div>")
+
+        workspace_pager=""
+        if total_pages>1:
+            suffix=f"&sort={quote(sort_mode)}&group={quote(slug)}"+(f"&focus={focus['id']}" if focus else "")
+            nav=[]
+            if group_page>1:
+                nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={group_page-1}{suffix}#grade-{slug}'>Previous</a>")
+            nav.append(f"<span class='small'>Page {group_page} of {total_pages} · {total} people in {escape(level)}</span>")
+            if group_page<total_pages:
+                nav.append(f"<a class='button' href='/research/discoveries?state={quote(state)}&page={group_page+1}{suffix}#grade-{slug}'>Next</a>")
+            workspace_pager="<div class='rc-priority-pager'>"+" ".join(nav)+"</div>"
+        shown_count=len(shown)
+        if total_pages>1:
+            out.append(f"<div class='small rc-review-group-count'>Showing {shown_count} of {total} people in {escape(level)}</div>")
+        elif total>0:
+            out.append(f"<div class='small rc-review-group-count'>{total} people in {escape(level)}</div>")
+        if workspace_pager:
+            out.append(workspace_pager)
+        out.append("</details>")
 
     return "".join(out)

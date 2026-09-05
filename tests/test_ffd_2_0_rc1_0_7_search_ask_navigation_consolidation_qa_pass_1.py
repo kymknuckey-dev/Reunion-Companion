@@ -18,6 +18,6 @@ def test_contextual_ask_about_is_retained():
 
 def test_search_question_pipeline_is_retained():
     source=(ROOT/'src/reunion_companion/companion/beta_ui.py').read_text()
-    search=source[source.index('def search_page'):source.index('def person_page')]
+    search=source[source.index('def _home_search_results'):source.index('def person_page')]
     assert 'is_natural_language_question(q)' in search
-    assert 'answer_question(db,q,None,selected_identity_id)' in search
+    assert 'answer_question(db,q,None,selected_identity_id,global_identity_discovery=True)' in search
