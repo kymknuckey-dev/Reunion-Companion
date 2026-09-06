@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS companion_ryerson_targeted_queue(
     completed_at TEXT,
     result_count INTEGER NOT NULL DEFAULT 0,
     match_count INTEGER NOT NULL DEFAULT 0,
+    coverage_scope TEXT,
+    coverage_completed_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -40,6 +42,26 @@ ON companion_ryerson_targeted_queue(status,next_retry_at,people_count);
 
 def ensure_targeted_schema(db):
     db.executescript(SCHEMA)
+    cols={row["name"] for row in db.execute('PRAGMA table_info("companion_ryerson_targeted_queue")').fetchall()}
+    if "coverage_scope" not in cols:
+        db.execute("ALTER TABLE companion_ryerson_targeted_queue ADD COLUMN coverage_scope TEXT")
+    if "coverage_completed_at" not in cols:
+        db.execute("ALTER TABLE companion_ryerson_targeted_queue ADD COLUMN coverage_completed_at TEXT")
+
+    # .12.8.1 accidentally rewound this paused family-wide queue. Restore the
+    # legacy completed rows once; it is not the normal Ryerson crawler queue.
+    marker=db.execute("SELECT value FROM meta WHERE key='ryerson_targeted_rewind_restored_v2'").fetchone()
+    if not marker:
+        db.execute(
+            """
+            UPDATE companion_ryerson_targeted_queue
+            SET status='completed',
+                completed_at=COALESCE(completed_at,updated_at),
+                updated_at=CURRENT_TIMESTAMP
+            WHERE coverage_scope='legacy_sa' AND status='queued'
+            """
+        )
+        db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('ryerson_targeted_rewind_restored_v2',CURRENT_TIMESTAMP)")
     db.commit()
 
 def _meta_get(db,key,default=""):
@@ -234,6 +256,7 @@ def targeted_form_javascript(surname: str, given_name: str="") -> str:
   const sn=document.querySelector('[name="search_sn"]');
   const gn=document.querySelector('[name="search_gn"]');
   const lo=document.querySelector('[name="search_lo"]');
+  const st=document.querySelector('[name="search_st"]');
   const y1=document.querySelector('[name="search_y1"]');
   const y2=document.querySelector('[name="search_y2"]');
   const submit=document.querySelector('[name="search"][type="submit"]');
@@ -242,6 +265,17 @@ def targeted_form_javascript(surname: str, given_name: str="") -> str:
   sn.value={sn};
   if (gn) gn.value={gn};
   for (const el of [lo,y1,y2]) if (el) el.value='';
+  if (st) {{
+    const opts=[...st.options];
+    // Ryerson's first State option is the national / All States choice.
+    // Set selectedIndex explicitly as well as value so browser state cannot
+    // retain a previous SA selection between automated submissions.
+    st.selectedIndex=0;
+    const all=opts.find(o => !String(o.value||'').trim()) || opts.find(o => /^(all|all states|any state)$/i.test(String(o.textContent||'').trim())) || opts[0];
+    if (all) st.value=all.value;
+    st.dispatchEvent(new Event('input',{{bubbles:true}}));
+    st.dispatchEvent(new Event('change',{{bubbles:true}}));
+  }}
   submit.click();
   return JSON.stringify({{status:'submitted',surname:sn.value,given_name:gn?gn.value:''}});
 }})()

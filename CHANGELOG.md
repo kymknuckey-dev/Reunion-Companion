@@ -1,3 +1,9 @@
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.8.2.1 — Ryerson National Coverage Queue Correction QA Fix
+- Installer QA compatibility correction: superseded .12.8.1 targeted-queue regression now reflects the .12.8.2 architecture.
+- Ryerson State reset now explicitly sets selectedIndex=0 as well as selecting the national/All States option.
+
+Ryerson national coverage bookkeeping corrected to the normal person crawler; historical SA-limited successes are safely requeued without deleting findings or review decisions. The family-wide paused queue is restored.
+
 
 ### RC1.0.14.8.9.9.4.1.3.8 CORRECTED-4
 - Restored the historical HTML/PDF shared-source call shape when `Paternal path last` is not requested.

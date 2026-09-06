@@ -46,7 +46,7 @@ def test_scope_page_has_creation_spinner_and_sibling_child_context(tmp_path):
     assert 'scope-publish-progress' in html
     assert 'rc-spinner' in html
     assert 'Creating family history report' in html
-    assert 'Children shown in chart: Sibling Child' in html
+    assert 'Children: Sibling Child' in html
     db.close()
 
 

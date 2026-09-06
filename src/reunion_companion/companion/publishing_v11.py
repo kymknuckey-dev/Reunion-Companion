@@ -914,7 +914,9 @@ def book_family_ids(db,start_pid,generations=4,end_pid=None,selected_family_ids=
     # RC1.0.11: explicit book scope constrains recursive family expansion.
     # Calls without scope retain legacy behaviour for compatibility.
     if end_pid is not None or selected_family_ids is not None:
-        from .family_book_scope import build_scope
+        from .family_book_scope import build_scope,build_structure_scope
+        if end_pid is None and selected_family_ids is not None:
+            return build_structure_scope(db,start_pid,selected_family_ids)['selected_family_ids']
         endpoint=start_pid if end_pid is None else end_pid
         return build_scope(db,start_pid,endpoint,generations,selected_family_ids,paternal_path_last,branch_order_start_family_id)['selected_family_ids']
     out=[];seen_people=set();seen_fam=set()
@@ -1002,8 +1004,11 @@ def book_html(db,start_pid,output_html, generations=4,theme=DEFAULT_THEME,end_pi
     start=db.execute("SELECT * FROM people WHERE id=?",(start_pid,)).fetchone()
     scope=None
     if end_pid is not None or selected_family_ids is not None:
-        from .family_book_scope import build_scope
-        scope=build_scope(db,start_pid,start_pid if end_pid is None else end_pid,generations,selected_family_ids,paternal_path_last,branch_order_start_family_id)
+        from .family_book_scope import build_scope,build_structure_scope
+        if end_pid is None and selected_family_ids is not None:
+            scope=build_structure_scope(db,start_pid,selected_family_ids)
+        else:
+            scope=build_scope(db,start_pid,start_pid if end_pid is None else end_pid,generations,selected_family_ids,paternal_path_last,branch_order_start_family_id)
         fam_ids=scope['selected_family_ids']
     else:
         fam_ids=book_family_ids(db,start_pid,generations)

@@ -49,9 +49,9 @@ def test_none_changeover_preserves_corrected_6_family_level_order(tmp_path):
 def test_family_history_page_exposes_single_changeover_selector(tmp_path):
     db=connect(tmp_path/'x.sqlite3'); seed(db); extend_mervyn_children(db)
     html=book_scope_page(db,1,{'endpoint':'11'})
-    assert html.count("name='branch_order_start_family_id'")==1
-    assert 'Branch ordering starts here' in html
-    assert 'None — keep family-level grouping throughout' in html
+    assert "name='branch_order_start_family_id'" not in html
+    assert 'Branch ordering starts here' not in html
+    assert 'genealogical family order' in html
     assert 'Mervyn and Elaine' in html
     db.close()
 
@@ -64,6 +64,6 @@ def test_saved_family_history_configuration_restores_changeover_family(tmp_path)
          'format':'HTML','branch_order_start_family_id':104},
     )
     html=book_scope_page(db,1,{'config':str(config_id)})
-    marker="<option value='104' selected>"
-    assert marker in html
+    assert "name='branch_order_start_family_id'" not in html
+    assert "name='family_104' value='1' checked" in html
     db.close()

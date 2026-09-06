@@ -45,14 +45,17 @@ def _family(db,pid):
     relationships.sort(key=lambda x:(x[0],{"Father":0,"Mother":1,"Parent":2,"Spouse":3,"Son":4,"Daughter":4,"Child":4,"Brother":5,"Sister":5,"Sibling":5}.get(x[1],9),x[2]))
     return relationships
 
-def _portrait(w):
-    for m in sorted(w.get("media",[]),key=lambda x:(-int(x.get("is_preferred") or 0),int(x.get("id") or 0))):
-        if m.get("exists_on_disk") and Path(m.get("file_path") or "").suffix.lower() in {".jpg",".jpeg",".png",".gif",".webp",".heic",".tif",".tiff"}: return m
-    return None
+def _portrait(db,pid):
+    """Return a portrait only from media directly attached to the person.
+
+    Event media (for example a burial/headstone photograph) remains available
+    to the story and publication, but must never be promoted to person portrait.
+    """
+    return _person_portrait(db,pid)
 
 def _person_portrait(db,pid):
     return db.execute("""SELECT DISTINCT m.* FROM media m JOIN person_media pm ON pm.media_id=m.id
-      WHERE pm.person_id=? AND m.exists_on_disk=1 AND (
+      WHERE pm.person_id=? AND COALESCE(m.is_preferred,0)=1 AND m.exists_on_disk=1 AND (
         lower(m.file_path) LIKE '%.jpg' OR lower(m.file_path) LIKE '%.jpeg' OR
         lower(m.file_path) LIKE '%.png' OR lower(m.file_path) LIKE '%.gif' OR
         lower(m.file_path) LIKE '%.webp' OR lower(m.file_path) LIKE '%.heic' OR
@@ -72,7 +75,7 @@ def _person_lifespan(db,pid):
 
 def person_identity_header(db,w,presentation=True):
     from .person_bookmarks import is_bookmarked
-    p=w["person"];events=_events(db,p["id"]);family=_family(db,p["id"]);portrait=_portrait(w)
+    p=w["person"];events=_events(db,p["id"]);family=_family(db,p["id"]);portrait=_portrait(db,p["id"])
     bookmarked=is_bookmarked(db,p["id"])
     img=f"<img src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
     context=[]
@@ -125,7 +128,7 @@ def _event_sort_key(e):
     return (1,rank,e["id"])
 
 def person_story_body(db,w,presentation=True):
-    p=w["person"];pid=p["id"];events=_events(db,pid);family=_family(db,pid);portrait=_portrait(w)
+    p=w["person"];pid=p["id"];events=_events(db,pid);family=_family(db,pid);portrait=_portrait(db,p["id"])
     portrait_html=f"<img class='person-portrait ffd-hero-portrait' src='/media-file/{portrait['id']}' alt='{esc(p['display_name'])}'>" if portrait else ""
     clean=[e for e in events if (e["event_type"] or "").casefold() not in ("changed","change") and (e["gedcom_tag"] or "").upper()!="CHAN"]
     ordered=sorted(clean,key=_event_sort_key)[:10]

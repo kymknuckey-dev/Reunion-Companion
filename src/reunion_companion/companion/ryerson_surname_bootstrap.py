@@ -208,6 +208,7 @@ def _surname_form_javascript(surname: str, given_name: str = "") -> str:
   const sn=document.querySelector('[name="search_sn"]');
   const gn=document.querySelector('[name="search_gn"]');
   const lo=document.querySelector('[name="search_lo"]');
+  const st=document.querySelector('[name="search_st"]');
   const y1=document.querySelector('[name="search_y1"]');
   const y2=document.querySelector('[name="search_y2"]');
   const submit=document.querySelector('[name="search"][type="submit"]');
@@ -217,7 +218,16 @@ def _surname_form_javascript(surname: str, given_name: str = "") -> str:
   sn.value={surname_json};
   if (gn) gn.value={given_json};
   for (const el of [lo,y1,y2]) if (el) el.value='';
-  for (const el of [sn,gn,lo,y1,y2]) if (el) {{
+  if (st) {{
+    const opts=[...st.options];
+    // Ryerson's first State option is the national / All States choice.
+    // Set selectedIndex explicitly as well as value so browser state cannot
+    // retain a previous SA selection between automated submissions.
+    st.selectedIndex=0;
+    const all=opts.find(o => !String(o.value||'').trim()) || opts.find(o => /^(all|all states|any state)$/i.test(String(o.textContent||'').trim())) || opts[0];
+    if (all) st.value=all.value;
+  }}
+  for (const el of [sn,gn,st,lo,y1,y2]) if (el) {{
     el.dispatchEvent(new Event('input',{{bubbles:true}}));
     el.dispatchEvent(new Event('change',{{bubbles:true}}));
   }}

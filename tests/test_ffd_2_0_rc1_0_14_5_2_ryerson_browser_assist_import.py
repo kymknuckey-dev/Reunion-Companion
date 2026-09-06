@@ -29,7 +29,7 @@ def test_browser_plan_uses_same_conservative_variants():
     plan=build_browser_search_plan(p)
     assert plan.url==RYERSON_SEARCH_URL
     assert plan.searches==(
-        {"surname":"Rigg","given_names":"Peter","state":"SA"},
+        {"surname":"Rigg","given_names":"Peter","state":""},
     )
 
 

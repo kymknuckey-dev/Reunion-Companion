@@ -26,7 +26,7 @@ from .beta3_publishing import (
 )
 from .version_identity import APP_DISPLAY_NAME, FFD_DISPLAY
 from .branding import header_brand_html
-from .family_book_scope import build_scope,endpoint_candidates
+from .family_book_scope import build_scope,endpoint_candidates,build_structure_scope
 from .family_publication_model import family_partners, children, spouse_families
 from .report_configurations import (
     list_report_configurations,get_report_configuration,save_report_configuration,delete_report_configuration
@@ -1269,87 +1269,56 @@ def book_scope_page(db,start_pid,query=None,msg=""):
     if config_id:
         loaded_config=get_report_configuration(db,config_id,report_type="family_history",start_person_id=start_pid)
     saved_settings=(loaded_config or {}).get("settings") or {}
-    endpoints=endpoint_candidates(db,start_pid)
-    try:
-        end_pid=int(saved_settings.get("endpoint") if loaded_config else (query.get('endpoint','0') or 0)) or None
-    except Exception:
-        end_pid=None
-    options=[]
-    for p,depth in endpoints:
-        selected=' selected' if end_pid==p['id'] else ''
-        indent='— '*depth
-        options.append(f"<option value='{p['id']}'{selected}>{esc(indent+p['display_name'])}</option>")
     message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ''
     config_card=_report_configuration_card(db,"family_history",start_pid,loaded_config,f"/book-scope/{start_pid}")
-    body=f"<h1>Family-history Book Scope</h1>{message}{config_card}<div class='card'><h2>1. Choose the paternal-line endpoint</h2><p class='meta'>The starting person is {esc(start['display_name'])}. Companion uses recorded father relationships to build the default book path.</p><form method='get' action='/book-scope/{start_pid}'><select name='endpoint' required><option value=''>Choose endpoint…</option>{''.join(options)}</select> <button type='submit'>Build default path</button></form></div>"
-    if end_pid:
-        try:scope=build_scope(db,start_pid,end_pid,4,None)
-        except ValueError as e:
-            return layout("Family-history Book Scope",body+f"<div class='card error'>{esc(str(e))}</div>",dict(start),"publish")
-        selected=(set(int(x) for x in saved_settings.get('selected_family_ids',[])) if loaded_config else set(scope['primary_family_ids']))
-        terminal_scope_ids={ch['id'] for e in scope['entries'] for ch in children(db,e.family_id) if not spouse_families(db,ch['id'])}
-        if loaded_config and 'selected_individual_ids' in saved_settings:
-            selected_individuals={int(x) for x in saved_settings.get('selected_individual_ids',[])}
-        else:
-            # Terminal individuals are opt-in. They may occur throughout a large
-            # family tree, so visibility must not imply report inclusion.
-            selected_individuals=set()
-        try:
-            branch_order_start_family_id=int(saved_settings.get('branch_order_start_family_id') or 0) or None
-        except Exception:
-            branch_order_start_family_id=None
-        entry_by_id={e.family_id:e for e in scope['entries']}
-        child_entries={}
-        for e in scope['entries']:
-            child_entries.setdefault(e.parent_family_id,[]).append(e)
 
-        def family_selector_node(entry):
-            h,w=family_partners(db,entry.family_id)
-            title=' and '.join(x['display_name'] for x in (h,w) if x) or f"Family {entry.family_id}"
-            checked=' checked' if entry.family_id in selected else ''
-            badge=" <span class='badge good'>Paternal path</span>" if entry.on_primary_path else " <span class='badge info'>Chart only</span>"
-            descendants=child_entries.get(entry.family_id,[])
-            child_rows=children(db,entry.family_id)
-            terminal_children=[ch for ch in child_rows if not spouse_families(db,ch['id'])]
-            child_context=''
-            if child_rows:
-                child_prefix='Children: ' if entry.on_primary_path else 'Children shown in chart: '
-                child_context="<span class='meta family-selector-children'>"+child_prefix+esc(', '.join(ch['display_name'] for ch in child_rows))+"</span>"
-            control=f"<label class='family-selector-label'><input type='checkbox' name='family_{entry.family_id}' value='1'{checked}> <strong>{esc(title)}</strong>{badge}{child_context}</label>"
-            terminal_html=''.join(
-                "<div class='family-selector-individual'><label class='family-selector-label'><input type='checkbox' name='individual_"
-                +str(ch['id'])+"' value='1'"+(" checked" if ch['id'] in selected_individuals else "")+"> <strong>"
-                +esc(ch['display_name'])+"</strong> <span class='badge neutral'>Individual — no family branch</span></label></div>"
-                for ch in terminal_children
-            )
-            if not descendants and not terminal_html:
-                return "<div class='family-selector-leaf'>"+control+"</div>"
-            # Show one family level at a time. Only the root starts open; the
-            # user deliberately opens the next family level when needed. This
-            # keeps sibling families visible together instead of letting the
-            # paternal route push them far down the page.
-            open_attr=' open' if entry.depth==0 else ''
-            nested=''.join(family_selector_node(ch) for ch in descendants)+terminal_html
-            return f"<details class='family-selector-branch'{open_attr}><summary>{control}</summary><div class='family-selector-level'>{nested}</div></details>"
+    scope=build_structure_scope(db,start_pid,None)
+    selected=(set(int(x) for x in saved_settings.get('selected_family_ids',[])) if loaded_config else set(scope['primary_family_ids']))
+    if loaded_config and 'selected_individual_ids' in saved_settings:
+        selected_individuals={int(x) for x in saved_settings.get('selected_individual_ids',[])}
+    else:
+        selected_individuals=set()
 
-        roots=child_entries.get(None,[])
-        rows=''.join(family_selector_node(e) for e in roots)
-        endpoint=db.execute("SELECT display_name FROM people WHERE id=?",(end_pid,)).fetchone()
-        ordering_options=["<option value=''>None — keep family-level grouping throughout</option>"]
-        for entry in scope['entries']:
-            h,w=family_partners(db,entry.family_id)
-            title=' and '.join(x['display_name'] for x in (h,w) if x) or f"Family {entry.family_id}"
-            sel=' selected' if branch_order_start_family_id==entry.family_id else ''
-            ordering_options.append(f"<option value='{entry.family_id}'{sel}>{esc(('— '*entry.depth)+title)}</option>")
-        ordering_control=(
-            "<div class='family-ordering-control'><h3>Branch ordering starts here</h3>"
-            "<p class='meta'>Above this family, keep each historical sibling-family level together. From this family downward, publish each child’s selected branch in birth order before moving to the next sibling. Choose None to keep family-level grouping throughout.</p>"
-            "<select name='branch_order_start_family_id'>"+''.join(ordering_options)+"</select></div>"
+    child_entries={}
+    for e in scope['entries']:
+        child_entries.setdefault(e.parent_family_id,[]).append(e)
+
+    def family_selector_node(entry):
+        h,w=family_partners(db,entry.family_id)
+        title=' and '.join(x['display_name'] for x in (h,w) if x) or f"Family {entry.family_id}"
+        checked=' checked' if entry.family_id in selected else ''
+        descendants=child_entries.get(entry.family_id,[])
+        child_rows=children(db,entry.family_id)
+        terminal_children=[ch for ch in child_rows if not spouse_families(db,ch['id'])]
+        child_context=''
+        if child_rows:
+            child_context="<span class='meta family-selector-children'>Children: "+esc(', '.join(ch['display_name'] for ch in child_rows))+"</span>"
+        control=f"<label class='family-selector-label'><input type='checkbox' name='family_{entry.family_id}' value='1'{checked}> <strong>{esc(title)}</strong>{child_context}</label>"
+        terminal_html=''.join(
+            "<div class='family-selector-individual'><label class='family-selector-label'><input type='checkbox' name='individual_"
+            +str(ch['id'])+"' value='1'"+(" checked" if ch['id'] in selected_individuals else "")+"> <strong>"
+            +esc(ch['display_name'])+"</strong> <span class='badge neutral'>Individual — no family branch</span></label></div>"
+            for ch in terminal_children
         )
-        config_editor=_configuration_editor(loaded_config).replace("__CONFIG_SAVE_PATH__",f"/report-config/family-history/{start_pid}/save")
-        body+=f"<style>.family-selector-branch,.family-selector-leaf{{border-top:1px solid #e5e5e5}}.family-selector-branch summary{{cursor:pointer;padding:10px 0;list-style-position:outside}}.family-selector-leaf{{padding:10px 0}}.family-selector-level{{margin-left:22px}}.family-selector-label{{cursor:pointer;display:block}}.family-selector-children{{display:block;margin-left:24px;margin-top:2px}}.family-selector-individual{{padding:10px 0;border-top:1px solid #e5e5e5;color:var(--text)}}.family-selector-individual-marker{{display:inline-block;width:18px;color:#667}}.badge.neutral{{background:#f0f0ed;color:#555}}.family-ordering-control{{margin-top:18px;padding-top:14px;border-top:1px solid #ddd}}details.family-selector-branch>summary::marker{{color:#667}}</style><div class='card'><h2>2. Choose family chapters</h2><p class='meta'>Open only the branches you want to inspect. Ticking a family gives it its own chapter; terminal children without a family branch have their own checkbox. Remember: opening a branch does not include it. The paternal path to {esc(endpoint['display_name'] if endpoint else str(end_pid))} is selected automatically. Other families stay visible in family context but do not become chapters unless you tick them.</p><form class='scope-publish-form' method='post' action='/publish/person/{start_pid}/scoped-book'><input type='hidden' name='endpoint' value='{end_pid}'>{rows}{ordering_control}{config_editor}<div style='margin-top:16px'><button name='format' value='PDF'>Create Print-ready PDF</button> <button class='secondary' name='format' value='HTML'>Create HTML</button></div></form><div id='scope-publish-progress' class='publishing-activity' style='display:none;margin-top:16px'><style>@keyframes rc-scope-spin{{to{{transform:rotate(360deg)}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-scope-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}</style><strong><span class='rc-spinner' aria-hidden='true'></span>Creating family history report…</strong><p class='meta'>Companion is assembling the selected families, narrative, charts and media. This can take a little while.</p></div><script>document.querySelectorAll('.scope-publish-form').forEach(function(f){{f.addEventListener('submit',function(e){{var s=e.submitter;if(s&&s.name&&s.value){{var h=document.createElement('input');h.type='hidden';h.name=s.name;h.value=s.value;h.className='submitted-format';f.appendChild(h);}}if(s&&s.name==='format'){{document.getElementById('scope-publish-progress').style.display='block';f.querySelectorAll('button').forEach(function(b){{b.disabled=true;}});}}}});}});</script></div>"
-        body+="<div class='card'><h2>Spouse context rule</h2><p class='meta'>For families on the primary path, the incoming spouse receives a chart-only family context. Direct ancestors may be shown; siblings may show partner/marriage and children; those branches stop at the children and never become chapters automatically.</p></div>"
-    return layout("Family-history Book Scope",body,dict(start),"publish")
+        if not descendants and not terminal_html:
+            return "<div class='family-selector-leaf'>"+control+"</div>"
+        open_attr=' open' if entry.depth==0 else ''
+        nested=''.join(family_selector_node(ch) for ch in descendants)+terminal_html
+        return f"<details class='family-selector-branch'{open_attr}><summary>{control}</summary><div class='family-selector-level'>{nested}</div></details>"
+
+    roots=child_entries.get(None,[])
+    rows=''.join(family_selector_node(e) for e in roots)
+    config_editor=_configuration_editor(loaded_config).replace("__CONFIG_SAVE_PATH__",f"/report-config/family-history/{start_pid}/save")
+    root_titles=[]
+    for e in roots:
+        h,w=family_partners(db,e.family_id)
+        root_titles.append(' and '.join(x['display_name'] for x in (h,w) if x) or f"Family {e.family_id}")
+    root_label=', '.join(root_titles) if root_titles else start['display_name']
+    body=(f"<h1>Family History</h1>{message}{config_card}"
+          f"<div class='card'><h2>Family structure</h2><p><strong>Root:</strong> {esc(root_label)}</p>"
+          "<p class='meta'>Select the families and terminal individuals that belong in this history. Companion publishes the selected families in genealogical family order and each branch ends naturally where your selection ends.</p></div>")
+    body+=f"<style>.family-selector-branch,.family-selector-leaf{{border-top:1px solid #e5e5e5}}.family-selector-branch summary{{cursor:pointer;padding:10px 0;list-style-position:outside}}.family-selector-leaf{{padding:10px 0}}.family-selector-level{{margin-left:22px}}.family-selector-label{{cursor:pointer;display:block}}.family-selector-children{{display:block;margin-left:24px;margin-top:2px}}.family-selector-individual{{padding:10px 0;border-top:1px solid #e5e5e5;color:var(--text)}}.badge.neutral{{background:#f0f0ed;color:#555}}details.family-selector-branch>summary::marker{{color:#667}}</style><div class='card'><h2>Choose families and people</h2><p class='meta'>Remember: opening a branch does not include it. Opening only reveals its descendants. Tick each family that should have a chapter. Terminal children without their own family branch can be included individually.</p><form class='scope-publish-form' method='post' action='/publish/person/{start_pid}/scoped-book'>{rows}{config_editor}<div style='margin-top:16px'><button name='format' value='PDF'>Create Print-ready PDF</button> <button class='secondary' name='format' value='HTML'>Create HTML</button></div></form><div id='scope-publish-progress' class='publishing-activity' style='display:none;margin-top:16px'><style>@keyframes rc-scope-spin{{to{{transform:rotate(360deg)}}}}.publishing-activity .rc-spinner{{display:inline-block;width:18px;height:18px;border:3px solid #bbb;border-top-color:#333;border-radius:50%;animation:rc-scope-spin .8s linear infinite;vertical-align:-4px;margin-right:8px}}</style><strong><span class='rc-spinner' aria-hidden='true'></span>Creating family history report…</strong><p class='meta'>Companion is assembling the selected families, narrative, charts and media. This can take a little while.</p></div><script>document.querySelectorAll('.scope-publish-form').forEach(function(f){{f.addEventListener('submit',function(e){{var s=e.submitter;if(s&&s.name&&s.value){{var h=document.createElement('input');h.type='hidden';h.name=s.name;h.value=s.value;h.className='submitted-format';f.appendChild(h);}}if(s&&s.name==='format'){{document.getElementById('scope-publish-progress').style.display='block';f.querySelectorAll('button').forEach(function(b){{b.disabled=true;}});}}}});}});</script></div>"
+    return layout("Family History",body,dict(start),"publish")
 
 
 
@@ -2107,7 +2076,6 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     m=re.match(r"^/report-config/family-history/(\d+)/save$",u.path)
                     if m:
                         pid=int(m.group(1))
-                        end_pid=int(form.get('endpoint','0') or 0)
                         chosen=sorted(int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('family_') and v=='1')
                         chosen_individuals=sorted(int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('individual_') and v=='1')
                         fmt=(form.get('config_format') or 'PDF').upper()
@@ -2117,11 +2085,9 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                         config_id=int(form.get('config_id','0') or 0) or None
                         if action=='save_as':
                             config_id=None
-                        branch_order_start_family_id=int(form.get('branch_order_start_family_id','0') or 0) or None
                         saved_id=save_report_configuration(
                             db,'family_history',pid,form.get('config_name',''),
-                            {'endpoint':end_pid,'selected_family_ids':chosen,'selected_individual_ids':chosen_individuals,'format':fmt,
-                             'branch_order_start_family_id':branch_order_start_family_id},
+                            {'selected_family_ids':chosen,'selected_individual_ids':chosen_individuals,'format':fmt},
                             config_id=config_id,
                         )
                         cfg=get_report_configuration(db,saved_id)
@@ -2171,15 +2137,14 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
 
                     m=re.match(r"^/publish/person/(\d+)/scoped-book$",u.path)
                     if m:
-                        pid=int(m.group(1));end_pid=int(form.get('endpoint','0') or 0)
+                        pid=int(m.group(1))
                         chosen={int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('family_') and v=='1'}
                         chosen_individuals={int(k.split('_',1)[1]) for k,v in form.items() if k.startswith('individual_') and v=='1'}
-                        branch_order_start_family_id=int(form.get('branch_order_start_family_id','0') or 0) or None
-                        scope=build_scope(db,pid,end_pid,4,chosen,False,branch_order_start_family_id)
+                        scope=build_structure_scope(db,pid,chosen)
                         row=db.execute("SELECT display_name FROM people WHERE id=?",(pid,)).fetchone()
                         fmt=(form.get('format') or 'PDF').upper()
-                        p=scoped_book_output(db,pid,end_pid,scope['selected_family_ids'],row['display_name'],fmt,4,False,branch_order_start_family_id,chosen_individuals)
-                        self.send_html(book_scope_page(db,pid,{'endpoint':str(end_pid)},f"Published: {p}"))
+                        p=scoped_book_output(db,pid,None,scope['selected_family_ids'],row['display_name'],fmt,4,False,None,chosen_individuals)
+                        self.send_html(book_scope_page(db,pid,{},f"Published: {p}"))
                         return
 
                     m=re.match(r"^/publish/person/(\d+)/(profile|biography|person|family|book|book-pdf)$",u.path)

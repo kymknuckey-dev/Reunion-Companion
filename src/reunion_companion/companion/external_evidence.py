@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS companion_external_scan_queue(
     next_retry_at TEXT,
     completed_at TEXT,
     result_count INTEGER NOT NULL DEFAULT 0,
+    coverage_scope TEXT,
+    coverage_completed_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(source_name,person_gedcom_xref)
@@ -118,9 +120,107 @@ CREATE TABLE IF NOT EXISTS companion_ryerson_surname_progress(
 VALID_STATUSES = {"new", "reviewed", "accepted", "rejected"}
 
 
+RYERSON_NATIONAL_REWIND_META = "ryerson_normal_crawler_national_rewind_v2"
+RYERSON_NATIONAL_CUTOFF_UTC = "2026-09-06T00:00:00+00:00"
+
+
+def _table_columns(db, table: str) -> set[str]:
+    return {row["name"] for row in db.execute(f'PRAGMA table_info("{table}")').fetchall()}
+
+
+def ensure_ryerson_national_coverage(db) -> None:
+    """Migrate the normal person crawler from legacy SA coverage to national coverage.
+
+    RC1.0.14.8.9.9.4.1.3.12.8.1 corrected the live form but rewound the
+    paused family-wide queue.  The normal crawler is the authoritative
+    person-by-person queue.  This one-time migration rewinds only historical
+    successful normal-crawler rows, preserving external evidence/review data.
+
+    Successful runs made on 6 Sep 2026 after the live all-state correction are
+    retained and certified as national rather than needlessly repeated.
+    """
+    cols=_table_columns(db,"companion_external_scan_queue")
+    if "coverage_scope" not in cols:
+        db.execute("ALTER TABLE companion_external_scan_queue ADD COLUMN coverage_scope TEXT")
+    if "coverage_completed_at" not in cols:
+        db.execute("ALTER TABLE companion_external_scan_queue ADD COLUMN coverage_completed_at TEXT")
+
+    # Some focused unit tests initialise only the external-evidence schema.
+    # The application database always has meta; without it there is nowhere to
+    # store a one-time migration marker, so leave queue contents untouched.
+    has_meta=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='meta'").fetchone()
+    if not has_meta:
+        db.commit()
+        return
+
+    marker=db.execute("SELECT value FROM meta WHERE key=?",(RYERSON_NATIONAL_REWIND_META,)).fetchone()
+    if marker:
+        db.commit()
+        return
+
+    success=("succeeded_with_findings","succeeded_no_match")
+    placeholders=",".join("?" for _ in success)
+
+    # Preserve the small number of all-state searches performed after .12.8.1
+    # was installed and before the crawler was paused for this correction.
+    db.execute(
+        f"""
+        UPDATE companion_external_scan_queue
+        SET coverage_scope='national',
+            coverage_completed_at=completed_at,
+            updated_at=CURRENT_TIMESTAMP
+        WHERE source_name='Ryerson'
+          AND status IN ({placeholders})
+          AND completed_at IS NOT NULL
+          AND completed_at>=?
+        """,
+        (*success,RYERSON_NATIONAL_CUTOFF_UTC),
+    )
+
+    # Historical successes were searched with State=SA.  Requeue the scan
+    # bookkeeping only.  companion_external_evidence and review decisions are
+    # deliberately untouched and remain protected by existing deduplication.
+    db.execute(
+        f"""
+        UPDATE companion_external_scan_queue
+        SET status='queued',
+            attempts=0,
+            last_error=NULL,
+            last_attempt_at=NULL,
+            next_retry_at=NULL,
+            completed_at=NULL,
+            result_count=0,
+            coverage_scope='legacy_sa',
+            coverage_completed_at=NULL,
+            updated_at=CURRENT_TIMESTAMP
+        WHERE source_name='Ryerson'
+          AND status IN ({placeholders})
+          AND COALESCE(coverage_scope,'')<>'national'
+        """,
+        success,
+    )
+
+    # Rows that had never completed will simply run nationally when reached.
+    db.execute(
+        """
+        UPDATE companion_external_scan_queue
+        SET coverage_scope=CASE
+              WHEN coverage_scope IS NULL OR coverage_scope='' THEN 'national_pending'
+              ELSE coverage_scope END,
+            updated_at=CURRENT_TIMESTAMP
+        WHERE source_name='Ryerson'
+          AND status IN ('queued','retry_wait','searching','failed')
+          AND COALESCE(coverage_scope,'')<>'legacy_sa'
+        """
+    )
+    db.execute("INSERT OR REPLACE INTO meta(key,value) VALUES(?,CURRENT_TIMESTAMP)",(RYERSON_NATIONAL_REWIND_META,))
+    db.commit()
+
+
 def ensure_external_evidence(db) -> None:
     db.executescript(SCHEMA)
     db.commit()
+    ensure_ryerson_national_coverage(db)
 
 
 def add_external_evidence(

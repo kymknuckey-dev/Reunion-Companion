@@ -29,7 +29,7 @@ HTML_HEADER = """
 def test_query_strategy_uses_first_given_name_only():
     profile={"surname":"Rigg","given_names":"Peter Stanly"}
     assert build_ryerson_queries(profile)==[
-        RyersonQuery("Rigg","Peter","SA"),
+        RyersonQuery("Rigg","Peter",""),
     ]
 
 

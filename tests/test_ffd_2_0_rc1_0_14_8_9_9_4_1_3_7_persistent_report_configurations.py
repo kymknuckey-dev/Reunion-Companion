@@ -74,7 +74,7 @@ def test_family_history_configuration_restores_endpoint_family_choices_and_saved
     assert "Saved Report Configurations" in html
     assert "Short Web History" in html
     assert "Saved output: HTML" in html
-    assert "<option value='6' selected>" in html
+    assert "paternal-line endpoint" not in html
     assert not re.search(r"name='family_100' value='1' checked", html)
     assert re.search(r"name='family_101' value='1' checked", html)
     assert "Create Print-ready PDF" in html

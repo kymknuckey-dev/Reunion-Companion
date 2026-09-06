@@ -111,11 +111,10 @@ def test_spouse_context_includes_sibling_partner_and_children_then_stops(tmp_pat
 def test_family_selector_exposes_book_section_and_chart_only_states(tmp_path):
     db=connect(tmp_path/'scope.sqlite3');_seed(db)
     html=book_scope_page(db,1,{'endpoint':'6'})
-    assert 'Family-history Book Scope' in html
-    assert 'Paternal path' in html
-    assert 'Chart only' in html
+    assert 'Family History' in html
+    assert 'Paternal path' not in html
+    assert 'genealogical family order' in html
     assert "name='family_100'" in html
     assert "name='family_200'" in html
     assert 'Create Print-ready PDF' in html
-    assert 'Spouse context rule' in html
     db.close()

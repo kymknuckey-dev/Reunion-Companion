@@ -265,3 +265,56 @@ def build_scope(db,start_pid,end_pid,generations=4,selected_family_ids=None,pate
         'primary_family_ids':primary,'main_line_by_family':context_person_by_family,
         'selected_family_ids':selected_order,'entries':entries,
     }
+
+
+def structure_candidate_families(db,start_pid):
+    """Return the complete descendant-family hierarchy rooted on start_pid.
+
+    The hierarchy is independent of any paternal endpoint.  Sibling branches
+    follow recorded child birth order, and each child's spouse-family branch is
+    nested beneath the family in which that child appears.
+    """
+    roots=[f['id'] for f in spouse_families(db,start_pid)]
+    out=[];seen=set()
+
+    def walk(fid,owner,depth,parent_fid):
+        if fid in seen or depth>64:
+            return
+        seen.add(fid)
+        out.append((fid,owner,depth,parent_fid))
+        for child in _children_by_birth(db,fid):
+            for sf in spouse_families(db,child['id']):
+                walk(sf['id'],child['id'],depth+1,fid)
+
+    for fid in roots:
+        walk(fid,start_pid,0,None)
+    return out
+
+
+def build_structure_scope(db,start_pid,selected_family_ids=None):
+    """Build a Family History scope from selection + genealogy structure.
+
+    Membership is explicit; publication order is derived from the descendant
+    family tree.  No paternal endpoint or manual branch-order switch is needed.
+    """
+    candidates=structure_candidate_families(db,start_pid)
+    root_ids=[fid for fid,owner,depth,parent in candidates if parent is None]
+    selected=set(root_ids if selected_family_ids is None else selected_family_ids)
+    entries=[FamilyScopeEntry(fid,owner,depth,
+                              'book_section' if fid in selected else 'chart_only',
+                              False,parent)
+             for fid,owner,depth,parent in candidates]
+    selected_order=[]
+    context_person_by_family={}
+    for e in entries:
+        context_person_by_family[e.family_id]=e.owner_id
+        if e.family_id in selected:
+            selected_order.append(e.family_id)
+    return {
+        'start_pid':start_pid,
+        'end_pid':None,
+        'primary_family_ids':root_ids,
+        'main_line_by_family':context_person_by_family,
+        'selected_family_ids':selected_order,
+        'entries':entries,
+    }

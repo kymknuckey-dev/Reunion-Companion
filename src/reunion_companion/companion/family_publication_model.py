@@ -158,10 +158,19 @@ def person_document_groups(db,pid):
             pass
         else:groups["other-documents"].append(m)
     if photos:
-        preferred=next((m for m in photos if int(_media_field(m,"is_preferred") or 0)==1),None)
-        portrait=preferred or photos[0]
-        groups["portrait"].append(portrait)
-        groups["other-photos"].extend(m for m in photos if m["id"]!=portrait["id"])
+        # A publication portrait must be directly attached to the person.
+        # Event photographs remain event/publication media and are never used as
+        # a fallback portrait merely because the person has no person photo.
+        direct_ids={m["id"] for m in db.execute("""SELECT m.id FROM media m
+            JOIN person_media pm ON pm.media_id=m.id WHERE pm.person_id=?""",(pid,)).fetchall()}
+        direct_photos=[m for m in photos if m["id"] in direct_ids]
+        if direct_photos:
+            preferred=next((m for m in direct_photos if int(_media_field(m,"is_preferred") or 0)==1),None)
+            if preferred:
+                groups["portrait"].append(preferred)
+            groups["other-photos"].extend(m for m in photos if not preferred or m["id"]!=preferred["id"])
+        else:
+            groups["other-photos"].extend(photos)
     return groups
 
 def parent_couple(db,pid):

@@ -123,8 +123,15 @@ def _form_fill_javascript(query: RyersonQuery) -> str:
     if (!el) return false;
     if (el.tagName === 'SELECT') {{
       const want=norm(value);
-      let opt=[...el.options].find(o => norm(o.value)===want || norm(o.textContent)===want);
-      if (!opt && want==='sa') opt=[...el.options].find(o => norm(o.textContent).includes('south australia'));
+      let opt;
+      if (!want) {{
+        opt=[...el.options].find(o => norm(o.value)==='') ||
+            [...el.options].find(o => ['all','all states','any state'].includes(norm(o.textContent))) ||
+            el.options[0];
+      }} else {{
+        opt=[...el.options].find(o => norm(o.value)===want || norm(o.textContent)===want);
+        if (!opt && want==='sa') opt=[...el.options].find(o => norm(o.textContent).includes('south australia'));
+      }}
       if (!opt) return false;
       el.value=opt.value;
     }} else {{

@@ -72,7 +72,7 @@ def next_runnable_scan(db, source_name=SOURCE_RYERSON, now=None):
 
 def _set_status(db, queue_id, *, status, attempts=None, last_error=None,
                 last_attempt_at=None, next_retry_at=None, completed_at=None,
-                result_count=None):
+                result_count=None, coverage_scope=None, coverage_completed_at=None):
     fields=["status=?","updated_at=CURRENT_TIMESTAMP"]
     vals=[status]
     supplied={
@@ -82,6 +82,8 @@ def _set_status(db, queue_id, *, status, attempts=None, last_error=None,
         "next_retry_at": _iso(next_retry_at) if next_retry_at else None,
         "completed_at": _iso(completed_at) if completed_at else None,
         "result_count": result_count,
+        "coverage_scope": coverage_scope,
+        "coverage_completed_at": _iso(coverage_completed_at) if coverage_completed_at else None,
     }
     for name,value in supplied.items():
         if value is not None:
@@ -169,6 +171,7 @@ def run_one_scan(db, search_fn, *, source_name=SOURCE_RYERSON, now=None):
     _set_status(
         db,row["id"],status=final,attempts=attempts,last_error="",
         last_attempt_at=now,completed_at=now,result_count=stored,
+        coverage_scope="national",coverage_completed_at=now,
     )
     return {"status":final,"queue_id":row["id"],"result_count":stored}
 

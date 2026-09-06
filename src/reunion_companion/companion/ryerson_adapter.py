@@ -15,7 +15,7 @@ from .external_evidence_scan import SourceBusyError, SourceSearchError
 
 
 RYERSON_SOURCE = "Ryerson"
-DEFAULT_STATE = "SA"
+DEFAULT_STATE = ""
 
 
 @dataclass(frozen=True)
