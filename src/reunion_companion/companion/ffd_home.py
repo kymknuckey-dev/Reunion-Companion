@@ -84,7 +84,7 @@ def home_body(db,quality_counts,presentation=False,search_html="",q=""):
         f"<strong>{value:,}</strong> {esc(label)}" for label,value in stats.items()
     )
 
-    quality_total=sum(quality_counts.values())
+    quality_total=sum(v for v in quality_counts.values() if isinstance(v,(int,float)))
     presentation_explore=f"""<h2 class='ffd-section'>Explore</h2>
 <div class='grid'>
   <a class='card quick ffd-explore' href='/search'><h2>Find a Person</h2><p>Search the family and open a person’s history.</p></a>

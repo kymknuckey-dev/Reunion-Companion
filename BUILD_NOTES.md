@@ -1,3 +1,26 @@
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.9.2 — Event Media Publication Context Correction
+
+- History Book publication now treats Reunion event attachment context as authoritative.
+- Birth event media is grouped with Birth Documents; Death, Burial and Cremation event media is grouped with Death & Burial Documents.
+- Filename/title/folder heuristics remain only as fallback classification.
+- Regression covers Brian Victor Knuckey-style Burial photos with generic titles.
+
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.9.1 — Data Quality Event & Era Drilldown
+- Data Quality primary lists now drill down by event/fact type before showing records.
+- Event/fact types drill down again by rolling era: last 100 years, 100–200 years, more than 200 years, or unknown context.
+- Existing Actionable / Review / Low opportunity classifications remain visible only at the record-list level for evaluation.
+- Era boundaries roll with the current year rather than using fixed calendar dates.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.9 — Actionable Data Quality Centre
+
+- Replaces the overwhelming Unsourced events / facts quality card with Missing information and Present but unsourced.
+- Separates Marriage quality through family records and retains missing Death events in Priorities.
+- Adds transparent first-pass actionability: 1900+ Actionable, 1800s Review, pre-1800 Low opportunity.
+- Preserves Place variants, Missing media, Legacy PICT, Untitled sources and Duplicate source titles.
+- Retains the RC1.0.14.8.9.9.4.1.3.12.8.2.1 Ryerson national-coverage queue correction.
+- Restores executable permission for scripts/reunion-ryerson in the release package.
+
 ## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.8.2.1 — Ryerson National Coverage Queue Correction QA Fix
 - Installer QA compatibility correction: superseded .12.8.1 targeted-queue regression now reflects the .12.8.2 architecture.
 - Ryerson State reset now explicitly sets selectedIndex=0 as well as selecting the national/All States option.

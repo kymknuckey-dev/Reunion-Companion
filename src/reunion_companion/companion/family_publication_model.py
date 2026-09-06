@@ -142,13 +142,30 @@ def family_publication_media(db,family_id,husband_id=None,wife_id=None):
             marriage_docs.append(m)
     return family,wedding_photos,marriage_docs
 
+def _event_media_types(db,pid):
+    """Return media id -> attached event types for this person.
+
+    Reunion's event attachment is authoritative publication metadata.  Filename,
+    title and folder heuristics are only fallbacks when no event context exists.
+    """
+    rows=db.execute("""SELECT em.media_id,e.event_type FROM event_media em
+        JOIN events e ON e.id=em.event_id WHERE e.person_id=?""",(pid,)).fetchall()
+    out={}
+    for r in rows:
+        out.setdefault(r["media_id"],set()).add((r["event_type"] or "").strip().lower())
+    return out
+
 def person_document_groups(db,pid):
     groups={"portrait":[],"birth":[],"death":[],"military":[],"other-documents":[],"other-photos":[],"legacy":[]}
     photos=[]
+    event_types=_event_media_types(db,pid)
     for m in person_media(db,pid):
         k=media_kind(m)
         title=_title(m).lower()
+        attached=event_types.get(m["id"],set())
         if k=="legacy":groups["legacy"].append(m)
+        elif "birth" in attached:groups["birth"].append(m)
+        elif attached.intersection({"death","burial","cremation"}):groups["death"].append(m)
         elif k=="birth-document" or (k=="document-image" and "birth" in title):groups["birth"].append(m)
         elif k=="death-document" or (k=="document-image" and ("death" in title or "burial" in title)):groups["death"].append(m)
         elif k=="military-document":groups["military"].append(m)

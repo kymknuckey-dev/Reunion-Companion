@@ -27,11 +27,13 @@ def test_research_overview_is_evidence_dashboard():
     assert 'Needs evidence' in s and 'Supported' in s
     assert "href='/person/{pid}?tab=sources'" in s
 
-def test_quality_centre_consolidates_place_and_unsourced_facts():
+def test_quality_centre_consolidates_actionable_data_quality():
     s=(ROOT/'src/reunion_companion/companion/beta_ui.py').read_text()
     q=s[s.index('def quality_page'):s.index('def quality_items_page')]
     assert 'Place variants' in q
-    assert 'Unsourced events / facts' in q
+    assert 'Missing information' in q
+    assert 'Present but unsourced' in q
+    assert 'Unsourced events / facts' not in q
     assert 'Missing birth places' not in q
     assert 'Missing death places' not in q
 

@@ -810,32 +810,95 @@ def data_page(db,msg="",import_page=1):
 <details class='rc-change-gedcom'><summary>Choose Different GEDCOM…</summary><form method='post' action='/data/import'><input name='path' placeholder='/Users/.../Family.ged' required><button class='secondary'>Refresh This GEDCOM</button></form></details>{last_refresh_html}</div></div>
 {crawler_html}""",active="manage")
 
+def _quality_card_breakdown(summary):
+    parts=[]
+    for label in ("Birth","Marriage","Death","Burial","Cremation"):
+        n=(summary.get("by_type") or {}).get(label,0)
+        if n: parts.append(f"{label} {n:,}")
+    return " · ".join(parts[:5]) or "No current items"
+
 def quality_page(db):
     q=quick_wins(db)
+    missing_summary=q["missing_information_summary"]
+    unsourced_summary=q["unsourced_information_summary"]
+    body="""<h1>Data Quality Centre</h1><p class='meta'>Find and fix issues in data already recorded. Review here, change the authoritative record in Reunion, then reload the GEDCOM.</p>
+<style>
+.rc-quality-primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}.rc-quality-primary .card{margin:0;text-decoration:none;color:var(--text)}
+.rc-quality-kpi{font-size:34px;font-weight:750;margin:4px 0}.rc-quality-actionable{font-size:13px;color:var(--good);font-weight:700}.rc-quality-breakdown{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.5}
+.rc-quality-secondary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.rc-quality-secondary .card{margin:0;text-decoration:none;color:var(--text)}
+.rc-quality-secondary .kpi{font-size:27px}.rc-quality-note{margin:16px 0;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:#fafaf8;font-size:13px;color:var(--muted)}
+@media(max-width:760px){.rc-quality-primary{grid-template-columns:1fr}}
+</style>"""
+    body+="<div class='rc-quality-primary'>"
+    body+=f"<a class='card' href='/quality/items?kind=missing-information'><h2>Missing information</h2><div class='rc-quality-kpi'>{q['missing_information']:,}</div><div class='rc-quality-actionable'>{q['missing_information_actionable']:,} actionable</div><div class='rc-quality-breakdown'>{esc(_quality_card_breakdown(missing_summary))}</div><p class='meta'>Recorded Birth, Marriage, Death and burial/cremation details with an empty date or place.</p></a>"
+    body+=f"<a class='card' href='/quality/items?kind=unsourced-information'><h2>Present but unsourced</h2><div class='rc-quality-kpi'>{q['unsourced_information']:,}</div><div class='rc-quality-actionable'>{q['unsourced_information_actionable']:,} actionable</div><div class='rc-quality-breakdown'>{esc(_quality_card_breakdown(unsourced_summary))}</div><p class='meta'>Recorded events and facts with no directly linked source or media evidence.</p></a>"
+    body+="</div><div class='rc-quality-note'><strong>Actionability is deliberately simple in this first pass.</strong> Recent records are surfaced first; nineteenth-century items are retained for review; early records remain visible without dominating the work queue. Missing Death events themselves remain in Priorities.</div>"
     cards=[
-        ("Place variants","place_variant_groups","/places"),
-        ("Unsourced events / facts","unsourced_events","/quality/items?kind=unsourced-events"),
-        ("Missing media","missing_media","/quality/items?kind=missing-media"),
-        ("Legacy PICT","legacy_pict","/quality/items?kind=legacy-pict"),
-        ("Untitled sources","untitled_sources","/quality/items?kind=untitled-sources"),
-        ("Duplicate source titles","duplicate_source_titles","/quality/items?kind=duplicate-sources"),
+        ("Place variants","place_variant_groups","/places","Potentially equivalent place names"),
+        ("Missing media","missing_media","/quality/items?kind=missing-media","Media files referenced but not found on disk"),
+        ("Legacy PICT","legacy_pict","/quality/items?kind=legacy-pict","Legacy image formats worth replacing"),
+        ("Untitled sources","untitled_sources","/quality/items?kind=untitled-sources","Sources without a useful title"),
+        ("Duplicate source titles","duplicate_source_titles","/quality/items?kind=duplicate-sources","Source titles that may need consolidation"),
     ]
-    body="<h1>Data Quality Centre</h1><p class='meta'>Review here, change the authoritative record in Reunion, then reload the GEDCOM.</p><div class='grid'>"
-    for label,key,url in cards:
-        body+=f"<a class='card quick' href='{url}'><h2>{esc(label)}</h2><div class='kpi'>{q[key]:,}</div><p class='meta'>Review items</p></a>"
+    body+="<div class='rc-quality-secondary'>"
+    for label,key,url,desc in cards:
+        body+=f"<a class='card quick' href='{url}'><h2>{esc(label)}</h2><div class='kpi'>{q[key]:,}</div><p class='meta'>{esc(desc)}</p></a>"
     return layout("Data Quality",body+"</div>",active="improve")
 
-def quality_items_page(db,kind):
-    items=quality_items(db,kind)
-    body=f"<h1>{esc(kind.replace('-',' ').title())}</h1><div class='card'><p>{len(items):,} item(s)</p>"
+def quality_items_page(db,kind,query=None):
+    from .beta3_quality import era_bucket, filter_quality_items, quality_drilldown
+    query=query or {}
+    items=quality_items(db,kind,100000)
+    titles={"missing-information":"Missing information","unsourced-information":"Present but unsourced"}
+    title=titles.get(kind,kind.replace('-',' ').title())
+    if kind in ("missing-information","unsourced-information"):
+        event_type=query.get("event") or ""
+        era=query.get("era") or ""
+        base=f"/quality/items?kind={quote(kind)}"
+        if not event_type:
+            summary=quality_drilldown(items)
+            body=f"<h1>{esc(title)}</h1><p class='meta'>Choose the genealogical task you want to work on. Event type narrows the list before actionability is considered.</p><div class='rc-quality-secondary'>"
+            preferred=("Birth","Marriage","Death","Burial","Cremation")
+            types=list(summary['by_type'])
+            types.sort(key=lambda x:(preferred.index(x) if x in preferred else len(preferred),x))
+            for typ in types:
+                n=summary['by_type'][typ]
+                body+=f"<a class='card quick' href='{base}&event={quote(typ)}'><h2>{esc(typ)}</h2><div class='kpi'>{n:,}</div><p class='meta'>View {esc(typ.lower())} items by era</p></a>"
+            body+="</div>"
+            return layout("Quality Items",body,active="improve")
+        typed=filter_quality_items(items,event_type=event_type)
+        if not era:
+            counts=quality_drilldown(typed)['by_era']
+            labels=[("last-100","Last 100 years"),("100-200","100–200 years ago"),("over-200","More than 200 years ago"),("unknown","Unknown / insufficient date context")]
+            body=f"<p><a href='{base}'>← {esc(title)}</a></p><h1>{esc(event_type)}</h1><p class='meta'>{esc(title)} — choose a rolling era to narrow the work list.</p><div class='rc-quality-secondary'>"
+            for key,label in labels:
+                n=counts.get(key,0)
+                body+=f"<a class='card quick' href='{base}&event={quote(event_type)}&era={key}'><h2>{esc(label)}</h2><div class='kpi'>{n:,}</div></a>"
+            body+="</div>"
+            return layout("Quality Items",body,active="improve")
+        filtered=filter_quality_items(typed,era=era)
+        era_label=era_bucket(None)[1] if era=='unknown' else dict((k,l) for k,l in (("last-100","Last 100 years"),("100-200","100–200 years ago"),("over-200","More than 200 years ago")))[era]
+        actionable=sum(1 for x in filtered if x.get("actionability")=="actionable")
+        review=sum(1 for x in filtered if x.get("actionability")=="review")
+        low=sum(1 for x in filtered if x.get("actionability")=="low")
+        body=f"<p><a href='{base}&event={quote(event_type)}'>← {esc(event_type)} eras</a></p><h1>{esc(event_type)} — {esc(era_label)}</h1><p class='meta'>{esc(title)}. Actionability remains visible as supporting information rather than the primary grouping.</p>"
+        body+=f"<div class='card'><strong>{len(filtered):,} item(s)</strong><span class='badge good' style='margin-left:10px'>{actionable:,} actionable</span><span class='badge info' style='margin-left:6px'>{review:,} review</span><span class='badge' style='margin-left:6px'>{low:,} low opportunity</span></div><div class='card' style='padding:0 18px'>"
+        for x in filtered:
+            badge_class="good" if x.get("actionability")=="actionable" else "info" if x.get("actionability")=="review" else ""
+            missing="Missing "+" and ".join(x["missing_fields"]) if x.get("missing_fields") else ""
+            detail=missing or x.get("current_value") or ""
+            href=f"/person/{x['person_id']}?tab=overview" if x.get("person_id") else "#"
+            body+=f"<a class='result' href='{href}'><strong>{esc(x.get('display_name'))}</strong><span class='badge {badge_class}' style='float:right'>{esc(x.get('priority_label'))}</span><span class='meta' style='display:block'>{esc(x.get('event_type'))} — {esc(detail)}</span><span class='small' style='display:block;margin-top:3px'>{esc(x.get('reason'))}</span></a>"
+        if not filtered: body+="<p>No current items.</p>"
+        return layout("Quality Items",body+"</div>",active="improve")
+    body=f"<h1>{esc(title)}</h1><div class='card'><p>{len(items):,} item(s)</p>"
     for x in items:
         if x.get("person_id"):
-            body+=f"""<a class='result' href='/person/{x['person_id']}?tab=overview'>
-<strong>{esc(x.get('display_name'))}</strong> — {esc(x.get('event_type') or '')} {esc(x.get('date_text') or '')}</a>"""
+            body+=f"<a class='result' href='/person/{x['person_id']}?tab=overview'><strong>{esc(x.get('display_name'))}</strong> — {esc(x.get('event_type') or '')} {esc(x.get('date_text') or '')}</a>"
         else:
-            title=x.get("title") or x.get("display_text") or x.get("file_path") or x.get("ids") or "Item"
-            body+=f"<div class='topic'><strong>{esc(title)}</strong><div class='small'>{esc(x.get('file_path') or '')}</div></div>"
-    return layout("Quality Items",body+"</div>")
+            item_title=x.get("title") or x.get("display_text") or x.get("file_path") or x.get("ids") or "Item"
+            body+=f"<div class='topic'><strong>{esc(item_title)}</strong><div class='small'>{esc(x.get('file_path') or '')}</div></div>"
+    return layout("Quality Items",body+"</div>",active="improve")
 
 def timeline_tab(db,pid,view="story",presentation=False):
     """Mode-specific timeline: Story in Presentation, Research in Research mode."""
@@ -1651,7 +1714,7 @@ def render_get(db,path,query=None):
     if path=="/quality":
         return quality_page(db)
     if path=="/quality/items":
-        return quality_items_page(db,query.get("kind",""))
+        return quality_items_page(db,query.get("kind",""),query)
     if path=="/research":
         return research_page(db,query)
     if path=="/research/discoveries":
