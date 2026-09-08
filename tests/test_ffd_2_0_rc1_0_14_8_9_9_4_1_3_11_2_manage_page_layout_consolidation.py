@@ -33,7 +33,8 @@ def test_manage_layout_consolidation_survives_workflow_simplification(monkeypatc
 
     # .12 deliberately simplified the GEDCOM workflow.
     assert 'Safe Refresh GEDCOM' in html
-    assert 'Choose Different GEDCOM' in html
+    assert 'Choose Different GEDCOM' not in html
+    assert 'EXPECTED GEDCOM' in html
     assert 'LAST REFRESH' in html
     assert "class='rc-manage-history'" not in html
     assert '<h2>Import History</h2>' not in html

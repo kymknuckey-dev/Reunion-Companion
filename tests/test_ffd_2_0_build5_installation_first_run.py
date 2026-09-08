@@ -22,8 +22,7 @@ def test_first_run_is_native_and_only_needed_without_genealogy_data():
 def test_first_run_uses_native_gedcom_file_chooser_and_backend_import():
     s=m.swift_source(Path("/tmp/x"))
     assert "NSOpenPanel" in s
-    assert 'filenameExtension:"ged"' in s
-    assert 'filenameExtension:"gedcom"' in s
+    assert 'panel.allowedFileTypes=["ged","gedcom"]' in s
     assert "/setup/import" in s
     assert "URLQueryItem(name:\"path\",value:file.path)" in s
 

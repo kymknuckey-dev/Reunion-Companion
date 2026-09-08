@@ -66,10 +66,10 @@ def seed_history_from_current(db):
       (str(p),cur["imported_at"],p.stat().st_size if p.exists() else None,p.stat().st_mtime if p.exists() else None,
        _sha(p) if p.exists() else None,json.dumps(counts),json.dumps({}),"baseline"));db.commit()
 
-def staged_import(db_path,gedcom_path):
+def staged_import(db_path,gedcom_path, *, reconcile_external=True):
     # FFD 1.8 Build 1 compatibility wrapper. All imports now use the safe full-refresh engine.
     from .safe_refresh import safe_refresh
-    r=safe_refresh(db_path,gedcom_path)
+    r=safe_refresh(db_path,gedcom_path,reconcile_external=reconcile_external)
     # Keep the older UI/API keys while exposing the richer change report.
     flat={k: sum(v.get(x,0) for x in ("added","changed","removed")) for k,v in r["changes"].items()}
     return {"source_path":r["source"]["path"],"counts":r["validation"],"diff":flat,"changes":r["changes"],

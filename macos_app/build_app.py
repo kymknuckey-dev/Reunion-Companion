@@ -46,7 +46,7 @@ APP_BUILD="6"
 # Historical release: APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6 — Research Value Prioritisation"
 # Historical release: APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.1 — Research Value Specificity Correction"
 # Historical release: APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.6.6 — External Evidence Identity & Review Lifecycle Correction"
-APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.9.2 — Event Media Publication Context Correction"
+APP_RELEASE="FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.4.1 — Family Context Safety & GEDCOM Locate QA"
 # RC1.0.5 Visual QA Pass 2 icon/bundle acceptance remains part of this cumulative build.
 ENGINE_BASELINE="FFD 1.9 RC1"
 BUNDLE_ID="com.reunioncompanion.app"
@@ -140,6 +140,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             let a=NSAlert(); a.alertStyle = .warning; a.messageText="Reunion Files access could not be saved"; a.informativeText=error.localizedDescription; a.runModal()
         }
     }
+    func chooseMediaRoot() {
+        let panel=NSOpenPanel(); panel.title="Choose Reunion Media folder"; panel.message="Select the Media folder whose contents should be compared with Reunion/GEDCOM references."; panel.prompt="Use Media Folder"
+        panel.canChooseFiles=false; panel.canChooseDirectories=true; panel.allowsMultipleSelection=false
+        if let current=reunionFilesURL { panel.directoryURL=current }
+        guard panel.runModal() == .OK, let folder=panel.url else { return }
+        guard let endpoint=URL(string:"http://127.0.0.1:8765/quality/media-root") else { return }
+        var req=URLRequest(url:endpoint); req.httpMethod="POST"; req.timeoutInterval=10
+        var components=URLComponents(); components.queryItems=[URLQueryItem(name:"path",value:folder.path)]
+        req.httpBody=components.percentEncodedQuery?.data(using:.utf8); req.setValue("application/x-www-form-urlencoded",forHTTPHeaderField:"Content-Type")
+        let sem=DispatchSemaphore(value:0); var ok=false; var message="The Media folder could not be saved."
+        URLSession.shared.dataTask(with:req) { data,response,error in
+            defer { sem.signal() }
+            if let http=response as? HTTPURLResponse, (200..<300).contains(http.statusCode) { ok=true }
+            if let data=data, let obj=try? JSONSerialization.jsonObject(with:data) as? [String:Any], let text=obj["message"] as? String { message=text }
+            if let error=error { message=error.localizedDescription }
+        }.resume(); _=sem.wait(timeout:.now()+12)
+        if ok { webView?.load(URLRequest(url:URL(string:"http://127.0.0.1:8765/quality/media")!)) }
+        else { let a=NSAlert(); a.alertStyle = .warning; a.messageText="Media folder could not be selected"; a.informativeText=message; a.runModal() }
+    }
+    func locateGEDCOM() {
+        let panel=NSOpenPanel(); panel.title="Locate expected Reunion GEDCOM"; panel.message="Choose the GEDCOM export for the active Companion Family File."; panel.prompt="Use GEDCOM"
+        panel.canChooseFiles=true; panel.canChooseDirectories=false; panel.allowsMultipleSelection=false
+        panel.allowedFileTypes=["ged","gedcom"]
+        if let current=reunionFilesURL { panel.directoryURL=current }
+        guard panel.runModal() == .OK, let file=panel.url else { return }
+        guard let endpoint=URL(string:"http://127.0.0.1:8765/data/import") else { return }
+        var req=URLRequest(url:endpoint); req.httpMethod="POST"; req.timeoutInterval=120
+        var components=URLComponents(); components.queryItems=[URLQueryItem(name:"path",value:file.path)]
+        req.httpBody=components.percentEncodedQuery?.data(using:.utf8); req.setValue("application/x-www-form-urlencoded",forHTTPHeaderField:"Content-Type")
+        let sem=DispatchSemaphore(value:0); var ok=false; var message="The GEDCOM could not be associated with this Family File."
+        URLSession.shared.dataTask(with:req) { data,response,error in
+            defer { sem.signal() }
+            if let http=response as? HTTPURLResponse, (200..<300).contains(http.statusCode) { ok=true }
+            if let error=error { message=error.localizedDescription }
+        }.resume(); _=sem.wait(timeout:.now()+125)
+        if ok { webView?.load(URLRequest(url:URL(string:"http://127.0.0.1:8765/data")!)) }
+        else { let a=NSAlert(); a.alertStyle = .warning; a.messageText="GEDCOM could not be located"; a.informativeText=message; a.runModal() }
+    }
+
     func configuredModel() -> String {
         let url=FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".reunion-companion/config.json")
         guard let data=try? Data(contentsOf:url), let obj=try? JSONSerialization.jsonObject(with:data) as? [String:Any] else { return "" }
@@ -185,7 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func chooseAndImportGEDCOM() {
         let panel=NSOpenPanel(); panel.title="Import Reunion GEDCOM"; panel.prompt="Import"; panel.canChooseFiles=true; panel.canChooseDirectories=false; panel.allowsMultipleSelection=false
-        panel.allowedContentTypes=[UTType(filenameExtension:"ged") ?? .data, UTType(filenameExtension:"gedcom") ?? .data]
+        panel.allowedFileTypes=["ged","gedcom"]
         guard panel.runModal() == .OK, let file=panel.url else { showFirstRun(); return }
         importGEDCOM(file)
     }
@@ -252,7 +291,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func loadCompanion() { guard let web=webView else { return }; web.load(URLRequest(url:companionURL)); showMainWindow() }
     func webView(_ webView:WKWebView,decidePolicyFor navigationAction:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
-        guard let url=navigationAction.request.url else { decisionHandler(.cancel); return }; let host=(url.host ?? "").lowercased(); let local=host=="127.0.0.1" || host=="localhost" || url.scheme=="about"
+        guard let url=navigationAction.request.url else { decisionHandler(.cancel); return }
+        if url.scheme=="reunion-companion" && url.host=="choose-media-root" { decisionHandler(.cancel); DispatchQueue.main.async { self.chooseMediaRoot() }; return }
+        if url.scheme=="reunion-companion" && url.host=="locate-gedcom" { decisionHandler(.cancel); DispatchQueue.main.async { self.locateGEDCOM() }; return }
+        let host=(url.host ?? "").lowercased(); let local=host=="127.0.0.1" || host=="localhost" || url.scheme=="about"
         if local { decisionHandler(.allow) } else { NSWorkspace.shared.open(url); decisionHandler(.cancel) }
     }
     func showStartupError(_ text:String) { let a=NSAlert(); a.alertStyle = .critical; a.messageText="Reunion Companion could not start"; a.informativeText=text; a.addButton(withTitle:"Quit"); a.runModal(); NSApp.terminate(nil) }

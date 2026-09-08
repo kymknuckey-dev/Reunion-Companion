@@ -1,3 +1,61 @@
+# FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.4.1 — Family Context Safety & GEDCOM Locate QA
+
+- Family File switching pauses the Ryerson crawler before materialising the incoming GEDCOM.
+- Family File switching skips External Evidence eligibility reconciliation, preventing another family's valid discoveries being retired.
+- The normal Ryerson queue is bound to the Family File that starts it; runner ticks refuse a mismatched active Family File.
+- Manage shows Queue Family File and a family-change pause notice.
+- Locate GEDCOM uses explicit .ged/.gedcom extension filtering for native macOS selection.
+- Expected GEDCOM, status/Locate and Safe Refresh are grouped before statistics.
+- No automatic data repair is performed: the verified 840-row incident recovery remains preserved in the user's repaired database.
+
+# FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.4 — GEDCOM Refresh UX & Backup Retention
+
+## Scope
+
+- Make Safe Refresh GEDCOM the single normal refresh action for the active Family File.
+- Show the exact expected GEDCOM filename and full path, plus found/missing status.
+- Remove the permanently visible Choose Different GEDCOM path field/button.
+- When the expected GEDCOM is missing, expose a contextual Locate GEDCOM… action backed by the native macOS file picker.
+- Retain only the latest 3 automatic Safe Refresh database backups after a successful verified refresh.
+- Add Manage visibility for recovery-backup count, size and retention policy.
+- Add explicit Clean Up Old Backups action for the existing accumulated backlog.
+- Cleanup removes surplus automatic refresh backups, stale reunion-companion-refresh staging files, and the obsolete companion.sqlite3.before-bickle-cleanup checkpoint.
+- The deliberate companion-before-ryerson-reset.sqlite3 checkpoint is never touched.
+
+## Safety
+
+Automatic pruning occurs only after a successful verified GEDCOM refresh and promotion. Failed refreshes do not prune recovery backups.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.3.4.1 — Native Finder Tag Metadata QA Correction
+
+- Finder tagging now mirrors Finder-generated metadata: named tag `Reunion - Not Referenced\n1` plus synchronized FinderInfo red label bits.
+- Removal preserves unrelated named tags and restores/clears label colour according to remaining coloured Finder tags.
+- Uses `/usr/bin/xattr` for compatibility with the frozen macOS runtime.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.3 — Finder Media Tagging & GEDCOM Chooser Usability
+
+- Adds explicit Finder tagging for the current Media Reconciliation “Not referenced” set.
+- Preserves unrelated existing Finder tags and supports removing only Companion’s `Reunion - Not Referenced` tag.
+- Recalculates the unreferenced set at action time before changing Finder metadata.
+- Keeps media files read-only: no move, rename, delete, or Reunion attachment changes.
+- Makes “Choose Different GEDCOM…” permanently visible on Manage instead of hiding it in a disclosure.
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.2 — Media Reconciliation Matching & Status Correction
+- Media reconciliation now compares complete paths case-insensitively with Unicode normalization, matching macOS/Reunion path semantics while preserving the actual displayed filename.
+- Adds regression coverage for `Duncan, Lyell Leonard doc2065260.JPG` versus physical `Duncan, Lyell Leonard Doc2065260.jpg`.
+- Clarifies Not referenced and Referenced but missing as review states; Referenced & found as healthy; iCloud as availability information rather than a data-quality failure.
+- iCloud placeholders are never classified as missing when the physical placeholder is present in the selected Media root.
+
+FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10.1 — Media Workspace Presentation QA
+
+
+## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.10 — Reunion Media Reconciliation
+- Added a read-only Improve → Media Reconciliation audit.
+- Compares imported Reunion/GEDCOM media references with every physical file beneath a selectable Media root.
+- Shows referenced/found, referenced/missing, unreferenced and iCloud-placeholder counts.
+- Adds image and first-page PDF thumbnails, relative locations, file sizes and Reunion person/event context.
+- Media root is inferred from existing Reunion paths initially and can be changed using the native macOS folder picker.
+- No file is moved, renamed, deleted or attached by this feature.
 ## FFD 2.0 RC1.0.14.8.9.9.4.1.3.12.9.2 — Event Media Publication Context Correction
 
 - History Book publication now treats Reunion event attachment context as authoritative.

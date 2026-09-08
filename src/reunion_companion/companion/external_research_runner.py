@@ -3,6 +3,8 @@ from .external_evidence_scan import SOURCE_RYERSON, enqueue_death_research_candi
 
 META_ENABLED="ryerson_runner_enabled"
 META_COOLDOWN_UNTIL="ryerson_runner_cooldown_until"
+META_OWNER_WORKSPACE="ryerson_runner_owner_workspace_id"
+META_OWNER_NAME="ryerson_runner_owner_family_name"
 
 def _meta_get(db,key,default=""):
     row=db.execute("SELECT value FROM meta WHERE key=?",(key,)).fetchone()
@@ -32,7 +34,47 @@ def source_waiting(db, now=None):
 def runner_enabled(db):
     return _meta_get(db,META_ENABLED,"0")=="1"
 
+
+def runner_owner(db):
+    raw=_meta_get(db,META_OWNER_WORKSPACE,"")
+    try: workspace_id=int(raw) if raw else None
+    except ValueError: workspace_id=None
+    return {"workspace_id":workspace_id,"family_name":_meta_get(db,META_OWNER_NAME,"")}
+
+def _active_workspace(db):
+    from .family_files import active_family_file
+    return active_family_file(db)
+
+def runner_matches_active_family(db):
+    owner=runner_owner(db); active=_active_workspace(db)
+    return bool(owner["workspace_id"] and active and owner["workspace_id"]==int(active["id"]))
+
+def _bind_owner(db, active):
+    _meta_set(db,META_OWNER_WORKSPACE,str(active["id"]))
+    _meta_set(db,META_OWNER_NAME,active.get("display_name") or "")
+
+def pause_for_family_change(db):
+    active=_active_workspace(db)
+    owner=runner_owner(db)
+    # Upgrade legacy global queues by binding them to the Family File that is
+    # active immediately before the first post-upgrade switch.
+    if not owner["workspace_id"] and active and scan_summary(db,SOURCE_RYERSON)["total"]:
+        _bind_owner(db,active)
+    if runner_enabled(db):
+        _meta_set(db,META_ENABLED,"0")
+    _meta_set(db,"ryerson_runner_pause_reason","family_file_changed")
+    return runner_status(db)
+
 def start_runner(db):
+    active=_active_workspace(db)
+    if not active: raise RuntimeError("No active Family File is available.")
+    owner=runner_owner(db)
+    total=scan_summary(db,SOURCE_RYERSON)["total"]
+    if owner["workspace_id"] and owner["workspace_id"] != int(active["id"]) and total:
+        raise RuntimeError(f"Ryerson queue belongs to {owner['family_name'] or 'another Family File'}. Switch to that Family File before starting the crawler.")
+    if not owner["workspace_id"]:
+        _bind_owner(db,active)
+    _meta_set(db,"ryerson_runner_pause_reason","")
     added=enqueue_death_research_candidates(db,SOURCE_RYERSON)
     # Backfill any stored findings that pre-date the live review handoff.
     # The bridge is idempotent and preserves existing review decisions.
@@ -57,7 +99,11 @@ def runner_status(db):
     # The source-wide cooldown gates every queued retry.  If it extends beyond
     # the earliest row retry, the cooldown is the actual next eligible time.
     next_retry=max((x for x in (retry_at,until) if x is not None),default=None)
+    owner=runner_owner(db)
     return {"enabled":runner_enabled(db),"source_name":SOURCE_RYERSON,"total":summary["total"],
+            "owner_workspace_id":owner["workspace_id"],"owner_family_name":owner["family_name"],
+            "matches_active_family":runner_matches_active_family(db),
+            "pause_reason":_meta_get(db,"ryerson_runner_pause_reason",""),
             "queued":c.get("queued",0),"searching":c.get("searching",0),
             "retry_wait":c.get("retry_wait",0),"findings":c.get("succeeded_with_findings",0),
             "no_match":c.get("succeeded_no_match",0),"failed":c.get("failed",0),
@@ -70,6 +116,14 @@ def runner_tick(db,search_fn,now=None):
     now=now or datetime.now(timezone.utc)
     if not runner_enabled(db):
         return {"status":"paused"}
+    if not runner_owner(db)["workspace_id"]:
+        active=_active_workspace(db)
+        if active:
+            _bind_owner(db,active)
+    if not runner_matches_active_family(db):
+        _meta_set(db,META_ENABLED,"0")
+        _meta_set(db,"ryerson_runner_pause_reason","family_file_mismatch")
+        return {"status":"paused_family_mismatch"}
     if source_waiting(db,now):
         until=source_cooldown_until(db)
         return {"status":"source_wait","next_retry_at":until.isoformat() if until else None}

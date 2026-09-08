@@ -24,6 +24,8 @@ from .gedcom import import_gedcom, parse_gedcom
 from .beta3_data_manager import ensure_companion_tables, seed_history_from_current, dataset_counts
 
 IMPORTED_TABLES = ("people", "families", "events", "notes", "sources", "media", "citations")
+AUTO_REFRESH_BACKUP_RETENTION = 3
+
 
 
 @dataclass(frozen=True)
@@ -187,6 +189,74 @@ def compare_snapshots(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any
     return report
 
 
+def _refresh_backup_files(db_path: Path) -> list[Path]:
+    backup_dir = db_path.parent / "backups"
+    if not backup_dir.exists():
+        return []
+    pattern = f"{db_path.stem}-before-refresh-*{db_path.suffix}"
+    return sorted(
+        (p for p in backup_dir.glob(pattern) if p.is_file()),
+        key=lambda p: (p.stat().st_mtime, p.name),
+        reverse=True,
+    )
+
+
+def backup_housekeeping_status(db_path: str | Path) -> dict[str, Any]:
+    """Describe automatic refresh backups and known stale refresh artefacts.
+
+    Deliberate named checkpoints such as companion-before-ryerson-reset.sqlite3
+    are intentionally outside this policy.
+    """
+    db_path = Path(db_path).expanduser().resolve()
+    backups = _refresh_backup_files(db_path)
+    excess = backups[AUTO_REFRESH_BACKUP_RETENTION:]
+    bickle = db_path.parent / f"{db_path.name}.before-bickle-cleanup"
+    stages = [p for p in db_path.parent.glob("reunion-companion-refresh-*.sqlite3") if p.is_file()]
+    cleanup = list(excess) + stages + ([bickle] if bickle.is_file() else [])
+    return {
+        "retention": AUTO_REFRESH_BACKUP_RETENTION,
+        "count": len(backups),
+        "bytes": sum(p.stat().st_size for p in backups),
+        "excess_count": len(excess),
+        "excess_bytes": sum(p.stat().st_size for p in excess),
+        "stale_stage_count": len(stages),
+        "stale_stage_bytes": sum(p.stat().st_size for p in stages),
+        "bickle_cleanup_present": bickle.is_file(),
+        "bickle_cleanup_bytes": bickle.stat().st_size if bickle.is_file() else 0,
+        "cleanup_bytes": sum(p.stat().st_size for p in cleanup),
+    }
+
+
+def prune_refresh_backups(db_path: str | Path, *, retain: int = AUTO_REFRESH_BACKUP_RETENTION) -> list[str]:
+    """Keep only the newest automatic Safe Refresh recovery backups."""
+    db_path = Path(db_path).expanduser().resolve()
+    removed = []
+    for path in _refresh_backup_files(db_path)[max(0, int(retain)) :]:
+        path.unlink(missing_ok=True)
+        removed.append(str(path))
+    return removed
+
+
+def cleanup_refresh_housekeeping(db_path: str | Path) -> dict[str, Any]:
+    """Explicit housekeeping for the agreed RC cleanup.
+
+    Keeps three automatic Safe Refresh backups, removes abandoned refresh-stage
+    files and the obsolete Bickle cleanup checkpoint. The deliberate Ryerson
+    reset checkpoint is never touched.
+    """
+    db_path = Path(db_path).expanduser().resolve()
+    removed = prune_refresh_backups(db_path)
+    for path in db_path.parent.glob("reunion-companion-refresh-*.sqlite3"):
+        if path.is_file():
+            path.unlink(missing_ok=True)
+            removed.append(str(path))
+    bickle = db_path.parent / f"{db_path.name}.before-bickle-cleanup"
+    if bickle.is_file():
+        bickle.unlink(missing_ok=True)
+        removed.append(str(bickle))
+    return {"removed": removed, "removed_count": len(removed), "status": backup_housekeeping_status(db_path)}
+
+
 def _backup_database(db_path: Path) -> Path:
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     backup_dir = db_path.parent / "backups"
@@ -262,7 +332,7 @@ def _build_stage(db_path: Path, ged: Path) -> tuple[Path, dict[str, Any], dict[s
     return stage, before_snapshot, after_snapshot, validation
 
 
-def safe_refresh(db_path: str | Path, gedcom_path: str | Path, *, dry_run: bool = False) -> dict[str, Any]:
+def safe_refresh(db_path: str | Path, gedcom_path: str | Path, *, dry_run: bool = False, reconcile_external: bool = True) -> dict[str, Any]:
     """Build, validate, compare and optionally promote a complete GEDCOM refresh."""
     db_path = Path(db_path).expanduser().resolve()
     ged = Path(gedcom_path).expanduser().resolve()
@@ -294,44 +364,38 @@ def safe_refresh(db_path: str | Path, gedcom_path: str | Path, *, dry_run: bool 
         result["backup_path"] = str(backup)
         result["promoted"] = True
 
-        # Reconcile Companion-held external discovery state against the newly
-        # promoted Reunion snapshot. This happens only after a successful
-        # promotion; dry runs and failed refreshes must never mutate discovery
-        # decisions.
-        refreshed = connect(db_path)
-        try:
-            from .external_evidence_matcher import ryerson_death_candidates
-            from .ryerson_discovery_review import (
-                discovery_fact_present_in_reunion,
-                reconcile_discovery_eligibility,
-                reconcile_waiting_discoveries,
-            )
-
-            eligible_person_ids = {
-                int(row["person_id"])
-                for row in ryerson_death_candidates(refreshed)
-            }
-
-            retired = reconcile_discovery_eligibility(
-                refreshed,
-                eligible_person_ids,
-            )
-
-            confirmed = reconcile_waiting_discoveries(
-                refreshed,
-                lambda discovery: discovery_fact_present_in_reunion(
+        # Reconcile Companion-held external discovery state only when refreshing
+        # the same active Family File. Family-file switching materialises a
+        # different genealogy snapshot and must never retire another family's
+        # Ryerson discoveries as ineligible.
+        if reconcile_external:
+            refreshed = connect(db_path)
+            try:
+                from .external_evidence_matcher import ryerson_death_candidates
+                from .ryerson_discovery_review import (
+                    discovery_fact_present_in_reunion,
+                    reconcile_discovery_eligibility,
+                    reconcile_waiting_discoveries,
+                )
+                eligible_person_ids = {int(row["person_id"]) for row in ryerson_death_candidates(refreshed)}
+                retired = reconcile_discovery_eligibility(refreshed, eligible_person_ids)
+                confirmed = reconcile_waiting_discoveries(
                     refreshed,
-                    discovery,
-                ),
-            )
+                    lambda discovery: discovery_fact_present_in_reunion(refreshed, discovery),
+                )
+                result["discovery_reconciliation"] = {
+                    "retired_ineligible": retired,
+                    "confirmed_after_refresh": len(confirmed),
+                }
+            finally:
+                refreshed.close()
+        else:
+            result["discovery_reconciliation"] = {"skipped": "family_file_switch"}
 
-            result["discovery_reconciliation"] = {
-                "retired_ineligible": retired,
-                "confirmed_after_refresh": len(confirmed),
-            }
-        finally:
-            refreshed.close()
-
+        # A successful verified refresh is the boundary at which automatic
+        # recovery-backup retention is safe to enforce. Deliberate named
+        # checkpoints are not part of this pruning policy.
+        result["pruned_backup_paths"] = prune_refresh_backups(db_path)
         return result
     finally:
         if stage is not None and stage.exists():

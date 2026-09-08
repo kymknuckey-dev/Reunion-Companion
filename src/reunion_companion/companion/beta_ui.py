@@ -18,6 +18,7 @@ from .identity_discovery import is_natural_language_question
 from .person_navigation import nav_html
 from .beta3_data_manager import current_gedcom,import_history,import_history_count,seed_history_from_current,reload_current,staged_import,dataset_counts
 from .beta3_quality import quick_wins,quality_items,person_quality
+from .media_reconciliation import reconcile_media,set_media_root,media_file_allowed,set_not_referenced_finder_tags,NOT_REFERENCED_FINDER_TAG
 from .family_files import (active_family_file,default_family_file,list_family_files,register_family_file,set_active_family,verify_refresh_for_workspace,record_workspace_import,
     rename_family_file,set_default_family,delete_family_file,family_report_count,preflight_family_refresh,FamilyFileMismatch,deletion_lifecycle)
 from .beta3_publishing import (
@@ -724,18 +725,28 @@ def data_page(db,msg="",import_page=1):
         for k in stat_order
     )
     message=f"<div class='card'><strong>{esc(msg)}</strong></div>" if msg else ""
-    current=esc(cur["source_path"]) if cur else "No GEDCOM recorded"
-    current_name=esc(Path(cur["source_path"]).name) if cur else "No GEDCOM recorded"
-    disabled="" if cur else "disabled"
+    ff=active_family_file(db)
+    expected_path=(ff or {}).get("gedcom_path") or (cur or {}).get("source_path")
+    expected=Path(expected_path).expanduser() if expected_path else None
+    current=esc(str(expected)) if expected else "No GEDCOM recorded"
+    current_name=esc(expected.name) if expected else "No GEDCOM recorded"
+    expected_found=bool(expected and expected.is_file())
+    disabled="" if expected_found else "disabled"
+    from .safe_refresh import backup_housekeeping_status
+    db_file=Path(db.execute("PRAGMA database_list").fetchone()[2]).resolve()
+    backup_status=backup_housekeeping_status(db_file)
 
     crawler_enabled=bool(run["enabled"])
+    owner_name=run.get("owner_family_name") or "Not yet assigned"
+    owner_line=f"<div class='small'><strong>Queue Family File:</strong> {esc(owner_name)}</div>"
+    pause_notice=("<div class='small'><strong>Crawler paused — Family File changed.</strong> Switch back to the queue Family File before restarting.</div>" if run.get("pause_reason") in ("family_file_changed","family_file_mismatch") and not run.get("matches_active_family") else "")
     crawler_state=("Waiting for Ryerson" if crawler_enabled and run.get("source_waiting") else ("Running" if crawler_enabled else "Paused"))
     core_names=", ".join(surname_run.get("core_surnames",[])) or "None"
     crawler_html=(
         "<div class='card rc-manage-section'><h2>Ryerson Crawler</h2>"
         "<p class='meta'>External death and funeral notice research from the Ryerson Index. The normal crawler uses surname + first given name.</p>"
         f"<div class='rc-manage-row'><div><strong>Ryerson Crawler — {crawler_state}</strong>"
-        f"<div class='small'>Death research: Queued {run['queued']} · Waiting {run['retry_wait']} · Searching {run.get('searching',0)} · Findings {run['findings']} · No finding {run['no_match']} · Failed {run['failed']} · Total {run.get('total',0)}</div>"
+        f"{owner_line}{pause_notice}<div class='small'>Death research: Queued {run['queued']} · Waiting {run['retry_wait']} · Searching {run.get('searching',0)} · Findings {run['findings']} · No finding {run['no_match']} · Failed {run['failed']} · Total {run.get('total',0)}</div>"
         f"<div class='small rc-manage-retry'>{esc(_ryerson_retry_status(run))}</div>"
         f"<div class='small'>Family-wide (paused): Completed {surname_run['completed']} · Queued {surname_run['queued']} · Waiting {surname_run['retry_wait']} · Searching {surname_run['searching']} · Failed {surname_run['failed']} · Total {surname_run['total']} · Core {esc(core_names)}</div></div>"
     )
@@ -757,7 +768,7 @@ def data_page(db,msg="",import_page=1):
         crawler_html+="<p class='small'>No crawler activity recorded yet.</p>"
     crawler_html+="</div>"
 
-    ff=active_family_file(db); fams=list_family_files(db)
+    fams=list_family_files(db)
     active_rows=[]; other_rows=[]
     for x in fams:
         reports=family_report_count(db,x['id'])
@@ -790,6 +801,19 @@ def data_page(db,msg="",import_page=1):
     else:
         last_refresh_html="<div class='rc-last-refresh'><span class='rc-manage-label'>LAST REFRESH</span><div class='small'>No refresh recorded yet.</div></div>"
 
+    status_icon="✓" if expected_found else "⚠"
+    status_text="File found" if expected_found else "Expected GEDCOM not found"
+    locate_html="" if expected_found else "<a class='button secondary' href='reunion-companion://locate-gedcom'>Locate GEDCOM…</a>"
+    backup_note=(f"{backup_status['count']} automatic backup(s) · {_fmt_size(backup_status['bytes'])} · retention: latest {backup_status['retention']}")
+    cleanup_needed=bool(backup_status['excess_count'] or backup_status['stale_stage_count'] or backup_status['bickle_cleanup_present'])
+    cleanup_html=""
+    if cleanup_needed:
+        cleanup_html=(
+            "<form method='post' action='/manage/backups/cleanup' class='inline-form'>"
+            f"<button class='secondary' type='submit'>Clean Up Old Backups</button></form>"
+            f"<span class='small'>Reclaim about {_fmt_size(backup_status['cleanup_bytes'])}. Keeps the latest 3 Safe Refresh backups and the Ryerson reset checkpoint.</span>"
+        )
+
     return layout("Data Manager",f"""<h1>Data Manager</h1>{message}
 <style>
 .rc-manage-section{{padding:16px;margin-bottom:16px}}.rc-manage-section h2{{margin:0 0 2px}}.rc-manage-section>.meta{{margin:0 0 10px}}
@@ -798,16 +822,18 @@ def data_page(db,msg="",import_page=1):
 .rc-manage-divider{{margin:0 14px;padding:10px 0 2px;border-bottom:1px solid var(--line);font-size:13px}}.rc-inline-details{{position:relative}}.rc-inline-details summary{{cursor:pointer;list-style:none;padding:8px 2px}}.rc-inline-details summary::-webkit-details-marker{{display:none}}.rc-rename-form{{position:absolute;right:0;top:34px;z-index:3;display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;box-shadow:0 4px 16px #0002}}.rc-rename-form input{{min-width:220px}}
 .rc-add-family{{margin-top:10px;text-align:right}}.rc-add-family summary{{cursor:pointer;list-style:none;font-weight:600}}.rc-add-family summary::-webkit-details-marker{{display:none}}.rc-add-family form{{display:flex;gap:8px;margin-top:10px}}.rc-add-family input{{min-width:0;flex:1}}
 .rc-gedcom-box{{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:10px}}.rc-gedcom-head{{padding:12px 14px}}.rc-gedcom-stats{{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}.rc-manage-stat{{text-align:center;padding:10px 5px;border-right:1px solid var(--line)}}.rc-manage-stat:last-child{{border-right:0}}.rc-manage-stat strong{{display:block;font-size:20px}}.rc-manage-stat span{{font-size:11px;color:var(--muted)}}
-.rc-gedcom-action{{display:flex;align-items:center;gap:14px;padding:12px 14px}}.rc-gedcom-action form{{margin:0}}.rc-change-gedcom{{padding:0 14px 12px}}.rc-change-gedcom summary{{cursor:pointer;font-weight:650}}.rc-change-gedcom form{{display:flex;gap:8px;margin-top:9px}}.rc-change-gedcom input{{flex:1}}.rc-last-refresh{{border-top:1px solid var(--line);padding:10px 14px}}.rc-manage-label{{display:block;font-size:9px;font-weight:750;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}}
+.rc-gedcom-action{{display:flex;align-items:center;gap:14px;padding:12px 14px;flex-wrap:wrap}}.rc-gedcom-action form{{margin:0}}.rc-gedcom-status{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px 12px;border-top:1px solid var(--line)}}.rc-gedcom-status .ok{{color:var(--good);font-weight:700}}.rc-gedcom-status .warn{{font-weight:700}}.rc-backup-status{{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:10px 14px}}.rc-backup-status form{{margin:0}}.rc-last-refresh{{border-top:1px solid var(--line);padding:10px 14px}}.rc-manage-label{{display:block;font-size:9px;font-weight:750;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}}
 .rc-manage-subhead{{font-size:13px;margin:12px 0 6px}}.rc-manage-list{{border:1px solid var(--line);border-radius:8px;overflow:hidden}}.rc-manage-activity{{display:grid;grid-template-columns:52px 1fr 2fr;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);align-items:center}}.rc-manage-activity:last-child{{border-bottom:0}}
 @media(max-width:900px){{.rc-gedcom-stats{{grid-template-columns:repeat(4,1fr)}}.rc-manage-stat{{border-bottom:1px solid var(--line)}}.rc-manage-row{{align-items:flex-start;flex-direction:column}}.rc-manage-actions{{justify-content:flex-start}}}}
 </style>
 <div class='card rc-manage-section'><h2>Family Files</h2><p class='meta'>Choose and maintain the Family Files managed by Companion.</p>{family_html}
 <details class='rc-add-family'><summary>＋ Add Family File</summary><form method='post' action='/family-file/add'><input name='name' placeholder='Family File name' required><input name='path' placeholder='/Users/.../Family.ged' required><input name='source_application' placeholder='Source application (e.g. Reunion)'><button>Add Family</button></form></details></div>
-<div class='card rc-manage-section'><h2>Reunion GEDCOM</h2><p class='meta'>Refresh the active Family File from its current or a different Reunion GEDCOM export.</p>
-<div class='rc-gedcom-box'><div class='rc-gedcom-head'><strong>{current_name}</strong><div class='small'>{current}</div></div><div class='rc-gedcom-stats'>{stats}</div>
-<div class='rc-gedcom-action'><form method='post' action='/data/reload'><button {disabled}>Safe Refresh GEDCOM</button></form><span class='small'>Builds and verifies a staged database, backs up the current database, then atomically promotes the refresh.</span></div>
-<details class='rc-change-gedcom'><summary>Choose Different GEDCOM…</summary><form method='post' action='/data/import'><input name='path' placeholder='/Users/.../Family.ged' required><button class='secondary'>Refresh This GEDCOM</button></form></details>{last_refresh_html}</div></div>
+<div class='card rc-manage-section'><h2>Reunion GEDCOM</h2><p class='meta'>Safe Refresh reloads the GEDCOM associated with the active Family File.</p>
+<div class='rc-gedcom-box'><div class='rc-gedcom-head'><span class='rc-manage-label'>EXPECTED GEDCOM</span><strong>{current_name}</strong><div class='small'>{current}</div></div>
+<div class='rc-gedcom-status'><span class='{"ok" if expected_found else "warn"}'>{status_icon} &nbsp;{status_text}</span>{locate_html}</div>
+<div class='rc-gedcom-action'><form method='post' action='/data/reload'><button {disabled}>Safe Refresh GEDCOM</button></form><span class='small'>Refreshes this Family File from the expected GEDCOM, verifies a staged database, creates a recovery backup, then promotes it safely.</span></div>
+<div class='rc-gedcom-stats'>{stats}</div>
+<div class='rc-backup-status'><div><span class='rc-manage-label'>RECOVERY BACKUPS</span><div class='small'>{backup_note}</div></div>{cleanup_html}</div>{last_refresh_html}</div></div>
 {crawler_html}""",active="manage")
 
 def _quality_card_breakdown(summary):
@@ -828,7 +854,15 @@ def quality_page(db):
 .rc-quality-secondary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.rc-quality-secondary .card{margin:0;text-decoration:none;color:var(--text)}
 .rc-quality-secondary .kpi{font-size:27px}.rc-quality-note{margin:16px 0;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:#fafaf8;font-size:13px;color:var(--muted)}
 @media(max-width:760px){.rc-quality-primary{grid-template-columns:1fr}}
+.rc-media-workspace{margin:16px 0}.rc-media-root{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px}.rc-media-root code{font-size:11px;word-break:break-all}.rc-media-totals{font-size:11px;color:var(--muted);margin-top:3px}.rc-media-filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}.rc-media-filter a{padding:10px 12px;border:1px solid var(--line);border-radius:9px;text-decoration:none;color:var(--text);background:#fff}.rc-media-filter a strong{display:block;font-size:21px;line-height:1.1}.rc-media-filter a span{font-size:11px;color:var(--muted)}.rc-media-filter a.active{border-color:var(--brand-navy);box-shadow:inset 0 0 0 1px var(--brand-navy)}.rc-media-browser{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}.rc-media-item{display:grid;grid-template-columns:112px minmax(0,1fr);background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:112px}.rc-media-thumb{width:112px;height:112px;background:#f0f1ee;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--line)}.rc-media-thumb img{width:100%;height:100%;object-fit:contain}.rc-media-thumb .rc-file-icon{font-size:34px;color:var(--muted)}.rc-media-copy{padding:9px 10px;min-width:0}.rc-media-copy strong{display:block;word-break:break-word;font-size:13px;line-height:1.25}.rc-media-path{font-size:10px;color:var(--muted);word-break:break-word;margin-top:4px}.rc-media-context{font-size:11px;margin-top:5px}@media(max-width:760px){.rc-media-filter{grid-template-columns:repeat(2,1fr)}.rc-media-browser{grid-template-columns:1fr}}
 </style>"""
+    media=reconcile_media(db); mc=media.get('counts') or {}; root=media.get('root')
+    body+="<div class='rc-media-workspace'><div class='card rc-media-root'><div><strong>Media</strong><div>"+(f"<code>{esc(root)}</code>" if root else "<span class='meta'>No media folder selected.</span>")+f"</div><div class='rc-media-totals'>{int(mc.get('referenced',0)):,} referenced by Reunion · {int(mc.get('physical',0)):,} files in Media folder</div></div><a class='button secondary' href='reunion-companion://choose-media-root'>Choose Media Folder…</a></div>"
+    body+="<div class='rc-media-filter'>"+''.join([
+        f"<a href='/quality/media?view=unreferenced'><strong>{int(mc.get('unreferenced',0)):,}</strong><span>Not referenced · review</span></a>",
+        f"<a href='/quality/media?view=missing'><strong>{int(mc.get('referenced_missing',0)):,}</strong><span>Referenced but missing · review</span></a>",
+        f"<a href='/quality/media?view=found'><strong>{int(mc.get('referenced_found',0)):,}</strong><span>Referenced &amp; found · healthy</span></a>",
+        f"<a href='/quality/media?view=cloud'><strong>{int(mc.get('cloud_placeholders',0)):,}</strong><span>iCloud availability</span></a>"]) + "</div></div>"
     body+="<div class='rc-quality-primary'>"
     body+=f"<a class='card' href='/quality/items?kind=missing-information'><h2>Missing information</h2><div class='rc-quality-kpi'>{q['missing_information']:,}</div><div class='rc-quality-actionable'>{q['missing_information_actionable']:,} actionable</div><div class='rc-quality-breakdown'>{esc(_quality_card_breakdown(missing_summary))}</div><p class='meta'>Recorded Birth, Marriage, Death and burial/cremation details with an empty date or place.</p></a>"
     body+=f"<a class='card' href='/quality/items?kind=unsourced-information'><h2>Present but unsourced</h2><div class='rc-quality-kpi'>{q['unsourced_information']:,}</div><div class='rc-quality-actionable'>{q['unsourced_information_actionable']:,} actionable</div><div class='rc-quality-breakdown'>{esc(_quality_card_breakdown(unsourced_summary))}</div><p class='meta'>Recorded events and facts with no directly linked source or media evidence.</p></a>"
@@ -899,6 +933,64 @@ def quality_items_page(db,kind,query=None):
             item_title=x.get("title") or x.get("display_text") or x.get("file_path") or x.get("ids") or "Item"
             body+=f"<div class='topic'><strong>{esc(item_title)}</strong><div class='small'>{esc(x.get('file_path') or '')}</div></div>"
     return layout("Quality Items",body+"</div>",active="improve")
+
+
+def _fmt_size(n):
+    n=float(n or 0)
+    for unit in ('B','KB','MB','GB'):
+        if n<1024 or unit=='GB':return f"{n:.0f} {unit}" if unit=='B' else f"{n:.1f} {unit}"
+        n/=1024
+
+def _media_context_html(item):
+    contexts=item.get('contexts') or []
+    if not contexts:return "<span class='small'>No linked person/event context</span>"
+    bits=[]
+    for c in contexts[:4]:
+        suffix=f" — {esc(c.get('event_type'))}" if c.get('event_type') else f" — {esc(c.get('context_type'))}"
+        bits.append(f"<a href='/person/{int(c['person_id'])}?tab=media'>{esc(c.get('display_name'))}</a>{suffix}")
+    if len(contexts)>4:bits.append(f"+{len(contexts)-4} more")
+    return '<br>'.join(bits)
+
+def _media_audit_card(item,referenced=False):
+    path=item.get('path') or item.get('file_path') or ''
+    ext=Path(path).suffix.lower()
+    thumb_url=f"/quality/media-preview?path={quote(path)}"
+    if ext in {'.jpg','.jpeg','.png','.gif','.webp','.tif','.tiff','.heic','.bmp','.pdf'} and path:
+        thumb=f"<img loading='lazy' src='{thumb_url}' alt=''>"
+    else:thumb="<span class='rc-file-icon'>▧</span>"
+    title=item.get('title') or item.get('name') or Path(path).name
+    rel=item.get('relative_path') or item.get('file_path') or path
+    cloud="<span class='badge warn'>iCloud placeholder</span> " if item.get('cloud_placeholder') else ''
+    is_referenced=item.get('referenced') if referenced is None else referenced
+    context=_media_context_html(item) if is_referenced else "<span class='small'>Not referenced by the imported Reunion/GEDCOM media data.</span>"
+    return f"<div class='rc-media-item'><div class='rc-media-thumb'>{thumb}</div><div class='rc-media-copy'><strong>{esc(title)}</strong>{cloud}<div class='rc-media-path'>{esc(rel)}</div><div class='small'>{esc(item.get('media_type') or ext.lstrip('.').upper())} · {_fmt_size(item.get('size'))}</div><div class='rc-media-context'>{context}</div></div></div>"
+
+def media_reconciliation_page(db,query=None):
+    query=query or {}; data=reconcile_media(db); counts=data.get('counts') or {}; view=query.get('view','unreferenced')
+    root=data.get('root')
+    body="<h1>Media</h1><p class='meta'>Read-only comparison of Reunion/GEDCOM media references with files physically present in your selected Media folder.</p><style>.rc-media-root{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px}.rc-media-root code{font-size:11px;word-break:break-all}.rc-media-totals{font-size:11px;color:var(--muted);margin-top:3px}.rc-media-filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}.rc-media-filter a{padding:10px 12px;border:1px solid var(--line);border-radius:9px;text-decoration:none;color:var(--text);background:#fff}.rc-media-filter a strong{display:block;font-size:21px;line-height:1.1}.rc-media-filter a span{font-size:11px;color:var(--muted)}.rc-media-filter a.active{border-color:var(--brand-navy);box-shadow:inset 0 0 0 1px var(--brand-navy)}.rc-media-browser{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}.rc-media-item{display:grid;grid-template-columns:112px minmax(0,1fr);background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden;min-height:112px}.rc-media-thumb{width:112px;height:112px;background:#f0f1ee;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--line)}.rc-media-thumb img{width:100%;height:100%;object-fit:contain}.rc-media-thumb .rc-file-icon{font-size:34px;color:var(--muted)}.rc-media-copy{padding:9px 10px;min-width:0}.rc-media-copy strong{display:block;word-break:break-word;font-size:13px;line-height:1.25}.rc-media-path{font-size:10px;color:var(--muted);word-break:break-word;margin-top:4px}.rc-media-context{font-size:11px;margin-top:5px}@media(max-width:760px){.rc-media-filter{grid-template-columns:repeat(2,1fr)}.rc-media-browser{grid-template-columns:1fr}}</style>"
+    body+="<div class='card rc-media-root'><div><strong>Media root</strong><div>"+(f"<code>{esc(root)}</code>" if root else "<span class='meta'>No media folder could be inferred.</span>")+f"</div><div class='rc-media-totals'>{int(counts.get('referenced',0)):,} referenced by Reunion · {int(counts.get('physical',0)):,} files in Media folder</div></div><a class='button secondary' href='reunion-companion://choose-media-root'>Choose Media Folder…</a></div>"
+    if not root:return layout('Media Reconciliation',body,active='improve')
+    if not data.get('root_exists'):
+        body+="<div class='card'><strong>Selected folder is unavailable.</strong><p class='meta'>It may be on another Mac, in iCloud, or have moved. Choose the current Reunion Media folder.</p></div>"
+        return layout('Media Reconciliation',body,active='improve')
+    tabs=[('unreferenced','Not referenced · review','unreferenced'),('missing','Referenced but missing · review','referenced_missing'),('found','Referenced & found · healthy','referenced_found'),('cloud','iCloud availability','cloud_placeholders')]
+    body+="<div class='rc-media-filter'>"+''.join(f"<a class='{('active' if view==key else '')}' href='/quality/media?view={key}'><strong>{int(counts.get(count_key,0)):,}</strong><span>{esc(label)}</span></a>" for key,label,count_key in tabs)+"</div>"
+    if view=='missing':items=data['referenced_missing'];referenced=True
+    elif view=='found':items=data['referenced_found'];referenced=True
+    elif view=='cloud':items=data['cloud_placeholders'];referenced=None
+    else:items=data['unreferenced'];referenced=False
+    if view=='unreferenced' and items:
+        body+=("<div class='card' style='display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap'>"
+              f"<div><strong>Finder tag</strong><div class='small'>Apply <code>{esc(NOT_REFERENCED_FINDER_TAG)}</code> to the current Not referenced files. Existing Finder tags are preserved.</div></div>"
+              "<div style='display:flex;gap:8px;flex-wrap:wrap'><form method='post' action='/quality/media-finder-tag'><input type='hidden' name='action' value='apply'><button>Tag Not Referenced Files</button></form>"
+              "<form method='post' action='/quality/media-finder-tag'><input type='hidden' name='action' value='remove'><button class='secondary'>Remove Finder Tag</button></form></div></div>")
+    body+=f"<p class='meta'>{len(items):,} item(s). Nothing on this page changes, moves, renames or deletes your files. Finder tagging changes only Finder tag metadata when you explicitly use a tagging button.</p><div class='rc-media-browser'>"
+    for item in items:body+=_media_audit_card(item,referenced=referenced)
+    body+="</div>"
+    if not items:body+="<div class='card'><p>No items in this category.</p></div>"
+    return layout('Media Reconciliation',body,active='improve')
+
 
 def timeline_tab(db,pid,view="story",presentation=False):
     """Mode-specific timeline: Story in Presentation, Research in Research mode."""
@@ -1715,6 +1807,8 @@ def render_get(db,path,query=None):
         return quality_page(db)
     if path=="/quality/items":
         return quality_items_page(db,query.get("kind",""),query)
+    if path=="/quality/media":
+        return media_reconciliation_page(db,query)
     if path=="/research":
         return research_page(db,query)
     if path=="/research/discoveries":
@@ -1843,6 +1937,28 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                 finally: db.close()
                 return
             q={k:v[0] for k,v in parse_qs(u.query).items()}
+            if u.path=="/quality/media-preview":
+                db=connect(db_path)
+                try:
+                    fp=media_file_allowed(db,q.get("path", ""))
+                    if not fp:self.send_error(404);return
+                    if fp.suffix.lower()==".pdf":
+                        try:
+                            import fitz
+                            doc=fitz.open(str(fp)); page=doc.load_page(0); pix=page.get_pixmap(matrix=fitz.Matrix(0.35,0.35),alpha=False); data=pix.tobytes("png"); doc.close(); ctype="image/png"
+                        except Exception:self.send_error(404);return
+                    else:
+                        try:
+                            from PIL import Image, ImageOps
+                            from io import BytesIO
+                            with Image.open(fp) as im:
+                                im=ImageOps.exif_transpose(im); im.thumbnail((240,240))
+                                if im.mode not in ('RGB','RGBA'): im=im.convert('RGB')
+                                out=BytesIO(); im.save(out,format='PNG',optimize=True); data=out.getvalue(); ctype='image/png'
+                        except PermissionError:self.send_error(403,"Reunion media folder access has not been granted");return
+                        except Exception:self.send_error(404);return
+                    self.send_response(200);self.send_header("Content-Type",ctype);self.send_header("Cache-Control","private, max-age=300");self.send_header("Content-Length",str(len(data)));self.end_headers();self.wfile.write(data);return
+                finally:db.close()
             if u.path.startswith("/media-file/"):
                 db=connect(db_path)
                 try:
@@ -1887,6 +2003,32 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     self.send_json({"status":"success","message":f"Imported {count} people. Reunion Companion is ready."})
                 except Exception as e:
                     traceback.print_exc(); self.send_json({"status":"error","message":f"{type(e).__name__}: {e}"},400)
+                return
+
+            if u.path=="/quality/media-root":
+                db=connect(db_path)
+                try:
+                    root=set_media_root(db,(form.get("path") or "").strip())
+                    self.send_json({"status":"success","path":root})
+                except Exception as e:self.send_json({"status":"error","message":str(e)},400)
+                finally:db.close()
+                return
+
+            if u.path=="/quality/media-finder-tag":
+                db=connect(db_path)
+                try:
+                    remove=(form.get("action") or "apply").strip().casefold()=="remove"
+                    result=set_not_referenced_finder_tags(db,remove=remove)
+                    verb="Removed" if remove else "Applied"
+                    failures=len(result.get("failed") or [])
+                    msg=f"{verb} Finder tag for {result['changed']} file(s)."
+                    if failures: msg+=f" {failures} file(s) could not be changed."
+                    html=media_reconciliation_page(db,{"view":"unreferenced"})
+                    html=html.replace("<h1>Media</h1>",f"<h1>Media</h1><div class='card'><strong>{esc(msg)}</strong></div>",1)
+                    self.send_html(html)
+                except Exception as e:
+                    traceback.print_exc(); self.send_html(error_page("Finder Tag Error",f"{type(e).__name__}: {e}"),500)
+                finally: db.close()
                 return
 
             m=re.match(r"^/person/(\d+)/bookmark$",u.path)
@@ -1974,11 +2116,32 @@ def run_ui(db_path,host="127.0.0.1",port=8765,open_browser=True):
                     path=target.get('gedcom_path')
                     if not path: raise ValueError('This Family File has no GEDCOM source yet.')
                 finally:db.close()
-                # Selection materialises data but never rewrites Family File identity/provenance.
-                staged_import(db_path,path)
+                # A Family File switch must pause Ryerson before another genealogy
+                # snapshot is materialised, and must not reconcile the previous
+                # family's discovery-review rows against the incoming family.
+                db=connect(db_path)
+                try:
+                    from .external_research_runner import pause_for_family_change
+                    pause_for_family_change(db)
+                finally: db.close()
+                staged_import(db_path,path,reconcile_external=False)
                 db=connect(db_path)
                 try:set_active_family(db,wid); self.send_html(home(db))
                 finally:db.close()
+                return
+
+            if u.path=="/manage/backups/cleanup":
+                try:
+                    from .safe_refresh import cleanup_refresh_housekeeping
+                    result=cleanup_refresh_housekeeping(db_path)
+                    db=connect(db_path)
+                    try:
+                        self.send_html(data_page(db,f"Backup cleanup complete. Removed {result['removed_count']} old backup/staging file(s)."))
+                    finally:db.close()
+                except Exception as e:
+                    db=connect(db_path)
+                    try:self.send_html(data_page(db,f"Backup cleanup failed: {e}"),500)
+                    finally:db.close()
                 return
 
             if u.path in ("/data/reload","/data/import"):
