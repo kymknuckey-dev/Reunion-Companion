@@ -230,6 +230,19 @@ def _norm(path: str | Path) -> str:
     return unicodedata.normalize('NFC',text).casefold()
 
 
+def media_filename_conforms(name: str) -> bool:
+    """Check the Media naming prefix: ``Surname, First names``."""
+    stem=Path(str(name)).stem.strip()
+    if ',' not in stem:
+        return False
+    surname,remainder=stem.split(',',1)
+    surname=surname.strip(); remainder=remainder.strip()
+    if not surname or not remainder:
+        return False
+    first_token=remainder.split()[0]
+    return any(ch.isalpha() for ch in surname) and any(ch.isalpha() for ch in first_token)
+
+
 def _is_cloud_placeholder(path: Path) -> bool:
     """Best-effort detection of macOS dataless/iCloud placeholder files."""
     try:
@@ -263,13 +276,17 @@ def _scan_files(root: Path):
 def _contexts(db, media_id: int):
     result=[]
     try:
-        for r in db.execute("""SELECT p.id person_id,p.display_name,'Person' context_type,NULL event_type
+        cols={r[1] for r in db.execute("PRAGMA table_info(people)").fetchall()}
+        given="p.given_names" if "given_names" in cols else "NULL"
+        surname="p.surname" if "surname" in cols else "NULL"
+        person_cols=f"p.id person_id,p.display_name,{given} given_names,{surname} surname"
+        for r in db.execute(f"""SELECT {person_cols},'Person' context_type,NULL event_type
           FROM person_media pm JOIN people p ON p.id=pm.person_id WHERE pm.media_id=?""",(media_id,)).fetchall():
             result.append(dict(r))
-        for r in db.execute("""SELECT p.id person_id,p.display_name,'Event' context_type,e.event_type
+        for r in db.execute(f"""SELECT {person_cols},'Event' context_type,e.event_type
           FROM event_media em JOIN events e ON e.id=em.event_id JOIN people p ON p.id=e.person_id WHERE em.media_id=?""",(media_id,)).fetchall():
             result.append(dict(r))
-        for r in db.execute("""SELECT p.id person_id,p.display_name,'Family' context_type,NULL event_type
+        for r in db.execute(f"""SELECT {person_cols},'Family' context_type,NULL event_type
           FROM family_media fm JOIN family_members mem ON mem.family_id=fm.family_id JOIN people p ON p.id=mem.person_id
           WHERE fm.media_id=? ORDER BY p.display_name""",(media_id,)).fetchall():
             result.append(dict(r))
@@ -281,11 +298,74 @@ def _contexts(db, media_id: int):
         if k not in seen:seen.add(k);unique.append(x)
     return unique
 
+def _person_filename_name(context: dict) -> str | None:
+    surname=str(context.get('surname') or '').strip()
+    given=str(context.get('given_names') or '').strip()
+    if surname and given:
+        return f"{surname}, {given}"
+    return None
+
+def _useful_filename_suffix(stem: str, contexts: list[dict]) -> str:
+    """Keep obvious descriptive text after names, without inventing detail."""
+    text=stem.strip()
+    # Common shorthand such as "Glenn S" can be resolved safely from a single
+    # association when the first name and surname initial agree.
+    if len(contexts)==1:
+        given=str(contexts[0].get('given_names') or '').strip().split()
+        surname=str(contexts[0].get('surname') or '').strip()
+        if given and surname:
+            import re
+            short=rf'^\s*{re.escape(given[0])}\s+{re.escape(surname[0])}\.?\s*$'
+            if re.fullmatch(short,text,flags=re.I): return ''
+    # Remove associated given/display names when they occur in the old filename.
+    needles=[]
+    for c in contexts:
+        for value in (c.get('display_name'), c.get('given_names')):
+            value=str(value or '').strip()
+            if value: needles.append(value)
+    import re
+    for value in sorted(set(needles),key=len,reverse=True):
+        text=re.sub(re.escape(value),' ',text,flags=re.I)
+    # Remove separators and a surname initial left by names such as "Glenn S".
+    text=re.sub(r'^[\s,&+\-]+|[\s,&+\-]+$','',text)
+    if re.fullmatch(r'[A-Za-z]\.?',text): return ''
+    text=re.sub(r'\s+',' ',text).strip(' -,&+')
+    return text
+
+def media_filename_suggestion(item: dict) -> dict:
+    """Return a conservative, read-only naming suggestion from Reunion links."""
+    contexts=item.get('contexts') or []
+    people={}
+    for c in contexts:
+        if c.get('person_id') and _person_filename_name(c):
+            people[int(c['person_id'])]=c
+    unique=list(people.values())
+    ext=Path(str(item.get('name') or item.get('path') or '')).suffix
+    stem=Path(str(item.get('name') or '')).stem
+    if len(unique)==1:
+        base=_person_filename_name(unique[0])
+        suffix=_useful_filename_suffix(stem,unique)
+        # Event type is useful evidence when the old name has no other description.
+        event_types=sorted({str(c.get('event_type')).strip() for c in contexts if c.get('event_type')})
+        if not suffix and len(event_types)==1 and event_types[0].casefold() not in {'image','photo','photograph'}:
+            suffix=event_types[0]
+        return {'suggested_filename':base+(f' {suffix}' if suffix else '')+ext,'confidence':'High','reason':'One clear Reunion person association'}
+    if len(unique)>1:
+        surnames={str(c.get('surname') or '').strip() for c in unique}
+        surnames.discard('')
+        if len(surnames)==1:
+            surname=next(iter(surnames)); givens=[str(c.get('given_names') or '').strip() for c in unique]
+            if all(givens):
+                base=f"{surname}, " + ' and '.join(givens)
+                suffix=_useful_filename_suffix(stem,unique)
+                return {'suggested_filename':base+(f' {suffix}' if suffix else '')+ext,'confidence':'Review','reason':'Multiple associated people with the same surname'}
+        return {'suggested_filename':None,'confidence':'Review','reason':'Multiple Reunion person associations'}
+    return {'suggested_filename':None,'confidence':'Review','reason':'No linked Reunion person association'}
 
 def reconcile_media(db, root: str | None=None):
     root_text=root or effective_media_root(db)
     if not root_text:
-        return {'root':None,'configured':False,'root_exists':False,'referenced_found':[], 'referenced_missing':[], 'unreferenced':[], 'cloud_placeholders':[], 'counts':{}}
+        return {'root':None,'configured':False,'root_exists':False,'referenced_found':[], 'referenced_missing':[], 'unreferenced':[], 'cloud_placeholders':[], 'nonstandard_filenames':[], 'counts':{}}
     root_path=Path(root_text).expanduser()
     physical=_scan_files(root_path) if root_path.exists() else []
     by_norm={_norm(x['path']):x for x in physical}
@@ -305,6 +385,19 @@ def reconcile_media(db, root: str | None=None):
         else:
             x['name']=Path(x['file_path']).name; x['relative_path']=None; x['cloud_placeholder']=False; missing.append(x)
     unref=[x for x in physical if _norm(x['path']) not in referenced_norm]
+    nonstandard=[]
+    for disk in physical:
+        if media_filename_conforms(disk.get('name') or ''):
+            continue
+        item=dict(disk)
+        ref=next((x for x in found if _norm(x.get('path') or x.get('file_path'))==_norm(disk['path'])),None)
+        item['referenced']=bool(ref)
+        if ref:
+            item['title']=ref.get('title'); item['media_type']=ref.get('media_type'); item['contexts']=ref.get('contexts') or []
+        else:
+            item['contexts']=[]
+        item.update(media_filename_suggestion(item))
+        nonstandard.append(item)
     cloud=[]
     found_by_norm={_norm(x.get('path') or x.get('file_path')):x for x in found}
     for disk in physical:
@@ -320,8 +413,8 @@ def reconcile_media(db, root: str | None=None):
         cloud.append(item)
     return {
         'root':str(root_path),'configured':bool(configured_media_root(db)),'root_exists':root_path.exists(),
-        'referenced_found':found,'referenced_missing':missing,'unreferenced':unref,'cloud_placeholders':cloud,
-        'counts':{'referenced':len(refs),'referenced_found':len(found),'referenced_missing':len(missing),'physical':len(physical),'unreferenced':len(unref),'cloud_placeholders':len(cloud)}
+        'referenced_found':found,'referenced_missing':missing,'unreferenced':unref,'cloud_placeholders':cloud,'nonstandard_filenames':nonstandard,
+        'counts':{'referenced':len(refs),'referenced_found':len(found),'referenced_missing':len(missing),'physical':len(physical),'unreferenced':len(unref),'cloud_placeholders':len(cloud),'nonstandard_filenames':len(nonstandard)}
     }
 
 
